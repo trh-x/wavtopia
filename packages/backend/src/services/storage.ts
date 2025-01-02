@@ -1,7 +1,7 @@
 import { Client } from "minio";
 import { AppError } from "../middleware/errorHandler";
 
-const minioClient = new Client({
+export const minioClient = new Client({
   endPoint: process.env.MINIO_ENDPOINT || "localhost",
   port: parseInt(process.env.MINIO_PORT || "9000"),
   useSSL: process.env.MINIO_USE_SSL === "true",
@@ -9,7 +9,7 @@ const minioClient = new Client({
   secretKey: process.env.MINIO_ROOT_PASSWORD || "wavtropolis123",
 });
 
-const bucket = process.env.MINIO_BUCKET || "wavtropolis";
+export const bucket = process.env.MINIO_BUCKET || "wavtropolis";
 
 export async function initializeStorage() {
   try {
@@ -51,8 +51,7 @@ export async function uploadFile(
       { "Content-Type": file.mimetype }
     );
 
-    const url = await minioClient.presignedGetObject(bucket, fileName);
-    return url;
+    return fileName;
   } catch (error) {
     console.error("Failed to upload file:", error);
     throw new AppError(500, "Failed to upload file");

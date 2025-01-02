@@ -3,8 +3,9 @@ import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
 import { uploadTrackFiles } from "../middleware/upload";
-import { uploadFile, deleteFile } from "../services/storage";
+import { uploadFile, deleteFile, getFileUrl } from "../services/storage";
 import { z } from "zod";
+import { minioClient, bucket } from "../services/storage";
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -71,22 +72,34 @@ router.get("/:id", async (req, res, next) => {
 // Create track with files
 router.post("/", uploadTrackFiles, async (req, res, next) => {
   try {
+    console.log("Received track upload request");
+
     // Parse the metadata from the data field
+    console.log("Request body data:", req.body.data);
     const metadata = JSON.parse(req.body.data);
+    console.log("Parsed metadata:", metadata);
+
     const data = trackSchema.parse(metadata);
+    console.log("Validated data:", data);
+
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    console.log("Received files:", Object.keys(files));
 
     if (!files.original?.[0]) {
       throw new AppError(400, "Original track file is required");
     }
 
     // Upload original file
+    console.log("Uploading original file:", files.original[0].originalname);
     const originalUrl = await uploadFile(files.original[0], "originals/");
+    console.log("Original file uploaded, URL:", originalUrl);
 
     // Upload cover art if provided
     let coverArtUrl: string | undefined;
     if (files.coverArt?.[0]) {
+      console.log("Uploading cover art:", files.coverArt[0].originalname);
       coverArtUrl = await uploadFile(files.coverArt[0], "covers/");
+      console.log("Cover art uploaded, URL:", coverArtUrl);
     }
 
     // Upload component files and create track
@@ -98,13 +111,16 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 
     let componentUploads: ComponentUpload[] = [];
     if (files.components && files.components.length > 0) {
+      console.log("Processing components:", files.components.length);
       if (files.components.length !== data.components.length) {
         throw new AppError(400, "Component files do not match component data");
       }
 
       componentUploads = await Promise.all(
         files.components.map(async (file, index) => {
+          console.log(`Uploading component ${index + 1}:`, file.originalname);
           const wavUrl = await uploadFile(file, "components/");
+          console.log(`Component ${index + 1} uploaded, URL:`, wavUrl);
           return {
             ...data.components[index],
             wavUrl,
@@ -113,11 +129,13 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       );
     }
 
+    console.log("Creating track in database");
     const track = await prisma.track.create({
       data: {
         title: data.title,
         artist: data.artist,
         originalFormat: data.originalFormat,
+        originalUrl: originalUrl,
         coverArt: coverArtUrl,
         metadata: data.metadata,
         userId: req.user!.id, // Associate track with user
@@ -129,9 +147,11 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         components: true,
       },
     });
+    console.log("Track created successfully:", track.id);
 
     res.status(201).json(track);
   } catch (error) {
+    console.error("Error in track creation:", error);
     if (error instanceof z.ZodError) {
       next(new AppError(400, "Invalid request data"));
     } else {
@@ -242,6 +262,49 @@ router.delete("/:id", async (req, res, next) => {
     });
 
     res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get original track file
+router.get("/:id/original", async (req, res, next) => {
+  try {
+    const track = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id, // Only get user's own track
+      },
+      select: {
+        originalFormat: true,
+        originalUrl: true,
+      },
+    });
+
+    if (!track) {
+      throw new AppError(404, "Track not found");
+    }
+
+    // Get the file from MinIO as a buffer
+    const fileStream = await minioClient.getObject(bucket, track.originalUrl);
+    const chunks: Buffer[] = [];
+
+    fileStream.on("data", (chunk) => chunks.push(chunk));
+    fileStream.on("error", (err) => next(err));
+    fileStream.on("end", () => {
+      const fileBuffer = Buffer.concat(chunks);
+
+      // Set headers for file download
+      res.setHeader("Content-Type", "application/octet-stream");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=original.${track.originalFormat}`
+      );
+      res.setHeader("Content-Length", fileBuffer.length);
+
+      // Send the file
+      res.send(fileBuffer);
+    });
   } catch (error) {
     next(error);
   }

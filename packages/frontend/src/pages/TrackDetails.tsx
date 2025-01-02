@@ -110,13 +110,37 @@ export function TrackDetails() {
         </div>
 
         <div className="mt-8">
-          <a
-            href={`/api/tracks/${track.id}/original`}
-            download
+          <button
+            onClick={async () => {
+              const token = localStorage.getItem("token");
+              try {
+                const response = await fetch(
+                  `/api/tracks/${track.id}/original`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                    },
+                  }
+                );
+                if (!response.ok) throw new Error("Download failed");
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `original.${track.originalFormat}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+              } catch (error) {
+                console.error("Failed to download file:", error);
+              }
+            }}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Download Original {track.originalFormat.toUpperCase()} File
-          </a>
+          </button>
         </div>
       </div>
     </div>
