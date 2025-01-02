@@ -109,7 +109,7 @@ export function TrackDetails() {
           ))}
         </div>
 
-        <div className="mt-8">
+        <div className="mt-8 space-y-4">
           <a
             href={`/api/tracks/${track.id}/original`}
             onClick={(e) => {
@@ -117,9 +117,21 @@ export function TrackDetails() {
               const token = localStorage.getItem("token");
               window.location.href = `/api/tracks/${track.id}/original?token=${token}`;
             }}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 mr-4"
           >
             Download Original {track.originalFormat.toUpperCase()} File
+          </a>
+
+          <a
+            href={`/api/tracks/${track.id}/full`}
+            onClick={(e) => {
+              e.preventDefault();
+              const token = localStorage.getItem("token");
+              window.location.href = `/api/tracks/${track.id}/full?token=${token}`;
+            }}
+            className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            Download Full Track WAV
           </a>
         </div>
       </div>

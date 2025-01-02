@@ -29,6 +29,7 @@ model Track {
   artist        String
   originalFormat String
   originalUrl   String
+  fullTrackUrl  String    // URL to the full track WAV file
   coverArt      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

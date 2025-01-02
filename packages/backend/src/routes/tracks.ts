@@ -148,10 +148,23 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       console.log("Cover art uploaded, URL:", coverArtUrl);
     }
 
-    // Convert XM to WAV components
-    console.log("Converting XM to WAV components");
-    const convertedComponents = await convertXMToWAV(files.original[0].buffer);
+    // Convert XM to WAV components and full track
+    console.log("Converting XM to WAV");
+    const { fullTrackBuffer, components: convertedComponents } =
+      await convertXMToWAV(files.original[0].buffer);
     console.log("Generated components:", convertedComponents.length);
+
+    // Upload full track WAV
+    console.log("Uploading full track WAV");
+    const fullTrackUrl = await uploadFile(
+      {
+        buffer: fullTrackBuffer,
+        originalname: "full_track.wav",
+        mimetype: "audio/wav",
+      } as Express.Multer.File,
+      "full_tracks/"
+    );
+    console.log("Full track WAV uploaded, URL:", fullTrackUrl);
 
     // Upload component files
     const componentUploads = await Promise.all(
@@ -181,6 +194,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         artist: data.artist,
         originalFormat: data.originalFormat,
         originalUrl: originalUrl,
+        fullTrackUrl: fullTrackUrl,
         coverArt: coverArtUrl,
         metadata: data.metadata as Prisma.InputJsonValue,
         userId: req.user!.id,
@@ -202,6 +216,58 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
     } else {
       next(error);
     }
+  }
+});
+
+// Add endpoint to get full track WAV
+router.get("/:id/full", async (req, res, next) => {
+  try {
+    // Get token from query parameter
+    const token = req.query.token as string;
+    if (!token) {
+      throw new AppError(401, "No token provided");
+    }
+
+    // Set the token in the Authorization header for the authenticate middleware
+    req.headers.authorization = `Bearer ${token}`;
+
+    // Call authenticate middleware manually
+    await new Promise((resolve, reject) => {
+      authenticate(req, res, (err) => {
+        if (err) reject(err);
+        else resolve(undefined);
+      });
+    });
+
+    const track = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id, // Only get user's own track
+      },
+      select: {
+        title: true,
+        fullTrackUrl: true,
+      },
+    });
+
+    if (!track) {
+      throw new AppError(404, "Track not found");
+    }
+
+    // Stream the file directly from MinIO
+    const fileStream = await minioClient.getObject(bucket, track.fullTrackUrl);
+
+    // Set headers for file download
+    res.setHeader("Content-Type", "audio/wav");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${track.title}.wav"`
+    );
+
+    // Pipe the file stream directly to the response
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -271,6 +337,9 @@ router.delete("/:id", async (req, res, next) => {
     }
 
     // Delete all associated files
+    await deleteFile(track.originalUrl);
+    await deleteFile(track.fullTrackUrl);
+
     if (track.coverArt) {
       await deleteFile(track.coverArt);
     }

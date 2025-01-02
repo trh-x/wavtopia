@@ -3,6 +3,8 @@ export interface Track {
   title: string;
   artist: string;
   originalFormat: string;
+  originalUrl: string;
+  fullTrackUrl: string;
   coverArt?: string;
   components: Component[];
   metadata?: Record<string, unknown>;

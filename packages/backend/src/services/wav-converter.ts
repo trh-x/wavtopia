@@ -1,6 +1,6 @@
 import { promisify } from "util";
 import { exec } from "child_process";
-import { writeFile, mkdtemp, rm } from "fs/promises";
+import { writeFile, mkdtemp, rm, readdir } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import { AppError } from "../middleware/errorHandler";
@@ -15,49 +15,79 @@ interface ConvertedComponent {
   filename: string;
 }
 
+interface ConversionResult {
+  fullTrackBuffer: Buffer;
+  components: ConvertedComponent[];
+}
+
 export async function convertXMToWAV(
   xmBuffer: Buffer
-): Promise<ConvertedComponent[]> {
+): Promise<ConversionResult> {
   try {
     // Create temporary directory
     const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-"));
     const xmPath = join(tempDir, "input.xm");
+    const fullTrackOutput = "full_track.wav";
+    const componentsBaseName = "output.wav"; // Base name for component files (will become output_01.wav, etc.)
 
     try {
       // Write XM file to temp directory
       await writeFile(xmPath, xmBuffer);
 
-      // Run export-to-wav command with full path from config
-      const { stdout, stderr } = await execAsync(
-        `"${config.tools.exportToWavPath}" "${xmPath}"`
+      // First, convert the full track
+      const { stderr: fullTrackStderr } = await execAsync(
+        `"${config.tools.exportToWavPath}" "${xmPath}" "${join(
+          tempDir,
+          fullTrackOutput
+        )}"`
       );
 
-      if (stderr) {
-        console.error("export-to-wav stderr:", stderr);
+      if (fullTrackStderr) {
+        console.error("Full track conversion stderr:", fullTrackStderr);
       }
 
-      // Parse the output to get component information
-      // This assumes export-to-wav outputs JSON with component information
-      const components = JSON.parse(stdout) as {
-        name: string;
-        type: string;
-        path: string;
-      }[];
+      // Read the full track WAV
+      const fullTrackBuffer = await readWavFile(join(tempDir, fullTrackOutput));
 
-      // Read the generated WAV files and create components
+      // Then convert individual components
+      const { stderr: componentsStderr } = await execAsync(
+        `"${config.tools.exportToWavPath}" "${xmPath}" "${join(
+          tempDir,
+          componentsBaseName
+        )}" --multi-track`
+      );
+
+      if (componentsStderr) {
+        console.error("Components conversion stderr:", componentsStderr);
+      }
+
+      // Find all generated component WAV files in the temp directory
+      const files = await readdir(tempDir);
+      const wavFiles = files
+        .filter((file) => file.startsWith("output_") && file.endsWith(".wav"))
+        .sort(); // Sort to ensure consistent order (output_01.wav, output_02.wav, etc.)
+
+      // Create components from the WAV files
       const convertedComponents: ConvertedComponent[] = await Promise.all(
-        components.map(async (component) => {
-          const buffer = await readWavFile(component.path);
+        wavFiles.map(async (filename, index) => {
+          const buffer = await readWavFile(join(tempDir, filename));
+          // Extract track number from filename (e.g., "output_01.wav" -> "01")
+          const trackNum =
+            filename.match(/_(\d+)\.wav$/)?.[1] || String(index + 1);
+
           return {
-            name: component.name,
-            type: component.type,
+            name: `Track ${trackNum}`, // Default name if we don't have specific track info
+            type: "audio", // Default type if we don't have specific track info
             buffer,
-            filename: `${component.name}.wav`,
+            filename: `track_${trackNum}.wav`,
           };
         })
       );
 
-      return convertedComponents;
+      return {
+        fullTrackBuffer,
+        components: convertedComponents,
+      };
     } finally {
       // Clean up temporary directory
       await rm(tempDir, { recursive: true, force: true });
