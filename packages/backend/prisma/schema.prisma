@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Track {
+  id            String    @id @default(cuid())
+  title         String
+  artist        String
+  originalFormat String
+  coverArt      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  components    Component[]
+  metadata      Json?
+}
+
+model Component {
+  id        String   @id @default(cuid())
+  name      String
+  wavUrl    String
+  type      String
+  trackId   String
+  track     Track    @relation(fields: [trackId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 

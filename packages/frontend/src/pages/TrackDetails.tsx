@@ -1,0 +1,119 @@
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import { Track } from "@/types";
+import * as Tone from "tone";
+import { useState } from "react";
+
+async function fetchTrack(id: string): Promise<Track> {
+  const response = await fetch(`/api/tracks/${id}`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch track");
+  }
+  return response.json();
+}
+
+export function TrackDetails() {
+  const { id } = useParams<{ id: string }>();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [players, setPlayers] = useState<Record<string, Tone.Player>>({});
+
+  const {
+    data: track,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["track", id],
+    queryFn: () => fetchTrack(id!),
+    enabled: !!id,
+  });
+
+  async function togglePlayback() {
+    if (!track) return;
+
+    if (!isPlaying) {
+      await Tone.start();
+      const newPlayers: Record<string, Tone.Player> = {};
+
+      for (const component of track.components) {
+        const player = new Tone.Player(component.wavUrl).toDestination();
+        newPlayers[component.id] = player;
+        await player.load();
+      }
+
+      setPlayers(newPlayers);
+      Object.values(newPlayers).forEach((player) => player.start());
+      setIsPlaying(true);
+    } else {
+      Object.values(players).forEach((player) => player.stop());
+      setIsPlaying(false);
+    }
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error || !track) {
+    return <div>Error loading track</div>;
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-6 mb-8">
+        {track.coverArt && (
+          <img
+            src={track.coverArt}
+            alt={track.title}
+            className="w-48 h-48 object-cover rounded-lg"
+          />
+        )}
+        <div>
+          <h1 className="text-3xl font-bold">{track.title}</h1>
+          <p className="text-xl text-gray-600">{track.artist}</p>
+          <button
+            onClick={togglePlayback}
+            className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+          >
+            {isPlaying ? "Stop" : "Play"}
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-2xl font-semibold">Components</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {track.components.map((component) => (
+            <div
+              key={component.id}
+              className="p-4 bg-white rounded-lg shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium">{component.name}</h3>
+                  <p className="text-sm text-gray-500">{component.type}</p>
+                </div>
+                <a
+                  href={component.wavUrl}
+                  download
+                  className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                >
+                  Download WAV
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-8">
+          <a
+            href={`/api/tracks/${track.id}/original`}
+            download
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            Download Original {track.originalFormat.toUpperCase()} File
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
