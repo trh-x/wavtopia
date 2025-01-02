@@ -20,7 +20,7 @@ async function fetchTrack(id: string): Promise<Track> {
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [players, setPlayers] = useState<Record<string, Tone.Player>>({});
+  const [player, setPlayer] = useState<Tone.Player | null>(null);
 
   const {
     data: track,
@@ -36,20 +36,35 @@ export function TrackDetails() {
     if (!track) return;
 
     if (!isPlaying) {
-      await Tone.start();
-      const newPlayers: Record<string, Tone.Player> = {};
+      try {
+        await Tone.start();
+        const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("No authentication token found");
+        }
 
-      for (const component of track.components) {
-        const player = new Tone.Player(component.wavUrl).toDestination();
-        newPlayers[component.id] = player;
-        await player.load(component.wavUrl);
+        const audioUrl = `/api/tracks/${track.id}/full?token=${token}`;
+        const newPlayer = new Tone.Player(audioUrl, () => {
+          newPlayer.start();
+          setIsPlaying(true);
+        }).toDestination();
+
+        setPlayer(newPlayer);
+      } catch (error) {
+        console.error("Playback error:", error);
+        if (player) {
+          player.stop();
+          player.dispose();
+          setPlayer(null);
+        }
+        setIsPlaying(false);
       }
-
-      setPlayers(newPlayers);
-      Object.values(newPlayers).forEach((player) => player.start());
-      setIsPlaying(true);
     } else {
-      Object.values(players).forEach((player) => player.stop());
+      if (player) {
+        player.stop();
+        player.dispose();
+        setPlayer(null);
+      }
       setIsPlaying(false);
     }
   };
