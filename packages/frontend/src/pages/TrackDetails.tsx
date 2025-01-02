@@ -116,11 +116,11 @@ export function TrackDetails() {
                   <a
                     href={`/api/tracks/${track.id}/component/${
                       component.id
-                    }?token=${localStorage.getItem("token")}`}
+                    }.wav?token=${localStorage.getItem("token")}`}
                     onClick={(e) => {
                       e.preventDefault();
                       const token = localStorage.getItem("token");
-                      window.location.href = `/api/tracks/${track.id}/component/${component.id}?token=${token}`;
+                      window.location.href = `/api/tracks/${track.id}/component/${component.id}.wav?token=${token}`;
                     }}
                     className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                   >

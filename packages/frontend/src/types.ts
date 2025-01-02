@@ -5,6 +5,7 @@ export interface Track {
   originalFormat: string;
   originalUrl: string;
   fullTrackUrl: string;
+  fullTrackMp3Url: string;
   coverArt?: string;
   components: Component[];
   metadata?: Record<string, unknown>;
@@ -16,6 +17,7 @@ export interface Component {
   id: string;
   name: string;
   wavUrl: string;
+  mp3Url: string;
   type: string;
   trackId: string;
   createdAt: string;
