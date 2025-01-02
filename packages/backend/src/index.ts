@@ -5,10 +5,17 @@ import { trackRoutes } from "./routes/tracks";
 import { authRoutes } from "./routes/auth";
 import { errorHandler } from "./middleware/errorHandler";
 import { initializeStorage } from "./services/storage";
+import config from "./config";
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: config.database.url,
+    },
+  },
+});
+
 const app = express();
-const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -35,8 +42,8 @@ async function main() {
     await prisma.$connect();
     console.log("Connected to database");
 
-    app.listen(port, () => {
-      console.log(`Server running at http://localhost:${port}`);
+    app.listen(config.server.port, () => {
+      console.log(`Server running at http://localhost:${config.server.port}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);

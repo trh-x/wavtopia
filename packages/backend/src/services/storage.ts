@@ -1,15 +1,16 @@
 import { Client } from "minio";
 import { AppError } from "../middleware/errorHandler";
+import config from "../config";
 
 export const minioClient = new Client({
-  endPoint: process.env.MINIO_ENDPOINT || "localhost",
-  port: parseInt(process.env.MINIO_PORT || "9000"),
-  useSSL: process.env.MINIO_USE_SSL === "true",
-  accessKey: process.env.MINIO_ROOT_USER || "wavtopia",
-  secretKey: process.env.MINIO_ROOT_PASSWORD || "wavtopia123",
+  endPoint: config.storage.endpoint,
+  port: config.storage.port,
+  useSSL: config.storage.useSSL,
+  accessKey: config.storage.accessKey,
+  secretKey: config.storage.secretKey,
 });
 
-export const bucket = process.env.MINIO_BUCKET || "wavtopia";
+export const bucket = config.storage.bucket;
 
 export async function initializeStorage() {
   try {

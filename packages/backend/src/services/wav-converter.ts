@@ -4,6 +4,7 @@ import { writeFile, mkdtemp, rm } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import { AppError } from "../middleware/errorHandler";
+import config from "../config";
 
 const execAsync = promisify(exec);
 
@@ -26,8 +27,10 @@ export async function convertXMToWAV(
       // Write XM file to temp directory
       await writeFile(xmPath, xmBuffer);
 
-      // Run export-to-wav command
-      const { stdout, stderr } = await execAsync(`export-to-wav "${xmPath}"`);
+      // Run export-to-wav command with full path from config
+      const { stdout, stderr } = await execAsync(
+        `"${config.tools.exportToWavPath}" "${xmPath}"`
+      );
 
       if (stderr) {
         console.error("export-to-wav stderr:", stderr);
