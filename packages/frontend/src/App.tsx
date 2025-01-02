@@ -9,6 +9,7 @@ import { Home } from "@/pages/Home";
 import { TrackDetails } from "@/pages/TrackDetails";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
+import { UploadTrack } from "@/pages/UploadTrack";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,14 @@ function AppRoutes() {
           element={
             <PrivateRoute>
               <TrackDetails />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            <PrivateRoute>
+              <UploadTrack />
             </PrivateRoute>
           }
         />

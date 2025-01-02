@@ -18,6 +18,12 @@ export function Layout({ children }: LayoutProps) {
             </Link>
             {user && (
               <div className="flex items-center gap-4">
+                <Link
+                  to="/upload"
+                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                >
+                  Upload Track
+                </Link>
                 <span className="text-sm">{user.username}</span>
                 <button
                   onClick={logout}

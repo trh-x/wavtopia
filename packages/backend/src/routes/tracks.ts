@@ -15,12 +15,14 @@ const trackSchema = z.object({
   artist: z.string().min(1),
   originalFormat: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
-  components: z.array(
-    z.object({
-      name: z.string().min(1),
-      type: z.string().min(1),
-    })
-  ),
+  components: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        type: z.string().min(1),
+      })
+    )
+    .default([]),
 });
 
 // Apply authentication to all routes
@@ -69,18 +71,13 @@ router.get("/:id", async (req, res, next) => {
 // Create track with files
 router.post("/", uploadTrackFiles, async (req, res, next) => {
   try {
-    const data = trackSchema.parse(req.body);
+    // Parse the metadata from the data field
+    const metadata = JSON.parse(req.body.data);
+    const data = trackSchema.parse(metadata);
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     if (!files.original?.[0]) {
       throw new AppError(400, "Original track file is required");
-    }
-
-    if (
-      !files.components ||
-      files.components.length !== data.components.length
-    ) {
-      throw new AppError(400, "Component files do not match component data");
     }
 
     // Upload original file
@@ -93,15 +90,28 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
     }
 
     // Upload component files and create track
-    const componentUploads = await Promise.all(
-      files.components.map(async (file, index) => {
-        const wavUrl = await uploadFile(file, "components/");
-        return {
-          ...data.components[index],
-          wavUrl,
-        };
-      })
-    );
+    interface ComponentUpload {
+      name: string;
+      type: string;
+      wavUrl: string;
+    }
+
+    let componentUploads: ComponentUpload[] = [];
+    if (files.components && files.components.length > 0) {
+      if (files.components.length !== data.components.length) {
+        throw new AppError(400, "Component files do not match component data");
+      }
+
+      componentUploads = await Promise.all(
+        files.components.map(async (file, index) => {
+          const wavUrl = await uploadFile(file, "components/");
+          return {
+            ...data.components[index],
+            wavUrl,
+          };
+        })
+      );
+    }
 
     const track = await prisma.track.create({
       data: {

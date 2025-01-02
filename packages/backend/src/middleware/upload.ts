@@ -8,8 +8,11 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Accept .xm and .wav files
-    if (file.mimetype === "audio/wav" || file.originalname.endsWith(".xm")) {
+    // Accept .xm and .wav files (case-insensitive)
+    if (
+      file.mimetype === "audio/wav" ||
+      file.originalname.toLowerCase().endsWith(".xm")
+    ) {
       cb(null, true);
     } else {
       cb(new AppError(400, "Only .wav and .xm files are allowed"));
