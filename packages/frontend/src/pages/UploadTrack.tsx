@@ -5,13 +5,11 @@ interface TrackFormData {
   title: string;
   artist: string;
   originalFormat: string;
-  components: { name: string; type: string }[];
 }
 
 interface FileData {
   original: File | null;
   coverArt: File | null;
-  components: File[];
 }
 
 export function UploadTrack() {
@@ -20,45 +18,12 @@ export function UploadTrack() {
     title: "",
     artist: "",
     originalFormat: "xm",
-    components: [],
   });
   const [files, setFiles] = useState<FileData>({
     original: null,
     coverArt: null,
-    components: [],
   });
   const [error, setError] = useState<string | null>(null);
-
-  function handleComponentAdd() {
-    setFormData((prev) => ({
-      ...prev,
-      components: [...prev.components, { name: "", type: "" }],
-    }));
-  }
-
-  function handleComponentRemove(index: number) {
-    setFormData((prev) => ({
-      ...prev,
-      components: prev.components.filter((_, i) => i !== index),
-    }));
-    setFiles((prev) => ({
-      ...prev,
-      components: prev.components.filter((_, i) => i !== index),
-    }));
-  }
-
-  function handleComponentChange(
-    index: number,
-    field: "name" | "type",
-    value: string
-  ) {
-    setFormData((prev) => ({
-      ...prev,
-      components: prev.components.map((comp, i) =>
-        i === index ? { ...comp, [field]: value } : comp
-      ),
-    }));
-  }
 
   function handleOriginalFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] || null;
@@ -79,11 +44,6 @@ export function UploadTrack() {
       return;
     }
 
-    if (files.components.length !== formData.components.length) {
-      setError("Each component must have a WAV file");
-      return;
-    }
-
     try {
       const formDataToSend = new FormData();
       // Add track metadata as a single JSON string
@@ -91,7 +51,6 @@ export function UploadTrack() {
         title: formData.title,
         artist: formData.artist,
         originalFormat: formData.originalFormat,
-        components: formData.components,
       };
       formDataToSend.append("data", JSON.stringify(metadata));
 
@@ -100,9 +59,6 @@ export function UploadTrack() {
       if (files.coverArt) {
         formDataToSend.append("coverArt", files.coverArt);
       }
-      files.components.forEach((file) => {
-        formDataToSend.append("components", file);
-      });
 
       const token = localStorage.getItem("token");
       const response = await fetch("/api/tracks", {
@@ -211,89 +167,6 @@ export function UploadTrack() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Track Components</h2>
-            <button
-              type="button"
-              onClick={handleComponentAdd}
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-            >
-              Add Component
-            </button>
-          </div>
-
-          {formData.components.map((component, index) => (
-            <div
-              key={index}
-              className="p-4 border border-gray-200 rounded-lg space-y-4"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="font-medium">Component {index + 1}</h3>
-                <button
-                  type="button"
-                  onClick={() => handleComponentRemove(index)}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  Remove
-                </button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={component.name}
-                    onChange={(e) =>
-                      handleComponentChange(index, "name", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Type
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={component.type}
-                    onChange={(e) =>
-                      handleComponentChange(index, "type", e.target.value)
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    WAV File
-                  </label>
-                  <input
-                    type="file"
-                    required
-                    accept=".wav"
-                    onChange={(e) =>
-                      setFiles((prev) => ({
-                        ...prev,
-                        components: prev.components.map((file, i) =>
-                          i === index ? e.target.files?.[0] || file : file
-                        ),
-                      }))
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
 
         <button

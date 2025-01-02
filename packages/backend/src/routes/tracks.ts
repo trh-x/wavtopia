@@ -4,8 +4,10 @@ import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, deleteFile, getFileUrl } from "../services/storage";
+import { convertXMToWAV } from "../services/wav-converter";
 import { z } from "zod";
 import { minioClient, bucket } from "../services/storage";
+import { Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -16,14 +18,6 @@ const trackSchema = z.object({
   artist: z.string().min(1),
   originalFormat: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
-  components: z
-    .array(
-      z.object({
-        name: z.string().min(1),
-        type: z.string().min(1),
-      })
-    )
-    .default([]),
 });
 
 // Get original track file (before global auth middleware)
@@ -154,32 +148,31 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       console.log("Cover art uploaded, URL:", coverArtUrl);
     }
 
-    // Upload component files and create track
-    interface ComponentUpload {
-      name: string;
-      type: string;
-      wavUrl: string;
-    }
+    // Convert XM to WAV components
+    console.log("Converting XM to WAV components");
+    const convertedComponents = await convertXMToWAV(files.original[0].buffer);
+    console.log("Generated components:", convertedComponents.length);
 
-    let componentUploads: ComponentUpload[] = [];
-    if (files.components && files.components.length > 0) {
-      console.log("Processing components:", files.components.length);
-      if (files.components.length !== data.components.length) {
-        throw new AppError(400, "Component files do not match component data");
-      }
-
-      componentUploads = await Promise.all(
-        files.components.map(async (file, index) => {
-          console.log(`Uploading component ${index + 1}:`, file.originalname);
-          const wavUrl = await uploadFile(file, "components/");
-          console.log(`Component ${index + 1} uploaded, URL:`, wavUrl);
-          return {
-            ...data.components[index],
-            wavUrl,
-          };
-        })
-      );
-    }
+    // Upload component files
+    const componentUploads = await Promise.all(
+      convertedComponents.map(async (component) => {
+        console.log(`Uploading component: ${component.name}`);
+        const wavUrl = await uploadFile(
+          {
+            buffer: component.buffer,
+            originalname: component.filename,
+            mimetype: "audio/wav",
+          } as Express.Multer.File,
+          "components/"
+        );
+        console.log(`Component uploaded, URL:`, wavUrl);
+        return {
+          name: component.name,
+          type: component.type,
+          wavUrl,
+        };
+      })
+    );
 
     console.log("Creating track in database");
     const track = await prisma.track.create({
@@ -189,8 +182,8 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         originalFormat: data.originalFormat,
         originalUrl: originalUrl,
         coverArt: coverArtUrl,
-        metadata: data.metadata,
-        userId: req.user!.id, // Associate track with user
+        metadata: data.metadata as Prisma.InputJsonValue,
+        userId: req.user!.id,
         components: {
           create: componentUploads,
         },
@@ -238,23 +231,6 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
       coverArtUrl = await uploadFile(files.coverArt[0], "covers/");
     }
 
-    let componentUploads;
-    if (files?.components && data.components) {
-      if (files.components.length !== data.components.length) {
-        throw new AppError(400, "Component files do not match component data");
-      }
-
-      componentUploads = await Promise.all(
-        files.components.map(async (file, index) => {
-          const wavUrl = await uploadFile(file, "components/");
-          return {
-            ...data.components![index],
-            wavUrl,
-          };
-        })
-      );
-    }
-
     const track = await prisma.track.update({
       where: { id: req.params.id },
       data: {
@@ -262,13 +238,7 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
         artist: data.artist,
         originalFormat: data.originalFormat,
         coverArt: coverArtUrl,
-        metadata: data.metadata,
-        components: componentUploads
-          ? {
-              deleteMany: {},
-              create: componentUploads,
-            }
-          : undefined,
+        metadata: data.metadata as Prisma.InputJsonValue,
       },
       include: {
         components: true,
