@@ -5,8 +5,8 @@ const minioClient = new Client({
   endPoint: process.env.MINIO_ENDPOINT || "localhost",
   port: parseInt(process.env.MINIO_PORT || "9000"),
   useSSL: process.env.MINIO_USE_SSL === "true",
-  accessKey: process.env.MINIO_ACCESS_KEY || "",
-  secretKey: process.env.MINIO_SECRET_KEY || "",
+  accessKey: process.env.MINIO_ROOT_USER || "wavtropolis",
+  secretKey: process.env.MINIO_ROOT_PASSWORD || "wavtropolis123",
 });
 
 const bucket = process.env.MINIO_BUCKET || "wavtropolis";
@@ -16,6 +16,19 @@ export async function initializeStorage() {
     const exists = await minioClient.bucketExists(bucket);
     if (!exists) {
       await minioClient.makeBucket(bucket);
+      // Make bucket public for downloads
+      const policy = {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Effect: "Allow",
+            Principal: { AWS: ["*"] },
+            Action: ["s3:GetObject"],
+            Resource: [`arn:aws:s3:::${bucket}/*`],
+          },
+        ],
+      };
+      await minioClient.setBucketPolicy(bucket, JSON.stringify(policy));
       console.log(`Created bucket: ${bucket}`);
     }
   } catch (error) {
@@ -30,9 +43,13 @@ export async function uploadFile(
 ): Promise<string> {
   try {
     const fileName = `${prefix}${Date.now()}-${file.originalname}`;
-    await minioClient.putObject(bucket, fileName, file.buffer, {
-      "Content-Type": file.mimetype,
-    });
+    await minioClient.putObject(
+      bucket,
+      fileName,
+      file.buffer,
+      file.buffer.length,
+      { "Content-Type": file.mimetype }
+    );
 
     const url = await minioClient.presignedGetObject(bucket, fileName);
     return url;

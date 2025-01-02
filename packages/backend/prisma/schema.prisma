@@ -7,6 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  role      Role     @default(USER)
+  tracks    Track[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
 model Track {
   id            String    @id @default(cuid())
   title         String
@@ -17,6 +33,8 @@ model Track {
   updatedAt     DateTime  @updatedAt
   components    Component[]
   metadata      Json?
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
 }
 
 model Component {
@@ -25,7 +43,7 @@ model Component {
   wavUrl    String
   type      String
   trackId   String
-  track     Track    @relation(fields: [trackId], references: [id])
+  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 } 

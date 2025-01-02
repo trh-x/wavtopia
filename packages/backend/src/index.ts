@@ -2,7 +2,9 @@ import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
 import { trackRoutes } from "./routes/tracks";
+import { authRoutes } from "./routes/auth";
 import { errorHandler } from "./middleware/errorHandler";
+import { initializeStorage } from "./services/storage";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -17,6 +19,7 @@ app.get("/health", (req, res) => {
 });
 
 // API routes
+app.use("/api/auth", authRoutes);
 app.use("/api/tracks", trackRoutes);
 
 // Error handling
@@ -24,6 +27,11 @@ app.use(errorHandler);
 
 async function main() {
   try {
+    // Initialize storage
+    await initializeStorage();
+    console.log("Storage initialized");
+
+    // Connect to database
     await prisma.$connect();
     console.log("Connected to database");
 

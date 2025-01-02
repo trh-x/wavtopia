@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
+import { authenticate } from "../middleware/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, deleteFile } from "../services/storage";
 import { z } from "zod";
@@ -22,10 +23,16 @@ const trackSchema = z.object({
   ),
 });
 
+// Apply authentication to all routes
+router.use(authenticate);
+
 // Get all tracks
 router.get("/", async (req, res, next) => {
   try {
     const tracks = await prisma.track.findMany({
+      where: {
+        userId: req.user!.id, // Only get user's own tracks
+      },
       include: {
         components: true,
       },
@@ -40,7 +47,10 @@ router.get("/", async (req, res, next) => {
 router.get("/:id", async (req, res, next) => {
   try {
     const track = await prisma.track.findUnique({
-      where: { id: req.params.id },
+      where: {
+        id: req.params.id,
+        userId: req.user!.id, // Only get user's own track
+      },
       include: {
         components: true,
       },
@@ -100,6 +110,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         originalFormat: data.originalFormat,
         coverArt: coverArtUrl,
         metadata: data.metadata,
+        userId: req.user!.id, // Associate track with user
         components: {
           create: componentUploads,
         },
@@ -122,6 +133,18 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 // Update track
 router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
   try {
+    // Check if track belongs to user
+    const existingTrack = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id,
+      },
+    });
+
+    if (!existingTrack) {
+      throw new AppError(404, "Track not found");
+    }
+
     const data = trackSchema.partial().parse(req.body);
     const files = req.files as
       | { [fieldname: string]: Express.Multer.File[] }
@@ -184,7 +207,10 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
 router.delete("/:id", async (req, res, next) => {
   try {
     const track = await prisma.track.findUnique({
-      where: { id: req.params.id },
+      where: {
+        id: req.params.id,
+        userId: req.user!.id, // Only delete user's own track
+      },
       include: { components: true },
     });
 
