@@ -5,7 +5,12 @@ import * as Tone from "tone";
 import { useState } from "react";
 
 async function fetchTrack(id: string): Promise<Track> {
-  const response = await fetch(`/api/tracks/${id}`);
+  const token = localStorage.getItem("token");
+  const response = await fetch(`/api/tracks/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch track");
   }
@@ -27,7 +32,7 @@ export function TrackDetails() {
     enabled: !!id,
   });
 
-  async function togglePlayback() {
+  const handlePlayback = async () => {
     if (!track) return;
 
     if (!isPlaying) {
@@ -47,7 +52,7 @@ export function TrackDetails() {
       Object.values(players).forEach((player) => player.stop());
       setIsPlaying(false);
     }
-  }
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -71,7 +76,7 @@ export function TrackDetails() {
           <h1 className="text-3xl font-bold">{track.title}</h1>
           <p className="text-xl text-gray-600">{track.artist}</p>
           <button
-            onClick={togglePlayback}
+            onClick={handlePlayback}
             className="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
           >
             {isPlaying ? "Stop" : "Play"}

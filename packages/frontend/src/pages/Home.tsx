@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { Track } from "@/types";
 
 async function fetchTracks(): Promise<Track[]> {
-  const response = await fetch("/api/tracks");
+  const token = localStorage.getItem("token");
+  const response = await fetch("/api/tracks", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
   if (!response.ok) {
     throw new Error("Failed to fetch tracks");
   }
