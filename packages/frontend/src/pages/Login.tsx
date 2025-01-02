@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LoginData {
   email: string;
@@ -8,6 +9,7 @@ interface LoginData {
 
 export function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState<LoginData>({
     email: "",
     password: "",
@@ -27,13 +29,13 @@ export function Login() {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || "Login failed");
       }
 
-      const { token } = await response.json();
-      localStorage.setItem("token", token);
+      login(data.token, data.user);
       navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

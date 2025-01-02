@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface RegisterData {
   email: string;
@@ -9,6 +10,7 @@ interface RegisterData {
 
 export function Register() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState<RegisterData>({
     email: "",
     username: "",
@@ -29,13 +31,13 @@ export function Register() {
         body: JSON.stringify(formData),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.message || "Registration failed");
       }
 
-      const { token } = await response.json();
-      localStorage.setItem("token", token);
+      login(data.token, data.user);
       navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
