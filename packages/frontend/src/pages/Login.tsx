@@ -44,9 +44,7 @@ export function Login() {
 
   return (
     <div className="max-w-md mx-auto mt-16">
-      <h1 className="text-3xl font-bold mb-8 text-center">
-        Login to Wavtropolis
-      </h1>
+      <h1 className="text-3xl font-bold mb-8 text-center">Login to Wavtopia</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm">

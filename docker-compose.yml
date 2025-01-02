@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres:14-alpine
     environment:
-      POSTGRES_USER: wavtropolis
-      POSTGRES_PASSWORD: wavtropolis
-      POSTGRES_DB: wavtropolis
+      POSTGRES_USER: wavtopia
+      POSTGRES_PASSWORD: wavtopia
+      POSTGRES_DB: wavtopia
     ports:
       - "5432:5432"
     volumes:
@@ -15,8 +15,8 @@ services:
   minio:
     image: minio/minio
     environment:
-      MINIO_ROOT_USER: wavtropolis
-      MINIO_ROOT_PASSWORD: wavtropolis123
+      MINIO_ROOT_USER: wavtopia
+      MINIO_ROOT_PASSWORD: wavtopia123
     ports:
       - "9000:9000"
       - "9001:9001"

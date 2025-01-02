@@ -1,4 +1,4 @@
-# Wavtropolis
+# Wavtopia
 
 A modern web platform for sharing and downloading multi-track music files.
 
@@ -64,7 +64,7 @@ The backend API will be available at http://localhost:3000
 ## Project Structure
 
 ```
-wavtropolis/
+wavtopia/
 ├── packages/
 │   ├── frontend/        # React frontend application
 │   │   ├── src/        # Source files

@@ -5,11 +5,11 @@ export const minioClient = new Client({
   endPoint: process.env.MINIO_ENDPOINT || "localhost",
   port: parseInt(process.env.MINIO_PORT || "9000"),
   useSSL: process.env.MINIO_USE_SSL === "true",
-  accessKey: process.env.MINIO_ROOT_USER || "wavtropolis",
-  secretKey: process.env.MINIO_ROOT_PASSWORD || "wavtropolis123",
+  accessKey: process.env.MINIO_ROOT_USER || "wavtopia",
+  secretKey: process.env.MINIO_ROOT_PASSWORD || "wavtopia123",
 });
 
-export const bucket = process.env.MINIO_BUCKET || "wavtropolis";
+export const bucket = process.env.MINIO_BUCKET || "wavtopia";
 
 export async function initializeStorage() {
   try {
