@@ -54,9 +54,8 @@ router.get("/:id/original", async (req, res, next) => {
         id: req.params.id,
         userId: req.user!.id, // Only get user's own track
       },
-      select: {
-        originalFormat: true,
-        originalUrl: true,
+      include: {
+        components: true,
       },
     });
 
@@ -106,9 +105,8 @@ router.get("/:id/full", async (req, res, next) => {
         id: req.params.id,
         userId: req.user!.id, // Only get user's own track
       },
-      select: {
-        title: true,
-        fullTrackUrl: true,
+      include: {
+        components: true,
       },
     });
 
@@ -159,11 +157,7 @@ router.get("/:id/component/:componentId.wav", async (req, res, next) => {
         userId: req.user!.id, // Only get user's own track
       },
       include: {
-        components: {
-          where: {
-            id: req.params.componentId,
-          },
-        },
+        components: true,
       },
     });
 

@@ -1,5 +1,9 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fieldReference"]
 }
 
 datasource db {
@@ -14,8 +18,10 @@ model User {
   password  String
   role      Role     @default(USER)
   tracks    Track[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
 }
 
 enum Role {
@@ -27,27 +33,31 @@ model Track {
   id             String      @id @default(uuid())
   title          String
   artist         String
-  originalFormat String
-  originalUrl    String
-  fullTrackUrl   String
-  fullTrackMp3Url String
-  coverArt       String?
+  originalFormat String      @map("original_format")
+  originalUrl    String      @map("original_url")
+  fullTrackUrl   String      @map("full_track_url")
+  fullTrackMp3Url String     @map("full_track_mp3_url")
+  coverArt       String?     @map("cover_art")
   metadata       Json?
   components     Component[]
-  userId         String
+  userId         String      @map("user_id")
   user           User        @relation(fields: [userId], references: [id])
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@map("tracks")
 }
 
 model Component {
   id        String   @id @default(uuid())
   name      String
   type      String
-  wavUrl    String
-  mp3Url    String
-  trackId   String
+  wavUrl    String   @map("wav_url")
+  mp3Url    String   @map("mp3_url")
+  trackId   String   @map("track_id")
   track     Track    @relation(fields: [trackId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("components")
 } 

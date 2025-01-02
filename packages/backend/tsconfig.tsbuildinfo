@@ -1,0 +1,1 @@
+{"root":["./src/config.ts","./src/index.ts","./src/middleware/auth.ts","./src/middleware/errorhandler.ts","./src/middleware/upload.ts","./src/routes/auth.ts","./src/routes/tracks.ts","./src/services/auth.ts","./src/services/mp3-converter.ts","./src/services/storage.ts","./src/services/wav-converter.ts"],"version":"5.7.2"}
