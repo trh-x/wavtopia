@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
-import { signup, login } from "../services/auth";
+import { signup, login, getUserById } from "../services/auth";
 import { AppError } from "../middleware/errorHandler";
+import { authenticate } from "../middleware/auth";
 
 const router = Router();
 
@@ -47,6 +48,21 @@ router.post("/login", async (req, res, next) => {
     } else {
       next(error);
     }
+  }
+});
+
+router.get("/me", authenticate, async (req, res, next) => {
+  try {
+    const user = await getUserById(req.user!.id);
+    if (!user) {
+      throw new AppError(404, "User not found");
+    }
+
+    // Don't send the password hash in the response
+    const { password, ...userWithoutPassword } = user;
+    res.json({ user: userWithoutPassword });
+  } catch (error) {
+    next(error);
   }
 });
 

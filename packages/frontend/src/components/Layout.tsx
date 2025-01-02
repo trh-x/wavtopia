@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen">
       <nav className="bg-primary-600 text-white">
@@ -13,6 +16,17 @@ export function Layout({ children }: LayoutProps) {
             <Link to="/" className="text-xl font-bold">
               Wavtropolis
             </Link>
+            {user && (
+              <div className="flex items-center gap-4">
+                <span className="text-sm">{user.username}</span>
+                <button
+                  onClick={logout}
+                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
