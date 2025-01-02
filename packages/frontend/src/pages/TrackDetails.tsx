@@ -42,7 +42,7 @@ export function TrackDetails() {
       for (const component of track.components) {
         const player = new Tone.Player(component.wavUrl).toDestination();
         newPlayers[component.id] = player;
-        await player.load();
+        await player.load(component.wavUrl);
       }
 
       setPlayers(newPlayers);
@@ -110,37 +110,17 @@ export function TrackDetails() {
         </div>
 
         <div className="mt-8">
-          <button
-            onClick={async () => {
+          <a
+            href={`/api/tracks/${track.id}/original`}
+            onClick={(e) => {
+              e.preventDefault();
               const token = localStorage.getItem("token");
-              try {
-                const response = await fetch(
-                  `/api/tracks/${track.id}/original`,
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  }
-                );
-                if (!response.ok) throw new Error("Download failed");
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `original.${track.originalFormat}`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-              } catch (error) {
-                console.error("Failed to download file:", error);
-              }
+              window.location.href = `/api/tracks/${track.id}/original?token=${token}`;
             }}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Download Original {track.originalFormat.toUpperCase()} File
-          </button>
+          </a>
         </div>
       </div>
     </div>

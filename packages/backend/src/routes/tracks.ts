@@ -26,7 +26,59 @@ const trackSchema = z.object({
     .default([]),
 });
 
-// Apply authentication to all routes
+// Get original track file (before global auth middleware)
+router.get("/:id/original", async (req, res, next) => {
+  try {
+    // Get token from query parameter
+    const token = req.query.token as string;
+    if (!token) {
+      throw new AppError(401, "No token provided");
+    }
+
+    // Set the token in the Authorization header for the authenticate middleware
+    req.headers.authorization = `Bearer ${token}`;
+
+    // Call authenticate middleware manually
+    await new Promise((resolve, reject) => {
+      authenticate(req, res, (err) => {
+        if (err) reject(err);
+        else resolve(undefined);
+      });
+    });
+
+    const track = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id, // Only get user's own track
+      },
+      select: {
+        originalFormat: true,
+        originalUrl: true,
+      },
+    });
+
+    if (!track) {
+      throw new AppError(404, "Track not found");
+    }
+
+    // Stream the file directly from MinIO
+    const fileStream = await minioClient.getObject(bucket, track.originalUrl);
+
+    // Set headers for file download
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=original.${track.originalFormat}`
+    );
+
+    // Pipe the file stream directly to the response
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Apply authentication to all other routes
 router.use(authenticate);
 
 // Get all tracks
@@ -262,49 +314,6 @@ router.delete("/:id", async (req, res, next) => {
     });
 
     res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Get original track file
-router.get("/:id/original", async (req, res, next) => {
-  try {
-    const track = await prisma.track.findUnique({
-      where: {
-        id: req.params.id,
-        userId: req.user!.id, // Only get user's own track
-      },
-      select: {
-        originalFormat: true,
-        originalUrl: true,
-      },
-    });
-
-    if (!track) {
-      throw new AppError(404, "Track not found");
-    }
-
-    // Get the file from MinIO as a buffer
-    const fileStream = await minioClient.getObject(bucket, track.originalUrl);
-    const chunks: Buffer[] = [];
-
-    fileStream.on("data", (chunk) => chunks.push(chunk));
-    fileStream.on("error", (err) => next(err));
-    fileStream.on("end", () => {
-      const fileBuffer = Buffer.concat(chunks);
-
-      // Set headers for file download
-      res.setHeader("Content-Type", "application/octet-stream");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=original.${track.originalFormat}`
-      );
-      res.setHeader("Content-Length", fileBuffer.length);
-
-      // Send the file
-      res.send(fileBuffer);
-    });
   } catch (error) {
     next(error);
   }
