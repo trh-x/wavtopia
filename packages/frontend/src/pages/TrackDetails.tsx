@@ -43,7 +43,7 @@ export function TrackDetails() {
           throw new Error("No authentication token found");
         }
 
-        const audioUrl = `/api/tracks/${track.id}/full?token=${token}`;
+        const audioUrl = `/api/tracks/${track.id}/full.mp3?token=${token}`;
         const newPlayer = new Tone.Player(audioUrl, () => {
           newPlayer.start();
           setIsPlaying(true);
@@ -112,19 +112,34 @@ export function TrackDetails() {
                   <h3 className="font-medium">{component.name}</h3>
                   <p className="text-sm text-gray-500">{component.type}</p>
                 </div>
-                <a
-                  href={`/api/tracks/${track.id}/component/${
-                    component.id
-                  }?token=${localStorage.getItem("token")}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    const token = localStorage.getItem("token");
-                    window.location.href = `/api/tracks/${track.id}/component/${component.id}?token=${token}`;
-                  }}
-                  className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                >
-                  Download WAV
-                </a>
+                <div className="space-x-2">
+                  <a
+                    href={`/api/tracks/${track.id}/component/${
+                      component.id
+                    }?token=${localStorage.getItem("token")}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const token = localStorage.getItem("token");
+                      window.location.href = `/api/tracks/${track.id}/component/${component.id}?token=${token}`;
+                    }}
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    WAV
+                  </a>
+                  <a
+                    href={`/api/tracks/${track.id}/component/${
+                      component.id
+                    }.mp3?token=${localStorage.getItem("token")}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const token = localStorage.getItem("token");
+                      window.location.href = `/api/tracks/${track.id}/component/${component.id}.mp3?token=${token}`;
+                    }}
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    MP3
+                  </a>
+                </div>
               </div>
             </div>
           ))}
@@ -152,9 +167,23 @@ export function TrackDetails() {
               const token = localStorage.getItem("token");
               window.location.href = `/api/tracks/${track.id}/full?token=${token}`;
             }}
+            className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 mr-4"
+          >
+            WAV
+          </a>
+
+          <a
+            href={`/api/tracks/${
+              track.id
+            }/full.mp3?token=${localStorage.getItem("token")}`}
+            onClick={(e) => {
+              e.preventDefault();
+              const token = localStorage.getItem("token");
+              window.location.href = `/api/tracks/${track.id}/full.mp3?token=${token}`;
+            }}
             className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
-            Download Full Track WAV
+            MP3
           </a>
         </div>
       </div>

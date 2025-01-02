@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   email     String   @unique
   username  String   @unique
   password  String
@@ -24,28 +24,30 @@ enum Role {
 }
 
 model Track {
-  id            String    @id @default(cuid())
-  title         String
-  artist        String
+  id             String      @id @default(uuid())
+  title          String
+  artist         String
   originalFormat String
-  originalUrl   String
-  fullTrackUrl  String    // URL to the full track WAV file
-  coverArt      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  components    Component[]
-  metadata      Json?
-  userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  originalUrl    String
+  fullTrackUrl   String
+  fullTrackMp3Url String
+  coverArt       String?
+  metadata       Json?
+  components     Component[]
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model Component {
-  id        String   @id @default(cuid())
+  id        String   @id @default(uuid())
   name      String
-  wavUrl    String
   type      String
+  wavUrl    String
+  mp3Url    String
   trackId   String
-  track     Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  track     Track    @relation(fields: [trackId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 } 

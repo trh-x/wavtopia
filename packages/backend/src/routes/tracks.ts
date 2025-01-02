@@ -5,6 +5,7 @@ import { authenticate } from "../middleware/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, deleteFile, getFileUrl } from "../services/storage";
 import { convertXMToWAV } from "../services/wav-converter";
+import { convertWAVToMP3 } from "../services/mp3-converter";
 import { z } from "zod";
 import { minioClient, bucket } from "../services/storage";
 import { Prisma } from "@prisma/client";
@@ -181,6 +182,98 @@ router.get("/:id/component/:componentId", async (req, res, next) => {
   }
 });
 
+// Add MP3 routes before the auth middleware
+router.get("/:id/full.mp3", async (req, res, next) => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      throw new AppError(401, "No token provided");
+    }
+
+    req.headers.authorization = `Bearer ${token}`;
+    await new Promise((resolve, reject) => {
+      authenticate(req, res, (err) => {
+        if (err) reject(err);
+        else resolve(undefined);
+      });
+    });
+
+    const track = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id,
+      },
+      select: {
+        title: true,
+        fullTrackMp3Url: true,
+      },
+    });
+
+    if (!track) {
+      throw new AppError(404, "Track not found");
+    }
+
+    const fileStream = await minioClient.getObject(
+      bucket,
+      track.fullTrackMp3Url
+    );
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${track.title}.mp3"`
+    );
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/:id/component/:componentId.mp3", async (req, res, next) => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      throw new AppError(401, "No token provided");
+    }
+
+    req.headers.authorization = `Bearer ${token}`;
+    await new Promise((resolve, reject) => {
+      authenticate(req, res, (err) => {
+        if (err) reject(err);
+        else resolve(undefined);
+      });
+    });
+
+    const track = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id,
+      },
+      include: {
+        components: {
+          where: {
+            id: req.params.componentId,
+          },
+        },
+      },
+    });
+
+    if (!track || track.components.length === 0) {
+      throw new AppError(404, "Track or component not found");
+    }
+
+    const component = track.components[0];
+    const fileStream = await minioClient.getObject(bucket, component.mp3Url);
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${component.name}.mp3"`
+    );
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Apply authentication to all other routes
 router.use(authenticate);
 
@@ -263,35 +356,66 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       await convertXMToWAV(files.original[0].buffer);
     console.log("Generated components:", convertedComponents.length);
 
-    // Upload full track WAV
-    console.log("Uploading full track WAV");
-    const fullTrackUrl = await uploadFile(
-      {
-        buffer: fullTrackBuffer,
-        originalname: "full_track.wav",
-        mimetype: "audio/wav",
-      } as Express.Multer.File,
-      "full_tracks/"
-    );
-    console.log("Full track WAV uploaded, URL:", fullTrackUrl);
+    // Convert full track to MP3
+    console.log("Converting full track to MP3");
+    const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackBuffer);
 
-    // Upload component files
+    // Upload full track WAV and MP3
+    console.log("Uploading full track WAV and MP3");
+    const [fullTrackUrl, fullTrackMp3Url] = await Promise.all([
+      uploadFile(
+        {
+          buffer: fullTrackBuffer,
+          originalname: "full_track.wav",
+          mimetype: "audio/wav",
+        } as Express.Multer.File,
+        "full_tracks/"
+      ),
+      uploadFile(
+        {
+          buffer: fullTrackMp3Buffer,
+          originalname: "full_track.mp3",
+          mimetype: "audio/mpeg",
+        } as Express.Multer.File,
+        "full_tracks/"
+      ),
+    ]);
+    console.log("Full track files uploaded, URLs:", {
+      fullTrackUrl,
+      fullTrackMp3Url,
+    });
+
+    // Convert and upload component files
     const componentUploads = await Promise.all(
       convertedComponents.map(async (component) => {
-        console.log(`Uploading component: ${component.name}`);
-        const wavUrl = await uploadFile(
-          {
-            buffer: component.buffer,
-            originalname: component.filename,
-            mimetype: "audio/wav",
-          } as Express.Multer.File,
-          "components/"
-        );
-        console.log(`Component uploaded, URL:`, wavUrl);
+        console.log(`Converting and uploading component: ${component.name}`);
+        const mp3Buffer = await convertWAVToMP3(component.buffer);
+
+        const [wavUrl, mp3Url] = await Promise.all([
+          uploadFile(
+            {
+              buffer: component.buffer,
+              originalname: component.filename,
+              mimetype: "audio/wav",
+            } as Express.Multer.File,
+            "components/"
+          ),
+          uploadFile(
+            {
+              buffer: mp3Buffer,
+              originalname: component.filename.replace(".wav", ".mp3"),
+              mimetype: "audio/mpeg",
+            } as Express.Multer.File,
+            "components/"
+          ),
+        ]);
+
+        console.log(`Component uploaded, URLs:`, { wavUrl, mp3Url });
         return {
           name: component.name,
           type: component.type,
           wavUrl,
+          mp3Url,
         };
       })
     );
@@ -304,6 +428,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         originalFormat: data.originalFormat,
         originalUrl: originalUrl,
         fullTrackUrl: fullTrackUrl,
+        fullTrackMp3Url: fullTrackMp3Url,
         coverArt: coverArtUrl,
         metadata: data.metadata as Prisma.InputJsonValue,
         userId: req.user!.id,
@@ -315,8 +440,8 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         components: true,
       },
     });
-    console.log("Track created successfully:", track.id);
 
+    console.log("Track created successfully:", track.id);
     res.status(201).json(track);
   } catch (error) {
     console.error("Error in track creation:", error);
