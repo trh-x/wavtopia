@@ -1,5 +1,7 @@
 # Wavtopia
 
+<img src="wavtopia-icon.png" alt="Wavtopia Icon" width="128" height="128" />
+
 A modern web platform for sharing and downloading multi-track music files. Wavtopia allows you to upload tracker music files (.xm format) and automatically converts them into individual WAV components and a full track WAV file.
 
 ## Features
