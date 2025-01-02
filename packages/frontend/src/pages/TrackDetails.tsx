@@ -98,8 +98,14 @@ export function TrackDetails() {
                   <p className="text-sm text-gray-500">{component.type}</p>
                 </div>
                 <a
-                  href={component.wavUrl}
-                  download
+                  href={`/api/tracks/${track.id}/component/${
+                    component.id
+                  }?token=${localStorage.getItem("token")}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const token = localStorage.getItem("token");
+                    window.location.href = `/api/tracks/${track.id}/component/${component.id}?token=${token}`;
+                  }}
                   className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                 >
                   Download WAV
@@ -123,7 +129,9 @@ export function TrackDetails() {
           </a>
 
           <a
-            href={`/api/tracks/${track.id}/full`}
+            href={`/api/tracks/${track.id}/full?token=${localStorage.getItem(
+              "token"
+            )}`}
             onClick={(e) => {
               e.preventDefault();
               const token = localStorage.getItem("token");

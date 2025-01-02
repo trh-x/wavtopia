@@ -72,6 +72,115 @@ router.get("/:id/original", async (req, res, next) => {
   }
 });
 
+// Get full track WAV file (before global auth middleware)
+router.get("/:id/full", async (req, res, next) => {
+  try {
+    // Get token from query parameter
+    const token = req.query.token as string;
+    if (!token) {
+      throw new AppError(401, "No token provided");
+    }
+
+    // Set the token in the Authorization header for the authenticate middleware
+    req.headers.authorization = `Bearer ${token}`;
+
+    // Call authenticate middleware manually
+    await new Promise((resolve, reject) => {
+      authenticate(req, res, (err) => {
+        if (err) reject(err);
+        else resolve(undefined);
+      });
+    });
+
+    const track = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id, // Only get user's own track
+      },
+      select: {
+        title: true,
+        fullTrackUrl: true,
+      },
+    });
+
+    if (!track) {
+      throw new AppError(404, "Track not found");
+    }
+
+    // Stream the file directly from MinIO
+    const fileStream = await minioClient.getObject(bucket, track.fullTrackUrl);
+
+    // Set headers for file download
+    res.setHeader("Content-Type", "audio/wav");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${track.title}.wav"`
+    );
+
+    // Pipe the file stream directly to the response
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get component WAV file (before global auth middleware)
+router.get("/:id/component/:componentId", async (req, res, next) => {
+  try {
+    // Get token from query parameter
+    const token = req.query.token as string;
+    if (!token) {
+      throw new AppError(401, "No token provided");
+    }
+
+    // Set the token in the Authorization header for the authenticate middleware
+    req.headers.authorization = `Bearer ${token}`;
+
+    // Call authenticate middleware manually
+    await new Promise((resolve, reject) => {
+      authenticate(req, res, (err) => {
+        if (err) reject(err);
+        else resolve(undefined);
+      });
+    });
+
+    const track = await prisma.track.findUnique({
+      where: {
+        id: req.params.id,
+        userId: req.user!.id, // Only get user's own track
+      },
+      include: {
+        components: {
+          where: {
+            id: req.params.componentId,
+          },
+        },
+      },
+    });
+
+    if (!track || track.components.length === 0) {
+      throw new AppError(404, "Track or component not found");
+    }
+
+    const component = track.components[0];
+
+    // Stream the file directly from MinIO
+    const fileStream = await minioClient.getObject(bucket, component.wavUrl);
+
+    // Set headers for file download
+    res.setHeader("Content-Type", "audio/wav");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${component.name}.wav"`
+    );
+
+    // Pipe the file stream directly to the response
+    fileStream.pipe(res);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Apply authentication to all other routes
 router.use(authenticate);
 
@@ -216,58 +325,6 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
     } else {
       next(error);
     }
-  }
-});
-
-// Add endpoint to get full track WAV
-router.get("/:id/full", async (req, res, next) => {
-  try {
-    // Get token from query parameter
-    const token = req.query.token as string;
-    if (!token) {
-      throw new AppError(401, "No token provided");
-    }
-
-    // Set the token in the Authorization header for the authenticate middleware
-    req.headers.authorization = `Bearer ${token}`;
-
-    // Call authenticate middleware manually
-    await new Promise((resolve, reject) => {
-      authenticate(req, res, (err) => {
-        if (err) reject(err);
-        else resolve(undefined);
-      });
-    });
-
-    const track = await prisma.track.findUnique({
-      where: {
-        id: req.params.id,
-        userId: req.user!.id, // Only get user's own track
-      },
-      select: {
-        title: true,
-        fullTrackUrl: true,
-      },
-    });
-
-    if (!track) {
-      throw new AppError(404, "Track not found");
-    }
-
-    // Stream the file directly from MinIO
-    const fileStream = await minioClient.getObject(bucket, track.fullTrackUrl);
-
-    // Set headers for file download
-    res.setHeader("Content-Type", "audio/wav");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${track.title}.wav"`
-    );
-
-    // Pipe the file stream directly to the response
-    fileStream.pipe(res);
-  } catch (error) {
-    next(error);
   }
 });
 
