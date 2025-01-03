@@ -372,11 +372,12 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 
     // Upload full track WAV and MP3
     console.log("Uploading full track WAV and MP3");
+    const originalName = files.original[0].originalname.replace(/\.xm$/i, "");
     const [fullTrackUrl, fullTrackMp3Url] = await Promise.all([
       uploadFile(
         {
           buffer: fullTrackBuffer,
-          originalname: "full_track.wav",
+          originalname: `${originalName}.wav`,
           mimetype: "audio/wav",
         } as Express.Multer.File,
         "full_tracks/"
@@ -384,7 +385,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       uploadFile(
         {
           buffer: fullTrackMp3Buffer,
-          originalname: "full_track.mp3",
+          originalname: `${originalName}.mp3`,
           mimetype: "audio/mpeg",
         } as Express.Multer.File,
         "full_tracks/"
@@ -397,15 +398,19 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 
     // Convert and upload component files
     const componentUploads = await Promise.all(
-      convertedComponents.map(async (component) => {
+      convertedComponents.map(async (component, index) => {
         console.log(`Converting and uploading component: ${component.name}`);
         const mp3Buffer = await convertWAVToMP3(component.buffer);
+        const componentName = `${originalName}_${component.name.replace(
+          /[^a-z0-9]/gi,
+          "_"
+        )}`;
 
         const [wavUrl, mp3Url] = await Promise.all([
           uploadFile(
             {
               buffer: component.buffer,
-              originalname: component.filename,
+              originalname: `${componentName}.wav`,
               mimetype: "audio/wav",
             } as Express.Multer.File,
             "components/"
@@ -413,7 +418,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
           uploadFile(
             {
               buffer: mp3Buffer,
-              originalname: component.filename.replace(".wav", ".mp3"),
+              originalname: `${componentName}.mp3`,
               mimetype: "audio/mpeg",
             } as Express.Multer.File,
             "components/"
