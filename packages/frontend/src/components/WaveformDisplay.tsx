@@ -24,8 +24,13 @@ export function WaveformDisplay({
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const { registerWaveform, unregisterWaveform, startPlayback, stopPlayback } =
-    usePlayback();
+  const {
+    registerWaveform,
+    unregisterWaveform,
+    startPlayback,
+    stopPlayback,
+    isMuted,
+  } = usePlayback();
 
   // Memoize the initial configuration to prevent unnecessary recreations
   const initialConfig = useMemo(
@@ -133,7 +138,7 @@ export function WaveformDisplay({
     if (!wavesurferRef.current || !isReady) return;
 
     try {
-      if (isPlaying) {
+      if (isPlaying && !isMuted(wavesurferRef.current)) {
         stopPlayback(wavesurferRef.current);
       } else {
         startPlayback(wavesurferRef.current);
@@ -156,6 +161,11 @@ export function WaveformDisplay({
           transition-all duration-200
           border border-gray-200
           ${isLoading || !isReady ? "cursor-not-allowed opacity-50" : ""}
+          ${
+            !isFullTrack && isMuted(wavesurferRef.current!)
+              ? "opacity-50 bg-gray-100"
+              : ""
+          }
         `}
       >
         {isLoading ? (
@@ -180,7 +190,11 @@ export function WaveformDisplay({
           </svg>
         ) : isPlaying ? (
           <svg
-            className="w-5 h-5 text-gray-700"
+            className={`w-5 h-5 ${
+              !isFullTrack && isMuted(wavesurferRef.current!)
+                ? "text-gray-400"
+                : "text-gray-700"
+            }`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -210,7 +224,11 @@ export function WaveformDisplay({
       </button>
       <div
         ref={containerRef}
-        className="flex-grow"
+        className={`flex-grow ${
+          !isFullTrack && isMuted(wavesurferRef.current!) && isPlaying
+            ? "opacity-50"
+            : ""
+        }`}
         style={{ minHeight: `${height}px` }}
       />
     </div>

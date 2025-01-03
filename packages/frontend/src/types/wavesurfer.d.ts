@@ -64,6 +64,10 @@ declare module "wavesurfer.js" {
     isPlaying(): boolean;
     isReady(): boolean;
 
+    // Volume methods
+    getVolume(): number;
+    setVolume(newVolume: number): void;
+
     // Configuration methods
     setOptions(params: Partial<WaveSurferParams>): void;
   }
