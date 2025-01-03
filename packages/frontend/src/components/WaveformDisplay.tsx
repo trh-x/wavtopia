@@ -161,11 +161,7 @@ export function WaveformDisplay({
           transition-all duration-200
           border border-gray-200
           ${isLoading || !isReady ? "cursor-not-allowed opacity-50" : ""}
-          ${
-            !isFullTrack && isMuted(wavesurferRef.current!)
-              ? "opacity-50 bg-gray-100"
-              : ""
-          }
+          ${isMuted(wavesurferRef.current!) ? "opacity-50 bg-gray-100" : ""}
         `}
       >
         {isLoading ? (
@@ -191,7 +187,7 @@ export function WaveformDisplay({
         ) : isPlaying ? (
           <svg
             className={`w-5 h-5 ${
-              !isFullTrack && isMuted(wavesurferRef.current!)
+              isMuted(wavesurferRef.current!)
                 ? "text-gray-400"
                 : "text-gray-700"
             }`}
@@ -225,9 +221,7 @@ export function WaveformDisplay({
       <div
         ref={containerRef}
         className={`flex-grow ${
-          !isFullTrack && isMuted(wavesurferRef.current!) && isPlaying
-            ? "opacity-50"
-            : ""
+          isMuted(wavesurferRef.current!) && isPlaying ? "opacity-50" : ""
         }`}
         style={{ minHeight: `${height}px` }}
       />

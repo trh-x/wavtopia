@@ -137,6 +137,24 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const muteFullTrack = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      if (info.isFullTrack) {
+        info.isMuted = true;
+        info.wavesurfer.setVolume(0);
+      }
+    });
+  };
+
+  const unmuteFullTrack = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      if (info.isFullTrack) {
+        info.isMuted = false;
+        info.wavesurfer.setVolume(1);
+      }
+    });
+  };
+
   const startPlayback = (wavesurfer: WaveSurfer) => {
     console.log("Starting playback");
     const waveformInfo = activeWaveformsRef.current.get(wavesurfer);
@@ -145,18 +163,11 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     if (waveformInfo.isFullTrack) {
       // If starting full track, mute all component tracks
       muteAllComponents();
+      unmuteFullTrack();
     } else {
-      // If starting component track, unmute all components and stop full track
+      // If starting component track, mute full track and unmute all components
+      muteFullTrack();
       unmuteAllComponents();
-      activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
-        if (
-          info.isFullTrack &&
-          playingWaveformsRef.current.has(otherWavesurfer)
-        ) {
-          otherWavesurfer.pause();
-          playingWaveformsRef.current.delete(otherWavesurfer);
-        }
-      });
     }
 
     // Add the new waveform to playing set and start playback if not already playing
