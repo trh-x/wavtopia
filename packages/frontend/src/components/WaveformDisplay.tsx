@@ -156,12 +156,21 @@ export function WaveformDisplay({
         className={`
           flex-shrink-0
           p-2.5 rounded-full 
-          bg-white hover:bg-gray-50
           shadow-md hover:shadow-lg 
           transition-all duration-200
-          border border-gray-200
-          ${isLoading || !isReady ? "cursor-not-allowed opacity-50" : ""}
-          ${isMuted(wavesurferRef.current!) ? "opacity-50 bg-gray-100" : ""}
+          border
+          ${
+            isLoading || !isReady
+              ? "cursor-not-allowed opacity-50 border-gray-200"
+              : ""
+          }
+          ${
+            isPlaying
+              ? isMuted(wavesurferRef.current!)
+                ? "opacity-60 bg-gray-100 border-gray-300" // Muted state
+                : "bg-blue-50 hover:bg-blue-100 border-blue-200" // Playing state
+              : "opacity-70 bg-red-50 hover:bg-red-100 border-red-200" // Stopped state
+          }
         `}
       >
         {isLoading ? (
@@ -187,7 +196,7 @@ export function WaveformDisplay({
         ) : isPlaying ? (
           isMuted(wavesurferRef.current!) ? (
             <svg
-              className="w-5 h-5 text-gray-400"
+              className="w-5 h-5 text-gray-500"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -207,7 +216,7 @@ export function WaveformDisplay({
             </svg>
           ) : (
             <svg
-              className="w-5 h-5 text-gray-700"
+              className="w-5 h-5 text-blue-600"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -222,7 +231,7 @@ export function WaveformDisplay({
           )
         ) : (
           <svg
-            className="w-5 h-5 text-gray-700"
+            className="w-5 h-5 text-red-500"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -239,7 +248,11 @@ export function WaveformDisplay({
       <div
         ref={containerRef}
         className={`flex-grow ${
-          isMuted(wavesurferRef.current!) && isPlaying ? "opacity-50" : ""
+          isPlaying
+            ? isMuted(wavesurferRef.current!)
+              ? "opacity-60" // Muted state
+              : "" // Playing state
+            : "opacity-70" // Stopped state
         }`}
         style={{ minHeight: `${height}px` }}
       />
