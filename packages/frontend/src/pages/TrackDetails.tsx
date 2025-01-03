@@ -18,6 +18,12 @@ async function fetchTrack(id: string): Promise<Track> {
   return response.json();
 }
 
+// Helper function to get audio URL with token
+function getAudioUrl(path: string): string {
+  const token = localStorage.getItem("token");
+  return `${path}?token=${token}`;
+}
+
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
   const [isPlaying, setIsPlaying] = useState(false);
@@ -205,7 +211,11 @@ export function TrackDetails() {
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Full Track Waveform</h2>
         <div className="bg-white p-4 rounded-lg shadow">
-          <WaveformDisplay waveformData={track.waveformData} height={96} />
+          <WaveformDisplay
+            waveformData={track.waveformData}
+            height={96}
+            audioUrl={getAudioUrl(`/api/tracks/${track.id}/full.mp3`)}
+          />
         </div>
       </div>
 
@@ -222,26 +232,24 @@ export function TrackDetails() {
                 <h3 className="text-lg font-medium">{component.name}</h3>
                 <div className="space-x-2">
                   <a
-                    href={`/api/tracks/${track.id}/component/${
-                      component.id
-                    }.wav?token=${localStorage.getItem("token")}`}
+                    href={getAudioUrl(
+                      `/api/tracks/${track.id}/component/${component.id}.wav`
+                    )}
                     onClick={(e) => {
                       e.preventDefault();
-                      const token = localStorage.getItem("token");
-                      window.location.href = `/api/tracks/${track.id}/component/${component.id}.wav?token=${token}`;
+                      window.location.href = e.currentTarget.href;
                     }}
                     className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                   >
                     WAV
                   </a>
                   <a
-                    href={`/api/tracks/${track.id}/component/${
-                      component.id
-                    }.mp3?token=${localStorage.getItem("token")}`}
+                    href={getAudioUrl(
+                      `/api/tracks/${track.id}/component/${component.id}.mp3`
+                    )}
                     onClick={(e) => {
                       e.preventDefault();
-                      const token = localStorage.getItem("token");
-                      window.location.href = `/api/tracks/${track.id}/component/${component.id}.mp3?token=${token}`;
+                      window.location.href = e.currentTarget.href;
                     }}
                     className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                   >
@@ -254,6 +262,9 @@ export function TrackDetails() {
                 height={64}
                 color="#4b5563"
                 progressColor="#6366f1"
+                audioUrl={getAudioUrl(
+                  `/api/tracks/${track.id}/component/${component.id}.mp3`
+                )}
               />
             </div>
           ))}
