@@ -159,10 +159,19 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const clearAllSolos = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      info.isSoloed = false;
+    });
+  };
+
   const startPlayback = (wavesurfer: WaveSurfer) => {
     console.log("Starting playback");
     const waveformInfo = activeWaveformsRef.current.get(wavesurfer);
     if (!waveformInfo) return;
+
+    // Clear any solo states
+    clearAllSolos();
 
     if (waveformInfo.isFullTrack) {
       // If starting full track, mute all component tracks
@@ -214,11 +223,18 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     if (!waveformInfo || waveformInfo.isFullTrack) return;
 
     if (waveformInfo.isSoloed) {
-      // If already soloed, unsolo by unmuting everything
+      // If already soloed, unsolo by unmuting only other components
       activeWaveformsRef.current.forEach((info) => {
-        info.isMuted = false;
-        info.isSoloed = false;
-        info.wavesurfer.setVolume(1);
+        if (!info.isFullTrack) {
+          info.isMuted = false;
+          info.isSoloed = false;
+          info.wavesurfer.setVolume(1);
+        }
+        // Keep full track muted
+        if (info.isFullTrack) {
+          info.isMuted = true;
+          info.wavesurfer.setVolume(0);
+        }
       });
     } else {
       // Solo this component by muting everything else
