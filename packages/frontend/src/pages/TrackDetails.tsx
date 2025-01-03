@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Track } from "@/types";
 import * as Tone from "tone";
 import { useState } from "react";
+import { WaveformDisplay } from "../components/WaveformDisplay";
 
 async function fetchTrack(id: string): Promise<Track> {
   const token = localStorage.getItem("token");
@@ -76,6 +77,18 @@ export function TrackDetails() {
   if (error || !track) {
     return <div>Error loading track</div>;
   }
+
+  console.log("Track details:", {
+    id: track.id,
+    waveformData: track.waveformData,
+    componentsCount: track.components.length,
+    componentWaveforms: track.components.map((c) => ({
+      id: c.id,
+      name: c.name,
+      hasWaveform: !!c.waveformData,
+      waveformLength: c.waveformData?.length,
+    })),
+  });
 
   return (
     <div>
@@ -185,6 +198,65 @@ export function TrackDetails() {
           >
             MP3
           </a>
+        </div>
+      </div>
+
+      {/* Full track waveform */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Full Track Waveform</h2>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <WaveformDisplay waveformData={track.waveformData} height={96} />
+        </div>
+      </div>
+
+      {/* Components */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Components</h2>
+        <div className="space-y-4">
+          {track.components.map((component) => (
+            <div
+              key={component.id}
+              className="bg-white p-4 rounded-lg shadow flex flex-col"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">{component.name}</h3>
+                <div className="space-x-2">
+                  <a
+                    href={`/api/tracks/${track.id}/component/${
+                      component.id
+                    }.wav?token=${localStorage.getItem("token")}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const token = localStorage.getItem("token");
+                      window.location.href = `/api/tracks/${track.id}/component/${component.id}.wav?token=${token}`;
+                    }}
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    WAV
+                  </a>
+                  <a
+                    href={`/api/tracks/${track.id}/component/${
+                      component.id
+                    }.mp3?token=${localStorage.getItem("token")}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const token = localStorage.getItem("token");
+                      window.location.href = `/api/tracks/${track.id}/component/${component.id}.mp3?token=${token}`;
+                    }}
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    MP3
+                  </a>
+                </div>
+              </div>
+              <WaveformDisplay
+                waveformData={component.waveformData}
+                height={64}
+                color="#4b5563"
+                progressColor="#6366f1"
+              />
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -17,8 +17,11 @@ const prisma = new PrismaClient({
 
 const app = express();
 
+// Increase the request size limit
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
 app.use(cors());
-app.use(express.json());
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -42,9 +45,12 @@ async function main() {
     await prisma.$connect();
     console.log("Connected to database");
 
-    app.listen(config.server.port, () => {
+    const server = app.listen(config.server.port, () => {
       console.log(`Server running at http://localhost:${config.server.port}`);
     });
+
+    // Set timeout to 5 minutes
+    server.timeout = 300000;
   } catch (error) {
     console.error("Failed to start server:", error);
     process.exit(1);
@@ -56,3 +62,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+export { app };

@@ -9,6 +9,7 @@ import { convertWAVToMP3 } from "../services/mp3-converter";
 import { z } from "zod";
 import { minioClient, bucket } from "../services/storage";
 import { Prisma, Role } from "@prisma/client";
+import { generateWaveformData } from "../services/waveform";
 
 // Extend Request type to include user property
 interface AuthenticatedRequest extends ExpressRequest {
@@ -366,6 +367,10 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       await convertXMToWAV(files.original[0].buffer);
     console.log("Generated components:", convertedComponents.length);
 
+    // Generate waveform data for full track
+    console.log("Generating waveform data for full track");
+    const fullTrackWaveform = await generateWaveformData(fullTrackBuffer);
+
     // Convert full track to MP3
     console.log("Converting full track to MP3");
     const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackBuffer);
@@ -406,6 +411,12 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
           "_"
         )}`;
 
+        // Generate waveform data for component
+        console.log(
+          `Generating waveform data for component: ${component.name}`
+        );
+        const waveformData = await generateWaveformData(component.buffer);
+
         const [wavUrl, mp3Url] = await Promise.all([
           uploadFile(
             {
@@ -431,6 +442,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
           type: component.type,
           wavUrl,
           mp3Url,
+          waveformData,
         };
       })
     );
@@ -444,6 +456,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         originalUrl: originalUrl,
         fullTrackUrl: fullTrackUrl,
         fullTrackMp3Url: fullTrackMp3Url,
+        waveformData: fullTrackWaveform,
         coverArt: coverArtUrl,
         metadata: data.metadata as Prisma.InputJsonValue,
         userId: req.user!.id,

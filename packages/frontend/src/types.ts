@@ -6,6 +6,7 @@ export interface Track {
   originalUrl: string;
   fullTrackUrl: string;
   fullTrackMp3Url: string;
+  waveformData: number[];
   coverArt?: string;
   components: Component[];
   metadata?: Record<string, unknown>;
@@ -18,6 +19,7 @@ export interface Component {
   name: string;
   wavUrl: string;
   mp3Url: string;
+  waveformData: number[];
   type: string;
   trackId: string;
   createdAt: string;

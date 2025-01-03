@@ -36,6 +36,7 @@ model Track {
   originalUrl    String      @map("original_url")
   fullTrackUrl   String      @map("full_track_url")
   fullTrackMp3Url String     @map("full_track_mp3_url")
+  waveformData   Float[]     @map("waveform_data")
   coverArt       String?     @map("cover_art")
   metadata       Json?
   components     Component[]
@@ -48,15 +49,16 @@ model Track {
 }
 
 model Component {
-  id        String   @id @default(uuid())
-  name      String
-  type      String
-  wavUrl    String   @map("wav_url")
-  mp3Url    String   @map("mp3_url")
-  trackId   String   @map("track_id")
-  track     Track    @relation(fields: [trackId], references: [id])
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  name         String
+  type         String
+  wavUrl       String   @map("wav_url")
+  mp3Url       String   @map("mp3_url")
+  waveformData Float[]  @map("waveform_data")
+  trackId      String   @map("track_id")
+  track        Track    @relation(fields: [trackId], references: [id])
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("components")
 } 
