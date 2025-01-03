@@ -17,6 +17,7 @@ interface PlaybackContextType {
   stopPlayback: (wavesurfer: WaveSurfer) => void;
   isMuted: (wavesurfer: WaveSurfer) => boolean;
   soloComponent: (wavesurfer: WaveSurfer) => void;
+  isSoloed: (wavesurfer: WaveSurfer) => boolean;
 }
 
 const PlaybackContext = createContext<PlaybackContextType | null>(null);
@@ -25,6 +26,7 @@ interface WaveformInfo {
   wavesurfer: WaveSurfer;
   isFullTrack: boolean;
   isMuted: boolean;
+  isSoloed: boolean;
 }
 
 export function PlaybackProvider({ children }: { children: ReactNode }) {
@@ -71,6 +73,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       wavesurfer,
       isFullTrack,
       isMuted: false,
+      isSoloed: false,
     });
 
     wavesurfer.on("seek", () => {
@@ -210,16 +213,27 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     const waveformInfo = activeWaveformsRef.current.get(wavesurfer);
     if (!waveformInfo || waveformInfo.isFullTrack) return;
 
-    // Mute everything except this component
-    activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
-      if (otherWavesurfer !== wavesurfer) {
-        info.isMuted = true;
-        info.wavesurfer.setVolume(0);
-      } else {
+    if (waveformInfo.isSoloed) {
+      // If already soloed, unsolo by unmuting everything
+      activeWaveformsRef.current.forEach((info) => {
         info.isMuted = false;
+        info.isSoloed = false;
         info.wavesurfer.setVolume(1);
-      }
-    });
+      });
+    } else {
+      // Solo this component by muting everything else
+      activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
+        if (otherWavesurfer !== wavesurfer) {
+          info.isMuted = true;
+          info.isSoloed = false;
+          info.wavesurfer.setVolume(0);
+        } else {
+          info.isMuted = false;
+          info.isSoloed = true;
+          info.wavesurfer.setVolume(1);
+        }
+      });
+    }
 
     // Start playing this component if it's not already playing
     if (!playingWaveformsRef.current.has(wavesurfer)) {
@@ -234,6 +248,11 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isSoloed = (wavesurfer: WaveSurfer) => {
+    const info = activeWaveformsRef.current.get(wavesurfer);
+    return info ? info.isSoloed : false;
+  };
+
   return (
     <PlaybackContext.Provider
       value={{
@@ -245,6 +264,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
         stopPlayback,
         isMuted,
         soloComponent,
+        isSoloed,
       }}
     >
       {children}
