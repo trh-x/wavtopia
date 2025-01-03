@@ -1,12 +1,20 @@
-import { createContext, useContext, useRef, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useRef,
+  useState,
+  ReactNode,
+  useCallback,
+} from "react";
+import WaveSurfer from "wavesurfer.js";
 
 interface PlaybackContextType {
   globalPlaybackTime: number;
   isAnyPlaying: boolean;
-  registerWaveform: (wavesurfer: any) => void;
-  unregisterWaveform: (wavesurfer: any) => void;
-  startPlayback: (wavesurfer: any) => void;
-  stopPlayback: (wavesurfer: any) => void;
+  registerWaveform: (wavesurfer: WaveSurfer) => void;
+  unregisterWaveform: (wavesurfer: WaveSurfer) => void;
+  startPlayback: (wavesurfer: WaveSurfer) => void;
+  stopPlayback: (wavesurfer: WaveSurfer) => void;
 }
 
 const PlaybackContext = createContext<PlaybackContextType | null>(null);
@@ -14,13 +22,13 @@ const PlaybackContext = createContext<PlaybackContextType | null>(null);
 export function PlaybackProvider({ children }: { children: ReactNode }) {
   const [isAnyPlaying, setIsAnyPlaying] = useState(false);
   const [globalPlaybackTime, setGlobalPlaybackTime] = useState(0);
-  const activeWaveformsRef = useRef<Set<any>>(new Set());
-  const playingWaveformsRef = useRef<Set<any>>(new Set());
+  const activeWaveformsRef = useRef<Set<WaveSurfer>>(new Set());
+  const playingWaveformsRef = useRef<Set<WaveSurfer>>(new Set());
   const playbackIntervalRef = useRef<number | null>(null);
   const lastUpdateTimeRef = useRef<number>(0);
 
-  const updateGlobalTime = () => {
-    // Throttle updates to every 100ms (10 times per second)
+  const updateGlobalTime = useCallback(() => {
+    // Throttle updates to every 100ms
     const now = Date.now();
     if (now - lastUpdateTimeRef.current < 100) return;
     lastUpdateTimeRef.current = now;
@@ -29,7 +37,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       const firstPlayingWaveform = Array.from(playingWaveformsRef.current)[0];
       const currentTime = firstPlayingWaveform.getCurrentTime();
 
-      // Still keep a tight sync threshold of 10ms
+      // Keep a tight sync threshold of 10ms
       if (Math.abs(currentTime - globalPlaybackTime) > 0.01) {
         setGlobalPlaybackTime(currentTime);
 
@@ -44,32 +52,40 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
         });
       }
     }
-  };
+  }, [globalPlaybackTime]);
 
-  const registerWaveform = (wavesurfer: any) => {
+  const registerWaveform = (wavesurfer: WaveSurfer) => {
     console.log("Registering waveform");
     activeWaveformsRef.current.add(wavesurfer);
 
-    // Add seek event listener to sync position when user clicks on waveform
+    // Use the correct event names from WaveSurfer
     wavesurfer.on("seek", () => {
-      const newTime = wavesurfer.getCurrentTime();
-      if (Math.abs(newTime - globalPlaybackTime) > 0.1) {
-        setGlobalPlaybackTime(newTime);
+      const currentTime = wavesurfer.getCurrentTime();
+      setGlobalPlaybackTime(currentTime);
 
-        // Update all playing waveforms to the new position
-        playingWaveformsRef.current.forEach((wf) => {
-          if (
-            wf !== wavesurfer &&
-            Math.abs(wf.getCurrentTime() - newTime) > 0.1
-          ) {
-            wf.seekTo(newTime / wf.getDuration());
+      // Sync other waveforms
+      activeWaveformsRef.current.forEach((otherWavesurfer) => {
+        if (otherWavesurfer !== wavesurfer) {
+          otherWavesurfer.seekTo(currentTime / otherWavesurfer.getDuration());
+        }
+      });
+    });
+
+    wavesurfer.on("audioprocess", (currentTime: number) => {
+      setGlobalPlaybackTime(currentTime);
+
+      // Sync other waveforms if this is the active player
+      if (playingWaveformsRef.current.has(wavesurfer)) {
+        activeWaveformsRef.current.forEach((otherWavesurfer) => {
+          if (otherWavesurfer !== wavesurfer) {
+            otherWavesurfer.seekTo(currentTime / otherWavesurfer.getDuration());
           }
         });
       }
     });
   };
 
-  const unregisterWaveform = (wavesurfer: any) => {
+  const unregisterWaveform = (wavesurfer: WaveSurfer) => {
     console.log("Unregistering waveform");
     activeWaveformsRef.current.delete(wavesurfer);
     playingWaveformsRef.current.delete(wavesurfer);
@@ -83,7 +99,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const startPlayback = (wavesurfer: any) => {
+  const startPlayback = (wavesurfer: WaveSurfer) => {
     console.log("Starting playback");
 
     // If other waveforms are playing, sync to their position before adding to playing set
@@ -111,7 +127,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const stopPlayback = (wavesurfer: any) => {
+  const stopPlayback = (wavesurfer: WaveSurfer) => {
     console.log("Stopping playback");
     // Remove from playing waveforms
     playingWaveformsRef.current.delete(wavesurfer);

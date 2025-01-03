@@ -8,40 +8,37 @@ import { TrackHeader } from "../components/track-details/TrackHeader";
 import { FullTrackSection } from "../components/track-details/FullTrackSection";
 import { ComponentsSection } from "../components/track-details/ComponentsSection";
 import { ViewMode } from "../components/track-details/ViewModeToggle";
-
-async function fetchTrack(id: string): Promise<Track> {
-  const { getAuthHeader } = useAuthToken();
-  const response = await fetch(`/api/tracks/${id}`, {
-    headers: {
-      Authorization: getAuthHeader(),
-    },
-  });
-  if (!response.ok) {
-    throw new Error("Failed to fetch track");
-  }
-  return response.json();
-}
+import { LoadingState } from "../components/ui/LoadingState";
+import { ErrorState } from "../components/ui/ErrorState";
+import { api } from "../api/client";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const { getToken } = useAuthToken();
 
   const {
     data: track,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["track", id],
-    queryFn: () => fetchTrack(id!),
+    queryFn: () => api.tracks.get(id!, getToken()!),
     enabled: !!id,
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingState message="Loading track details..." />;
   }
 
   if (error || !track) {
-    return <div>Error loading track</div>;
+    return (
+      <ErrorState
+        message="Failed to load track details"
+        retry={() => refetch()}
+      />
+    );
   }
 
   return (
