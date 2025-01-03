@@ -20,24 +20,24 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
   const lastUpdateTimeRef = useRef<number>(0);
 
   const updateGlobalTime = () => {
-    // Throttle updates to every 16ms (roughly 60fps)
+    // Throttle updates to every 100ms (10 times per second)
     const now = Date.now();
-    if (now - lastUpdateTimeRef.current < 16) return;
+    if (now - lastUpdateTimeRef.current < 100) return;
     lastUpdateTimeRef.current = now;
 
     if (playingWaveformsRef.current.size > 0) {
       const firstPlayingWaveform = Array.from(playingWaveformsRef.current)[0];
       const currentTime = firstPlayingWaveform.getCurrentTime();
 
-      // Update if time has changed by more than 5ms
-      if (Math.abs(currentTime - globalPlaybackTime) > 0.005) {
+      // Still keep a tight sync threshold of 10ms
+      if (Math.abs(currentTime - globalPlaybackTime) > 0.01) {
         setGlobalPlaybackTime(currentTime);
 
-        // Sync other playing waveforms if they're more than 5ms out of sync
+        // Sync other playing waveforms if they're more than 10ms out of sync
         playingWaveformsRef.current.forEach((wavesurfer) => {
           if (
             wavesurfer !== firstPlayingWaveform &&
-            Math.abs(wavesurfer.getCurrentTime() - currentTime) > 0.005
+            Math.abs(wavesurfer.getCurrentTime() - currentTime) > 0.01
           ) {
             wavesurfer.seekTo(currentTime / wavesurfer.getDuration());
           }
@@ -91,18 +91,23 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       const firstPlayingWaveform = Array.from(playingWaveformsRef.current)[0];
       const currentTime = firstPlayingWaveform.getCurrentTime();
       wavesurfer.seekTo(currentTime / wavesurfer.getDuration());
+
+      // Add to playing waveforms after seeking
+      playingWaveformsRef.current.add(wavesurfer);
+      setIsAnyPlaying(true);
+
+      // Start this waveform with a small delay to ensure sync
+      setTimeout(() => wavesurfer.play(), 32);
+    } else {
+      // If this is the first waveform, start immediately
+      playingWaveformsRef.current.add(wavesurfer);
+      setIsAnyPlaying(true);
+      wavesurfer.play();
     }
-
-    // Add to playing waveforms
-    playingWaveformsRef.current.add(wavesurfer);
-    setIsAnyPlaying(true);
-
-    // Start this waveform with a small delay to ensure sync
-    setTimeout(() => wavesurfer.play(), 16);
 
     // Start interval to keep playing waveforms in sync if not already running
     if (!playbackIntervalRef.current) {
-      playbackIntervalRef.current = window.setInterval(updateGlobalTime, 16);
+      playbackIntervalRef.current = window.setInterval(updateGlobalTime, 100);
     }
   };
 
