@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import WaveSurfer from "wavesurfer.js";
+import { usePlayback } from "../contexts/PlaybackContext";
 
 interface WaveformDisplayProps {
   waveformData: number[];
@@ -18,19 +19,16 @@ export function WaveformDisplay({
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const { registerWaveform, unregisterWaveform, startPlayback, stopPlayback } =
+    usePlayback();
 
-  useEffect(() => {
-    if (!containerRef.current || !waveformData?.length) return;
-
-    // Convert waveform data to Float32Array
-    const peaks = [new Float32Array(waveformData)];
-
-    // Create WaveSurfer instance
-    const wavesurfer = WaveSurfer.create({
-      container: containerRef.current,
+  // Memoize the initialization options
+  const getWaveSurferOptions = useCallback(
+    () => ({
+      container: containerRef.current!,
       height,
       waveColor: color,
       progressColor,
@@ -42,61 +40,103 @@ export function WaveformDisplay({
       barRadius: 2,
       fillParent: true,
       minPxPerSec: 1,
-      mediaControls: false,
-      autoplay: false,
+      backend: "WebAudio" as const,
+      peaks: [new Float32Array(waveformData)],
       url: audioUrl,
-      peaks: peaks,
-    });
+      autoplay: false,
+      responsive: true,
+      partialRender: true,
+    }),
+    [height, color, progressColor, waveformData, audioUrl]
+  );
 
-    // Add event listeners
-    wavesurfer.on("play", () => {
-      console.log("Playing...");
-      setIsPlaying(true);
-    });
+  useEffect(() => {
+    if (!containerRef.current || !waveformData?.length) return;
 
-    wavesurfer.on("pause", () => {
-      console.log("Paused");
-      setIsPlaying(false);
-    });
+    let isCurrentInstance = true;
 
-    wavesurfer.on("finish", () => {
-      console.log("Finished");
-      setIsPlaying(false);
-    });
-
-    wavesurfer.on("loading", (progress) => {
-      console.log("Loading:", progress);
-      setIsLoading(true);
-    });
-
-    wavesurfer.on("ready", () => {
-      console.log("Ready to play");
-      setIsLoading(false);
-      setIsReady(true);
-    });
-
-    wavesurfer.on("error", (error) => {
-      console.error("WaveSurfer error:", error);
-    });
-
-    wavesurferRef.current = wavesurfer;
-
-    // Cleanup on unmount
-    return () => {
+    const initializeWaveSurfer = async () => {
+      // Cleanup previous instance if it exists
       if (wavesurferRef.current) {
+        unregisterWaveform(wavesurferRef.current);
         wavesurferRef.current.destroy();
+        wavesurferRef.current = null;
+      }
+
+      if (!isCurrentInstance) return;
+
+      const options = getWaveSurferOptions();
+      const wavesurfer = WaveSurfer.create(options);
+
+      wavesurfer.on("loading", (progress) => {
+        if (!isCurrentInstance) return;
+        setIsLoading(true);
+      });
+
+      wavesurfer.on("ready", () => {
+        if (!isCurrentInstance) return;
+        setIsLoading(false);
+        setIsReady(true);
+        registerWaveform(wavesurfer);
+      });
+
+      wavesurfer.on("play", () => {
+        if (!isCurrentInstance) return;
+        setIsPlaying(true);
+      });
+
+      wavesurfer.on("pause", () => {
+        if (!isCurrentInstance) return;
+        setIsPlaying(false);
+      });
+
+      wavesurfer.on("finish", () => {
+        if (!isCurrentInstance) return;
+        setIsPlaying(false);
+        stopPlayback(wavesurfer);
+      });
+
+      wavesurfer.on("error", (error) => {
+        if (!isCurrentInstance) return;
+        console.error("WaveSurfer error:", error);
+        setIsLoading(false);
+        setIsReady(false);
+      });
+
+      wavesurferRef.current = wavesurfer;
+    };
+
+    initializeWaveSurfer();
+
+    return () => {
+      isCurrentInstance = false;
+      if (wavesurferRef.current) {
+        unregisterWaveform(wavesurferRef.current);
+        wavesurferRef.current.destroy();
+        wavesurferRef.current = null;
       }
     };
-  }, [waveformData, height, color, progressColor, audioUrl]);
+  }, [waveformData, audioUrl]); // Only recreate when essential data changes
+
+  // Update visual properties without recreating instance
+  useEffect(() => {
+    if (!wavesurferRef.current) return;
+
+    wavesurferRef.current.setOptions({
+      height,
+      waveColor: color,
+      progressColor,
+    });
+  }, [height, color, progressColor]);
 
   const handlePlayPause = async () => {
-    if (!wavesurferRef.current) return;
+    if (!wavesurferRef.current || !isReady) return;
 
     try {
       if (isPlaying) {
-        await wavesurferRef.current.pause();
+        stopPlayback(wavesurferRef.current);
       } else {
-        await wavesurferRef.current.play();
+        startPlayback(wavesurferRef.current);
       }
     } catch (error) {
       console.error("Playback error:", error);
