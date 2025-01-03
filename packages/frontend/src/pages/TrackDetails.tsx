@@ -6,6 +6,115 @@ import { useState } from "react";
 import { WaveformDisplay } from "../components/WaveformDisplay";
 import { PlaybackProvider } from "../contexts/PlaybackContext";
 
+// Helper function to get audio URL with token
+function getAudioUrl(path: string): string {
+  const token = localStorage.getItem("token");
+  return `${path}?token=${token}`;
+}
+
+// Helper function for download links
+function DownloadLink({
+  href,
+  onClick,
+  className,
+  children,
+}: {
+  href: string;
+  onClick?: (e: React.MouseEvent) => void;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const defaultOnClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    window.location.href = `${href}?token=${token}`;
+  };
+
+  return (
+    <a
+      href={href}
+      onClick={onClick || defaultOnClick}
+      className={
+        className ||
+        "inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+      }
+    >
+      {children}
+    </a>
+  );
+}
+
+// Component for track component downloads
+function ComponentDownloadButtons({
+  trackId,
+  componentId,
+}: {
+  trackId: string;
+  componentId: string;
+}) {
+  return (
+    <div className="space-x-2">
+      <DownloadLink
+        href={`/api/tracks/${trackId}/component/${componentId}.wav`}
+        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+      >
+        WAV
+      </DownloadLink>
+      <DownloadLink
+        href={`/api/tracks/${trackId}/component/${componentId}.mp3`}
+        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+      >
+        MP3
+      </DownloadLink>
+    </div>
+  );
+}
+
+// Component for rendering a single track component
+function TrackComponent({
+  component,
+  trackId,
+  isGridView,
+}: {
+  component: Track["components"][0];
+  trackId: string;
+  isGridView: boolean;
+}) {
+  return (
+    <div
+      className={`bg-white p-4 rounded-lg ${
+        isGridView ? "shadow-sm" : "shadow flex flex-col"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3
+            className={`${isGridView ? "font-medium" : "text-lg font-medium"}`}
+          >
+            {component.name}
+          </h3>
+          {isGridView && (
+            <p className="text-sm text-gray-500">{component.type}</p>
+          )}
+        </div>
+        <ComponentDownloadButtons
+          trackId={trackId}
+          componentId={component.id}
+        />
+      </div>
+      <WaveformDisplay
+        waveformData={component.waveformData}
+        height={isGridView ? 48 : 64}
+        color="#4b5563"
+        progressColor="#6366f1"
+        audioUrl={getAudioUrl(
+          `/api/tracks/${trackId}/component/${component.id}.mp3`
+        )}
+      />
+    </div>
+  );
+}
+
 async function fetchTrack(id: string): Promise<Track> {
   const token = localStorage.getItem("token");
   const response = await fetch(`/api/tracks/${id}`, {
@@ -19,16 +128,8 @@ async function fetchTrack(id: string): Promise<Track> {
   return response.json();
 }
 
-// Helper function to get audio URL with token
-function getAudioUrl(path: string): string {
-  const token = localStorage.getItem("token");
-  return `${path}?token=${token}`;
-}
-
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [player, setPlayer] = useState<Tone.Player | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const {
@@ -41,43 +142,6 @@ export function TrackDetails() {
     enabled: !!id,
   });
 
-  const handlePlayback = async () => {
-    if (!track) return;
-
-    if (!isPlaying) {
-      try {
-        await Tone.start();
-        const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("No authentication token found");
-        }
-
-        const audioUrl = `/api/tracks/${track.id}/full.mp3?token=${token}`;
-        const newPlayer = new Tone.Player(audioUrl, () => {
-          newPlayer.start();
-          setIsPlaying(true);
-        }).toDestination();
-
-        setPlayer(newPlayer);
-      } catch (error) {
-        console.error("Playback error:", error);
-        if (player) {
-          player.stop();
-          player.dispose();
-          setPlayer(null);
-        }
-        setIsPlaying(false);
-      }
-    } else {
-      if (player) {
-        player.stop();
-        player.dispose();
-        setPlayer(null);
-      }
-      setIsPlaying(false);
-    }
-  };
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -85,18 +149,6 @@ export function TrackDetails() {
   if (error || !track) {
     return <div>Error loading track</div>;
   }
-
-  console.log("Track details:", {
-    id: track.id,
-    waveformData: track.waveformData,
-    componentsCount: track.components.length,
-    componentWaveforms: track.components.map((c) => ({
-      id: c.id,
-      name: c.name,
-      hasWaveform: !!c.waveformData,
-      waveformLength: c.waveformData?.length,
-    })),
-  });
 
   return (
     <PlaybackProvider>
@@ -125,45 +177,15 @@ export function TrackDetails() {
             />
           </div>
           <div className="mt-4 flex flex-wrap gap-4">
-            <a
-              href={`/api/tracks/${track.id}/original`}
-              onClick={(e) => {
-                e.preventDefault();
-                const token = localStorage.getItem("token");
-                window.location.href = `/api/tracks/${track.id}/original?token=${token}`;
-              }}
-              className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            >
+            <DownloadLink href={`/api/tracks/${track.id}/original`}>
               Download Original {track.originalFormat.toUpperCase()} File
-            </a>
-
-            <a
-              href={`/api/tracks/${track.id}/full?token=${localStorage.getItem(
-                "token"
-              )}`}
-              onClick={(e) => {
-                e.preventDefault();
-                const token = localStorage.getItem("token");
-                window.location.href = `/api/tracks/${track.id}/full?token=${token}`;
-              }}
-              className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            >
+            </DownloadLink>
+            <DownloadLink href={`/api/tracks/${track.id}/full`}>
               WAV
-            </a>
-
-            <a
-              href={`/api/tracks/${
-                track.id
-              }/full.mp3?token=${localStorage.getItem("token")}`}
-              onClick={(e) => {
-                e.preventDefault();
-                const token = localStorage.getItem("token");
-                window.location.href = `/api/tracks/${track.id}/full.mp3?token=${token}`;
-              }}
-              className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            >
+            </DownloadLink>
+            <DownloadLink href={`/api/tracks/${track.id}/full.mp3`}>
               MP3
-            </a>
+            </DownloadLink>
           </div>
         </div>
 
@@ -194,108 +216,22 @@ export function TrackDetails() {
             </div>
           </div>
 
-          {viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {track.components.map((component) => (
-                <div
-                  key={component.id}
-                  className="p-4 bg-white rounded-lg shadow-sm"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="font-medium">{component.name}</h3>
-                      <p className="text-sm text-gray-500">{component.type}</p>
-                    </div>
-                    <div className="space-x-2">
-                      <a
-                        href={`/api/tracks/${track.id}/component/${
-                          component.id
-                        }.wav?token=${localStorage.getItem("token")}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const token = localStorage.getItem("token");
-                          window.location.href = `/api/tracks/${track.id}/component/${component.id}.wav?token=${token}`;
-                        }}
-                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                      >
-                        WAV
-                      </a>
-                      <a
-                        href={`/api/tracks/${track.id}/component/${
-                          component.id
-                        }.mp3?token=${localStorage.getItem("token")}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          const token = localStorage.getItem("token");
-                          window.location.href = `/api/tracks/${track.id}/component/${component.id}.mp3?token=${token}`;
-                        }}
-                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                      >
-                        MP3
-                      </a>
-                    </div>
-                  </div>
-                  <WaveformDisplay
-                    waveformData={component.waveformData}
-                    height={48}
-                    color="#4b5563"
-                    progressColor="#6366f1"
-                    audioUrl={getAudioUrl(
-                      `/api/tracks/${track.id}/component/${component.id}.mp3`
-                    )}
-                  />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {track.components.map((component) => (
-                <div
-                  key={component.id}
-                  className="bg-white p-4 rounded-lg shadow flex flex-col"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium">{component.name}</h3>
-                    <div className="space-x-2">
-                      <a
-                        href={getAudioUrl(
-                          `/api/tracks/${track.id}/component/${component.id}.wav`
-                        )}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.location.href = e.currentTarget.href;
-                        }}
-                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                      >
-                        WAV
-                      </a>
-                      <a
-                        href={getAudioUrl(
-                          `/api/tracks/${track.id}/component/${component.id}.mp3`
-                        )}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.location.href = e.currentTarget.href;
-                        }}
-                        className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                      >
-                        MP3
-                      </a>
-                    </div>
-                  </div>
-                  <WaveformDisplay
-                    waveformData={component.waveformData}
-                    height={64}
-                    color="#4b5563"
-                    progressColor="#6366f1"
-                    audioUrl={getAudioUrl(
-                      `/api/tracks/${track.id}/component/${component.id}.mp3`
-                    )}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 md:grid-cols-2 gap-4"
+                : "space-y-4"
+            }
+          >
+            {track.components.map((component) => (
+              <TrackComponent
+                key={component.id}
+                component={component}
+                trackId={track.id}
+                isGridView={viewMode === "grid"}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </PlaybackProvider>
