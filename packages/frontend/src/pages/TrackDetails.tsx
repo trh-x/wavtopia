@@ -124,6 +124,47 @@ export function TrackDetails() {
               audioUrl={getAudioUrl(`/api/tracks/${track.id}/full.mp3`)}
             />
           </div>
+          <div className="mt-4 flex flex-wrap gap-4">
+            <a
+              href={`/api/tracks/${track.id}/original`}
+              onClick={(e) => {
+                e.preventDefault();
+                const token = localStorage.getItem("token");
+                window.location.href = `/api/tracks/${track.id}/original?token=${token}`;
+              }}
+              className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            >
+              Download Original {track.originalFormat.toUpperCase()} File
+            </a>
+
+            <a
+              href={`/api/tracks/${track.id}/full?token=${localStorage.getItem(
+                "token"
+              )}`}
+              onClick={(e) => {
+                e.preventDefault();
+                const token = localStorage.getItem("token");
+                window.location.href = `/api/tracks/${track.id}/full?token=${token}`;
+              }}
+              className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            >
+              WAV
+            </a>
+
+            <a
+              href={`/api/tracks/${
+                track.id
+              }/full.mp3?token=${localStorage.getItem("token")}`}
+              onClick={(e) => {
+                e.preventDefault();
+                const token = localStorage.getItem("token");
+                window.location.href = `/api/tracks/${track.id}/full.mp3?token=${token}`;
+              }}
+              className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+            >
+              MP3
+            </a>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -255,48 +296,6 @@ export function TrackDetails() {
               ))}
             </div>
           )}
-        </div>
-
-        <div className="mt-8 space-y-4">
-          <a
-            href={`/api/tracks/${track.id}/original`}
-            onClick={(e) => {
-              e.preventDefault();
-              const token = localStorage.getItem("token");
-              window.location.href = `/api/tracks/${track.id}/original?token=${token}`;
-            }}
-            className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 mr-4"
-          >
-            Download Original {track.originalFormat.toUpperCase()} File
-          </a>
-
-          <a
-            href={`/api/tracks/${track.id}/full?token=${localStorage.getItem(
-              "token"
-            )}`}
-            onClick={(e) => {
-              e.preventDefault();
-              const token = localStorage.getItem("token");
-              window.location.href = `/api/tracks/${track.id}/full?token=${token}`;
-            }}
-            className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 mr-4"
-          >
-            WAV
-          </a>
-
-          <a
-            href={`/api/tracks/${
-              track.id
-            }/full.mp3?token=${localStorage.getItem("token")}`}
-            onClick={(e) => {
-              e.preventDefault();
-              const token = localStorage.getItem("token");
-              window.location.href = `/api/tracks/${track.id}/full.mp3?token=${token}`;
-            }}
-            className="inline-block px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-          >
-            MP3
-          </a>
         </div>
       </div>
     </PlaybackProvider>
