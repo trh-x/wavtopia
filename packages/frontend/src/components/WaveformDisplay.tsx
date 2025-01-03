@@ -29,6 +29,7 @@ export function WaveformDisplay({
     unregisterWaveform,
     startPlayback,
     stopPlayback,
+    stopAll,
     isMuted,
     soloComponent,
     isSoloed,
@@ -253,6 +254,34 @@ export function WaveformDisplay({
             </svg>
           )}
         </button>
+        {isFullTrack && (
+          <button
+            onClick={stopAll}
+            disabled={isLoading || !isReady}
+            className={`
+              flex-shrink-0
+              p-2.5 rounded-full 
+              shadow-md hover:shadow-lg 
+              transition-all duration-200
+              border
+              ${
+                isLoading || !isReady
+                  ? "cursor-not-allowed opacity-50 border-gray-200"
+                  : "bg-red-50 hover:bg-red-100 border-red-200"
+              }
+            `}
+            title="Stop All Playback"
+          >
+            <svg
+              className="w-5 h-5 text-red-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <rect x="6" y="6" width="12" height="12" strokeWidth={2} />
+            </svg>
+          </button>
+        )}
         {!isFullTrack && (
           <button
             onClick={handleSolo}

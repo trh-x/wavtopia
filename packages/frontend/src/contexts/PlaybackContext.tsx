@@ -15,6 +15,7 @@ interface PlaybackContextType {
   unregisterWaveform: (wavesurfer: WaveSurfer) => void;
   startPlayback: (wavesurfer: WaveSurfer) => void;
   stopPlayback: (wavesurfer: WaveSurfer) => void;
+  stopAll: () => void;
   isMuted: (wavesurfer: WaveSurfer) => boolean;
   soloComponent: (wavesurfer: WaveSurfer) => void;
   isSoloed: (wavesurfer: WaveSurfer) => boolean;
@@ -212,6 +213,21 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const stopAll = () => {
+    console.log("Stopping all playback");
+    // Stop all playing waveforms
+    playingWaveformsRef.current.forEach((wavesurfer) => {
+      wavesurfer.pause();
+    });
+    playingWaveformsRef.current.clear();
+    setIsAnyPlaying(false);
+
+    if (playbackIntervalRef.current) {
+      window.clearInterval(playbackIntervalRef.current);
+      playbackIntervalRef.current = null;
+    }
+  };
+
   const isMuted = (wavesurfer: WaveSurfer) => {
     const info = activeWaveformsRef.current.get(wavesurfer);
     return info ? info.isMuted : false;
@@ -278,6 +294,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
         unregisterWaveform,
         startPlayback,
         stopPlayback,
+        stopAll,
         isMuted,
         soloComponent,
         isSoloed,
