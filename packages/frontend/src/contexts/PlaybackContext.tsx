@@ -11,18 +11,28 @@ import WaveSurfer from "wavesurfer.js";
 interface PlaybackContextType {
   globalPlaybackTime: number;
   isAnyPlaying: boolean;
-  registerWaveform: (wavesurfer: WaveSurfer) => void;
+  registerWaveform: (wavesurfer: WaveSurfer, isFullTrack: boolean) => void;
   unregisterWaveform: (wavesurfer: WaveSurfer) => void;
   startPlayback: (wavesurfer: WaveSurfer) => void;
   stopPlayback: (wavesurfer: WaveSurfer) => void;
+  isMuted: (wavesurfer: WaveSurfer) => boolean;
+  soloComponent: (wavesurfer: WaveSurfer) => void;
+  isSoloed: (wavesurfer: WaveSurfer) => boolean;
 }
 
 const PlaybackContext = createContext<PlaybackContextType | null>(null);
 
+interface WaveformInfo {
+  wavesurfer: WaveSurfer;
+  isFullTrack: boolean;
+  isMuted: boolean;
+  isSoloed: boolean;
+}
+
 export function PlaybackProvider({ children }: { children: ReactNode }) {
   const [isAnyPlaying, setIsAnyPlaying] = useState(false);
   const [globalPlaybackTime, setGlobalPlaybackTime] = useState(0);
-  const activeWaveformsRef = useRef<Set<WaveSurfer>>(new Set());
+  const activeWaveformsRef = useRef<Map<WaveSurfer, WaveformInfo>>(new Map());
   const playingWaveformsRef = useRef<Set<WaveSurfer>>(new Set());
   const playbackIntervalRef = useRef<number | null>(null);
   const lastUpdateTimeRef = useRef<number>(0);
@@ -54,16 +64,24 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   }, [globalPlaybackTime]);
 
-  const registerWaveform = (wavesurfer: WaveSurfer) => {
-    console.log("Registering waveform");
-    activeWaveformsRef.current.add(wavesurfer);
+  const registerWaveform = (wavesurfer: WaveSurfer, isFullTrack: boolean) => {
+    console.log(
+      "Registering waveform",
+      isFullTrack ? "full track" : "component"
+    );
+    activeWaveformsRef.current.set(wavesurfer, {
+      wavesurfer,
+      isFullTrack,
+      isMuted: false,
+      isSoloed: false,
+    });
 
     wavesurfer.on("seek", () => {
       const currentTime = wavesurfer.getCurrentTime();
       setGlobalPlaybackTime(currentTime);
 
       // Always sync on user-initiated seeks
-      activeWaveformsRef.current.forEach((otherWavesurfer) => {
+      activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
         if (otherWavesurfer !== wavesurfer) {
           otherWavesurfer.seekTo(currentTime / otherWavesurfer.getDuration());
         }
@@ -79,7 +97,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       setGlobalPlaybackTime(currentTime);
 
       if (playingWaveformsRef.current.has(wavesurfer)) {
-        activeWaveformsRef.current.forEach((otherWavesurfer) => {
+        activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
           if (
             otherWavesurfer !== wavesurfer &&
             Math.abs(otherWavesurfer.getCurrentTime() - currentTime) > 0.02
@@ -105,27 +123,72 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const muteAllComponents = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      if (!info.isFullTrack) {
+        info.isMuted = true;
+        info.wavesurfer.setVolume(0);
+      }
+    });
+  };
+
+  const unmuteAllComponents = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      if (!info.isFullTrack) {
+        info.isMuted = false;
+        info.wavesurfer.setVolume(1);
+      }
+    });
+  };
+
+  const muteFullTrack = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      if (info.isFullTrack) {
+        info.isMuted = true;
+        info.wavesurfer.setVolume(0);
+      }
+    });
+  };
+
+  const unmuteFullTrack = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      if (info.isFullTrack) {
+        info.isMuted = false;
+        info.wavesurfer.setVolume(1);
+      }
+    });
+  };
+
+  const clearAllSolos = () => {
+    activeWaveformsRef.current.forEach((info) => {
+      info.isSoloed = false;
+    });
+  };
+
   const startPlayback = (wavesurfer: WaveSurfer) => {
     console.log("Starting playback");
+    const waveformInfo = activeWaveformsRef.current.get(wavesurfer);
+    if (!waveformInfo) return;
 
-    // If other waveforms are playing, sync to their position before adding to playing set
-    if (playingWaveformsRef.current.size > 0) {
-      const firstPlayingWaveform = Array.from(playingWaveformsRef.current)[0];
-      const currentTime = firstPlayingWaveform.getCurrentTime();
-      wavesurfer.seekTo(currentTime / wavesurfer.getDuration());
+    // Clear any solo states
+    clearAllSolos();
 
-      // Add to playing waveforms after seeking
-      playingWaveformsRef.current.add(wavesurfer);
-      setIsAnyPlaying(true);
-
-      // Start this waveform with a small delay to ensure sync
-      setTimeout(() => wavesurfer.play(), 32);
+    if (waveformInfo.isFullTrack) {
+      // If starting full track, mute all component tracks
+      muteAllComponents();
+      unmuteFullTrack();
     } else {
-      // If this is the first waveform, start immediately
+      // If starting component track, mute full track and unmute all components
+      muteFullTrack();
+      unmuteAllComponents();
+    }
+
+    // Add the new waveform to playing set and start playback if not already playing
+    if (!playingWaveformsRef.current.has(wavesurfer)) {
       playingWaveformsRef.current.add(wavesurfer);
-      setIsAnyPlaying(true);
       wavesurfer.play();
     }
+    setIsAnyPlaying(true);
 
     // Start interval to keep playing waveforms in sync if not already running
     if (!playbackIntervalRef.current) {
@@ -149,6 +212,63 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const isMuted = (wavesurfer: WaveSurfer) => {
+    const info = activeWaveformsRef.current.get(wavesurfer);
+    return info ? info.isMuted : false;
+  };
+
+  const soloComponent = (wavesurfer: WaveSurfer) => {
+    console.log("Soloing component");
+    const waveformInfo = activeWaveformsRef.current.get(wavesurfer);
+    if (!waveformInfo || waveformInfo.isFullTrack) return;
+
+    if (waveformInfo.isSoloed) {
+      // If already soloed, unsolo by unmuting only other components
+      activeWaveformsRef.current.forEach((info) => {
+        if (!info.isFullTrack) {
+          info.isMuted = false;
+          info.isSoloed = false;
+          info.wavesurfer.setVolume(1);
+        }
+        // Keep full track muted
+        if (info.isFullTrack) {
+          info.isMuted = true;
+          info.wavesurfer.setVolume(0);
+        }
+      });
+    } else {
+      // Solo this component by muting everything else
+      activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
+        if (otherWavesurfer !== wavesurfer) {
+          info.isMuted = true;
+          info.isSoloed = false;
+          info.wavesurfer.setVolume(0);
+        } else {
+          info.isMuted = false;
+          info.isSoloed = true;
+          info.wavesurfer.setVolume(1);
+        }
+      });
+    }
+
+    // Start playing this component if it's not already playing
+    if (!playingWaveformsRef.current.has(wavesurfer)) {
+      playingWaveformsRef.current.add(wavesurfer);
+      wavesurfer.play();
+    }
+    setIsAnyPlaying(true);
+
+    // Start interval to keep playing waveforms in sync if not already running
+    if (!playbackIntervalRef.current) {
+      playbackIntervalRef.current = window.setInterval(updateGlobalTime, 100);
+    }
+  };
+
+  const isSoloed = (wavesurfer: WaveSurfer) => {
+    const info = activeWaveformsRef.current.get(wavesurfer);
+    return info ? info.isSoloed : false;
+  };
+
   return (
     <PlaybackContext.Provider
       value={{
@@ -158,6 +278,9 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
         unregisterWaveform,
         startPlayback,
         stopPlayback,
+        isMuted,
+        soloComponent,
+        isSoloed,
       }}
     >
       {children}

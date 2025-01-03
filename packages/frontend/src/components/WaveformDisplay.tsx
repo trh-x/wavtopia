@@ -8,6 +8,7 @@ interface WaveformDisplayProps {
   height?: number;
   color?: string;
   progressColor?: string;
+  isFullTrack?: boolean;
 }
 
 export function WaveformDisplay({
@@ -16,14 +17,22 @@ export function WaveformDisplay({
   height = 128,
   color = "#1f2937",
   progressColor = "#4f46e5",
+  isFullTrack = false,
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const { registerWaveform, unregisterWaveform, startPlayback, stopPlayback } =
-    usePlayback();
+  const {
+    registerWaveform,
+    unregisterWaveform,
+    startPlayback,
+    stopPlayback,
+    isMuted,
+    soloComponent,
+    isSoloed,
+  } = usePlayback();
 
   // Memoize the initial configuration to prevent unnecessary recreations
   const initialConfig = useMemo(
@@ -67,7 +76,7 @@ export function WaveformDisplay({
       wavesurfer.on("ready", () => {
         setIsLoading(false);
         setIsReady(true);
-        registerWaveform(wavesurfer);
+        registerWaveform(wavesurfer, isFullTrack);
       });
 
       wavesurfer.on("play", () => {
@@ -131,7 +140,7 @@ export function WaveformDisplay({
     if (!wavesurferRef.current || !isReady) return;
 
     try {
-      if (isPlaying) {
+      if (isPlaying && !isMuted(wavesurferRef.current)) {
         stopPlayback(wavesurferRef.current);
       } else {
         startPlayback(wavesurferRef.current);
@@ -141,74 +150,159 @@ export function WaveformDisplay({
     }
   };
 
+  const handleSolo = async () => {
+    if (!wavesurferRef.current || !isReady) return;
+    soloComponent(wavesurferRef.current);
+  };
+
   return (
     <div className="flex items-center gap-4 group">
-      <button
-        onClick={handlePlayPause}
-        disabled={isLoading || !isReady}
-        className={`
-          flex-shrink-0
-          p-2.5 rounded-full 
-          bg-white hover:bg-gray-50
-          shadow-md hover:shadow-lg 
-          transition-all duration-200
-          border border-gray-200
-          ${isLoading || !isReady ? "cursor-not-allowed opacity-50" : ""}
-        `}
-      >
-        {isLoading ? (
-          <svg
-            className="w-5 h-5 animate-spin text-gray-600"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
+      <div className="flex gap-2">
+        <button
+          onClick={handlePlayPause}
+          disabled={isLoading || !isReady}
+          className={`
+            flex-shrink-0
+            p-2.5 rounded-full 
+            shadow-md hover:shadow-lg 
+            transition-all duration-200
+            border
+            ${
+              isLoading || !isReady
+                ? "cursor-not-allowed opacity-50 border-gray-200"
+                : ""
+            }
+            ${
+              isPlaying
+                ? isMuted(wavesurferRef.current!)
+                  ? "opacity-60 bg-gray-100 border-gray-300" // Muted state
+                  : "bg-blue-50 hover:bg-blue-100 border-blue-200" // Playing state
+                : "opacity-70 bg-red-50 hover:bg-red-100 border-red-200" // Stopped state
+            }
+          `}
+        >
+          {isLoading ? (
+            <svg
+              className="w-5 h-5 animate-spin text-gray-600"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          ) : isPlaying ? (
+            isMuted(wavesurferRef.current!) ? (
+              <svg
+                className="w-5 h-5 text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-5 h-5 text-blue-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15.75 5.25v13.5m-7.5-13.5v13.5"
+                />
+              </svg>
+            )
+          ) : (
+            <svg
+              className="w-5 h-5 text-red-500"
               fill="none"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-        ) : isPlaying ? (
-          <svg
-            className="w-5 h-5 text-gray-700"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+              />
+            </svg>
+          )}
+        </button>
+        {!isFullTrack && (
+          <button
+            onClick={handleSolo}
+            disabled={isLoading || !isReady}
+            className={`
+              flex-shrink-0
+              p-2.5 rounded-full 
+              shadow-md hover:shadow-lg 
+              transition-all duration-200
+              border
+              ${
+                isLoading || !isReady
+                  ? "cursor-not-allowed opacity-50 border-gray-200"
+                  : ""
+              }
+              ${
+                isSoloed(wavesurferRef.current!)
+                  ? "bg-yellow-100 hover:bg-yellow-200 border-yellow-300 text-yellow-700"
+                  : isPlaying && !isMuted(wavesurferRef.current!)
+                  ? "bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-600"
+                  : "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-400 hover:text-gray-600"
+              }
+            `}
+            title={isSoloed(wavesurferRef.current!) ? "Unsolo" : "Solo"}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15.75 5.25v13.5m-7.5-13.5v13.5"
-            />
-          </svg>
-        ) : (
-          <svg
-            className="w-5 h-5 text-gray-700"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-            />
-          </svg>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+              />
+            </svg>
+          </button>
         )}
-      </button>
+      </div>
       <div
         ref={containerRef}
-        className="flex-grow"
+        className={`flex-grow ${
+          isPlaying
+            ? isMuted(wavesurferRef.current!)
+              ? "opacity-60" // Muted state
+              : "" // Playing state
+            : "opacity-70" // Stopped state
+        }`}
         style={{ minHeight: `${height}px` }}
       />
     </div>

@@ -16,6 +16,7 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
           waveformData={track.waveformData}
           height={96}
           audioUrl={getAudioUrl(`/api/tracks/${track.id}/full.mp3`)}
+          isFullTrack={true}
         />
       </div>
       <div className="mt-4 flex flex-wrap gap-4">
