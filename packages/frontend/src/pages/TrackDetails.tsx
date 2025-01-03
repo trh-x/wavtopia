@@ -1,15 +1,61 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { Track } from "@/types";
-import * as Tone from "tone";
 import { useState } from "react";
 import { WaveformDisplay } from "../components/WaveformDisplay";
 import { PlaybackProvider } from "../contexts/PlaybackContext";
 
+// Custom hook for auth token
+function useAuthToken() {
+  return {
+    getToken: () => localStorage.getItem("token"),
+    getAuthHeader: () => `Bearer ${localStorage.getItem("token")}`,
+    appendTokenToUrl: (url: string) =>
+      `${url}?token=${localStorage.getItem("token")}`,
+  };
+}
+
 // Helper function to get audio URL with token
 function getAudioUrl(path: string): string {
-  const token = localStorage.getItem("token");
-  return `${path}?token=${token}`;
+  const { appendTokenToUrl } = useAuthToken();
+  return appendTokenToUrl(path);
+}
+
+// Common button styles
+const buttonStyles = {
+  base: "px-4 py-2 rounded-lg",
+  active: "bg-primary-600 text-white",
+  inactive: "bg-gray-100 text-gray-700 hover:bg-gray-200",
+};
+
+// View mode toggle component
+function ViewModeToggle({
+  viewMode,
+  onViewModeChange,
+}: {
+  viewMode: "grid" | "list";
+  onViewModeChange: (mode: "grid" | "list") => void;
+}) {
+  return (
+    <div className="flex gap-2">
+      <button
+        onClick={() => onViewModeChange("grid")}
+        className={`${buttonStyles.base} ${
+          viewMode === "grid" ? buttonStyles.active : buttonStyles.inactive
+        }`}
+      >
+        Grid View
+      </button>
+      <button
+        onClick={() => onViewModeChange("list")}
+        className={`${buttonStyles.base} ${
+          viewMode === "list" ? buttonStyles.active : buttonStyles.inactive
+        }`}
+      >
+        List View
+      </button>
+    </div>
+  );
 }
 
 // Helper function for download links
@@ -24,10 +70,10 @@ function DownloadLink({
   className?: string;
   children: React.ReactNode;
 }) {
+  const { appendTokenToUrl } = useAuthToken();
   const defaultOnClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-    window.location.href = `${href}?token=${token}`;
+    window.location.href = appendTokenToUrl(href);
   };
 
   return (
@@ -116,10 +162,10 @@ function TrackComponent({
 }
 
 async function fetchTrack(id: string): Promise<Track> {
-  const token = localStorage.getItem("token");
+  const { getAuthHeader } = useAuthToken();
   const response = await fetch(`/api/tracks/${id}`, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: getAuthHeader(),
     },
   });
   if (!response.ok) {
@@ -192,28 +238,10 @@ export function TrackDetails() {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-semibold">Components</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`px-4 py-2 rounded-lg ${
-                  viewMode === "grid"
-                    ? "bg-primary-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                Grid View
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`px-4 py-2 rounded-lg ${
-                  viewMode === "list"
-                    ? "bg-primary-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                List View
-              </button>
-            </div>
+            <ViewModeToggle
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
           </div>
 
           <div
