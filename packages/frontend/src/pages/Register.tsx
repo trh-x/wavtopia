@@ -1,6 +1,8 @@
-import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
+import { useForm, ValidationRules } from "@/hooks/useForm";
+import { api } from "@/api/client";
 
 interface RegisterData {
   email: string;
@@ -8,117 +10,113 @@ interface RegisterData {
   password: string;
 }
 
+const validationRules: ValidationRules<RegisterData> = {
+  email: [
+    {
+      validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string),
+      message: "Please enter a valid email address",
+    },
+  ],
+  username: [
+    {
+      validate: (value) => (value as string).length >= 3,
+      message: "Username must be at least 3 characters long",
+    },
+    {
+      validate: (value) => /^[a-zA-Z0-9_-]+$/.test(value as string),
+      message:
+        "Username can only contain letters, numbers, underscores, and hyphens",
+    },
+  ],
+  password: [
+    {
+      validate: (value) => (value as string).length >= 8,
+      message: "Password must be at least 8 characters long",
+    },
+    {
+      validate: (value) => /[A-Z]/.test(value as string),
+      message: "Password must contain at least one uppercase letter",
+    },
+    {
+      validate: (value) => /[a-z]/.test(value as string),
+      message: "Password must contain at least one lowercase letter",
+    },
+    {
+      validate: (value) => /[0-9]/.test(value as string),
+      message: "Password must contain at least one number",
+    },
+  ],
+};
+
 export function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [formData, setFormData] = useState<RegisterData>({
-    email: "",
-    username: "",
-    password: "",
-  });
-  const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-
-    try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Registration failed");
-      }
-
+  const {
+    values,
+    errors,
+    handleChange,
+    handleSubmit,
+    isSubmitting,
+    submitError,
+  } = useForm<RegisterData>({
+    initialValues: {
+      email: "",
+      username: "",
+      password: "",
+    },
+    validationRules,
+    onSubmit: async (values) => {
+      const data = await api.auth.register(
+        values.email,
+        values.username,
+        values.password
+      );
       login(data.token, data.user);
       navigate("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    }
-  }
+    },
+  });
 
   return (
     <div className="max-w-md mx-auto mt-16">
       <h1 className="text-3xl font-bold mb-8 text-center">Create an Account</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            required
-            value={formData.email}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, email: e.target.value }))
-            }
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="username"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            required
-            minLength={3}
-            maxLength={30}
-            value={formData.username}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, username: e.target.value }))
-            }
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            required
-            minLength={8}
-            value={formData.password}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, password: e.target.value }))
-            }
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          />
-          <p className="mt-1 text-sm text-gray-500">
-            Must be at least 8 characters long
-          </p>
-        </div>
-        <button
-          type="submit"
-          className="w-full py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-        >
-          Create Account
-        </button>
+        {submitError && <FormError message={submitError} />}
+
+        <FormInput
+          id="email"
+          type="email"
+          label="Email"
+          required
+          value={values.email}
+          onChange={(e) => handleChange("email", e.target.value)}
+          error={errors.email}
+        />
+
+        <FormInput
+          id="username"
+          type="text"
+          label="Username"
+          required
+          value={values.username}
+          onChange={(e) => handleChange("username", e.target.value)}
+          error={errors.username}
+        />
+
+        <FormInput
+          id="password"
+          type="password"
+          label="Password"
+          required
+          value={values.password}
+          onChange={(e) => handleChange("password", e.target.value)}
+          error={errors.password}
+        />
+
+        <FormButton type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Creating account..." : "Create Account"}
+        </FormButton>
+
         <p className="text-center text-sm text-gray-600">
           Already have an account?{" "}
           <Link to="/login" className="text-primary-600 hover:text-primary-700">
