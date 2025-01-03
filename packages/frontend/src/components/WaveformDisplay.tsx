@@ -8,6 +8,7 @@ interface WaveformDisplayProps {
   height?: number;
   color?: string;
   progressColor?: string;
+  isFullTrack?: boolean;
 }
 
 export function WaveformDisplay({
@@ -16,6 +17,7 @@ export function WaveformDisplay({
   height = 128,
   color = "#1f2937",
   progressColor = "#4f46e5",
+  isFullTrack = false,
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -67,7 +69,7 @@ export function WaveformDisplay({
       wavesurfer.on("ready", () => {
         setIsLoading(false);
         setIsReady(true);
-        registerWaveform(wavesurfer);
+        registerWaveform(wavesurfer, isFullTrack);
       });
 
       wavesurfer.on("play", () => {
