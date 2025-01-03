@@ -28,24 +28,24 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
   const lastUpdateTimeRef = useRef<number>(0);
 
   const updateGlobalTime = useCallback(() => {
-    // Throttle updates to every 100ms
+    // Throttle updates to every 50ms (20 times per second)
     const now = Date.now();
-    if (now - lastUpdateTimeRef.current < 100) return;
+    if (now - lastUpdateTimeRef.current < 50) return;
     lastUpdateTimeRef.current = now;
 
     if (playingWaveformsRef.current.size > 0) {
       const firstPlayingWaveform = Array.from(playingWaveformsRef.current)[0];
       const currentTime = firstPlayingWaveform.getCurrentTime();
 
-      // Keep a tight sync threshold of 10ms
-      if (Math.abs(currentTime - globalPlaybackTime) > 0.01) {
+      // Use a 20ms sync threshold
+      if (Math.abs(currentTime - globalPlaybackTime) > 0.02) {
         setGlobalPlaybackTime(currentTime);
 
-        // Sync other playing waveforms if they're more than 10ms out of sync
+        // Sync other waveforms if they're more than 20ms out of sync
         playingWaveformsRef.current.forEach((wavesurfer) => {
           if (
             wavesurfer !== firstPlayingWaveform &&
-            Math.abs(wavesurfer.getCurrentTime() - currentTime) > 0.01
+            Math.abs(wavesurfer.getCurrentTime() - currentTime) > 0.02
           ) {
             wavesurfer.seekTo(currentTime / wavesurfer.getDuration());
           }
@@ -58,12 +58,11 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     console.log("Registering waveform");
     activeWaveformsRef.current.add(wavesurfer);
 
-    // Use the correct event names from WaveSurfer
     wavesurfer.on("seek", () => {
       const currentTime = wavesurfer.getCurrentTime();
       setGlobalPlaybackTime(currentTime);
 
-      // Sync other waveforms
+      // Always sync on user-initiated seeks
       activeWaveformsRef.current.forEach((otherWavesurfer) => {
         if (otherWavesurfer !== wavesurfer) {
           otherWavesurfer.seekTo(currentTime / otherWavesurfer.getDuration());
@@ -71,13 +70,20 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    let lastProcessTime = 0;
     wavesurfer.on("audioprocess", (currentTime: number) => {
+      const now = Date.now();
+      if (now - lastProcessTime < 50) return;
+      lastProcessTime = now;
+
       setGlobalPlaybackTime(currentTime);
 
-      // Sync other waveforms if this is the active player
       if (playingWaveformsRef.current.has(wavesurfer)) {
         activeWaveformsRef.current.forEach((otherWavesurfer) => {
-          if (otherWavesurfer !== wavesurfer) {
+          if (
+            otherWavesurfer !== wavesurfer &&
+            Math.abs(otherWavesurfer.getCurrentTime() - currentTime) > 0.02
+          ) {
             otherWavesurfer.seekTo(currentTime / otherWavesurfer.getDuration());
           }
         });
