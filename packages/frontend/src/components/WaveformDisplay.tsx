@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import WaveSurfer from "wavesurfer.js";
 import { usePlayback } from "../contexts/PlaybackContext";
 
@@ -25,10 +25,10 @@ export function WaveformDisplay({
   const { registerWaveform, unregisterWaveform, startPlayback, stopPlayback } =
     usePlayback();
 
-  // Memoize the initialization options
-  const getWaveSurferOptions = useCallback(
+  // Memoize the initial configuration to prevent unnecessary recreations
+  const initialConfig = useMemo(
     () => ({
-      container: containerRef.current!,
+      container: containerRef.current,
       height,
       waveColor: color,
       progressColor,
@@ -44,90 +44,88 @@ export function WaveformDisplay({
       peaks: [new Float32Array(waveformData)],
       url: audioUrl,
       autoplay: false,
-      responsive: true,
-      partialRender: true,
     }),
-    [height, color, progressColor, waveformData, audioUrl]
+    // Only include dependencies that should cause a full recreation
+    [audioUrl]
   );
 
+  // Initialize WaveSurfer instance
   useEffect(() => {
     if (!containerRef.current || !waveformData?.length) return;
 
-    let isCurrentInstance = true;
+    // Only create if we don't have an instance
+    if (!wavesurferRef.current) {
+      const wavesurfer = WaveSurfer.create({
+        ...initialConfig,
+        container: containerRef.current, // Need to set this here as it might not be available during useMemo
+      });
 
-    const initializeWaveSurfer = async () => {
-      // Cleanup previous instance if it exists
-      if (wavesurferRef.current) {
-        unregisterWaveform(wavesurferRef.current);
-        wavesurferRef.current.destroy();
-        wavesurferRef.current = null;
-      }
-
-      if (!isCurrentInstance) return;
-
-      const options = getWaveSurferOptions();
-      const wavesurfer = WaveSurfer.create(options);
-
-      wavesurfer.on("loading", (progress) => {
-        if (!isCurrentInstance) return;
+      wavesurfer.on("loading", () => {
         setIsLoading(true);
       });
 
       wavesurfer.on("ready", () => {
-        if (!isCurrentInstance) return;
         setIsLoading(false);
         setIsReady(true);
         registerWaveform(wavesurfer);
       });
 
       wavesurfer.on("play", () => {
-        if (!isCurrentInstance) return;
         setIsPlaying(true);
       });
 
       wavesurfer.on("pause", () => {
-        if (!isCurrentInstance) return;
         setIsPlaying(false);
       });
 
       wavesurfer.on("finish", () => {
-        if (!isCurrentInstance) return;
         setIsPlaying(false);
         stopPlayback(wavesurfer);
       });
 
       wavesurfer.on("error", (error) => {
-        if (!isCurrentInstance) return;
         console.error("WaveSurfer error:", error);
         setIsLoading(false);
         setIsReady(false);
       });
 
       wavesurferRef.current = wavesurfer;
-    };
+    }
 
-    initializeWaveSurfer();
-
+    // Cleanup on unmount
     return () => {
-      isCurrentInstance = false;
-      if (wavesurferRef.current) {
-        unregisterWaveform(wavesurferRef.current);
-        wavesurferRef.current.destroy();
-        wavesurferRef.current = null;
+      const wavesurfer = wavesurferRef.current;
+      if (wavesurfer) {
+        // Only cleanup if we're actually unmounting, not just re-rendering
+        if (!document.body.contains(containerRef.current)) {
+          unregisterWaveform(wavesurfer);
+          wavesurfer.destroy();
+          wavesurferRef.current = null;
+        }
       }
     };
-  }, [waveformData, audioUrl]); // Only recreate when essential data changes
+  }, [initialConfig]);
 
-  // Update visual properties without recreating instance
+  // Update WaveSurfer options when props change
   useEffect(() => {
-    if (!wavesurferRef.current) return;
+    const currentWavesurfer = wavesurferRef.current;
+    if (!currentWavesurfer) return;
 
-    wavesurferRef.current.setOptions({
+    currentWavesurfer.setOptions({
       height,
       waveColor: color,
       progressColor,
     });
   }, [height, color, progressColor]);
+
+  // Handle waveform data changes
+  useEffect(() => {
+    const currentWavesurfer = wavesurferRef.current;
+    if (!currentWavesurfer || !waveformData?.length) return;
+
+    const peaks = new Float32Array(waveformData);
+    currentWavesurfer.setOptions({ peaks: [peaks] });
+  }, [waveformData]);
 
   const handlePlayPause = async () => {
     if (!wavesurferRef.current || !isReady) return;
@@ -189,7 +187,7 @@ export function WaveformDisplay({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M10 9v6m4-6v6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              d="M15.75 5.25v13.5m-7.5-13.5v13.5"
             />
           </svg>
         ) : (
