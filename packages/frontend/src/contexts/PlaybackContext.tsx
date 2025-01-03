@@ -20,24 +20,24 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
   const lastUpdateTimeRef = useRef<number>(0);
 
   const updateGlobalTime = () => {
-    // Throttle updates to every 100ms
+    // Throttle updates to every 16ms (roughly 60fps)
     const now = Date.now();
-    if (now - lastUpdateTimeRef.current < 100) return;
+    if (now - lastUpdateTimeRef.current < 16) return;
     lastUpdateTimeRef.current = now;
 
     if (playingWaveformsRef.current.size > 0) {
       const firstPlayingWaveform = Array.from(playingWaveformsRef.current)[0];
       const currentTime = firstPlayingWaveform.getCurrentTime();
 
-      // Only update if time has changed significantly
-      if (Math.abs(currentTime - globalPlaybackTime) > 0.1) {
+      // Update if time has changed by more than 5ms
+      if (Math.abs(currentTime - globalPlaybackTime) > 0.005) {
         setGlobalPlaybackTime(currentTime);
 
-        // Only sync other playing waveforms if they're significantly out of sync
+        // Sync other playing waveforms if they're more than 5ms out of sync
         playingWaveformsRef.current.forEach((wavesurfer) => {
           if (
             wavesurfer !== firstPlayingWaveform &&
-            Math.abs(wavesurfer.getCurrentTime() - currentTime) > 0.1
+            Math.abs(wavesurfer.getCurrentTime() - currentTime) > 0.005
           ) {
             wavesurfer.seekTo(currentTime / wavesurfer.getDuration());
           }
@@ -85,21 +85,24 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
 
   const startPlayback = (wavesurfer: any) => {
     console.log("Starting playback");
+
+    // If other waveforms are playing, sync to their position before adding to playing set
+    if (playingWaveformsRef.current.size > 0) {
+      const firstPlayingWaveform = Array.from(playingWaveformsRef.current)[0];
+      const currentTime = firstPlayingWaveform.getCurrentTime();
+      wavesurfer.seekTo(currentTime / wavesurfer.getDuration());
+    }
+
     // Add to playing waveforms
     playingWaveformsRef.current.add(wavesurfer);
     setIsAnyPlaying(true);
 
-    // If other waveforms are playing, sync to their position
-    if (playingWaveformsRef.current.size > 1) {
-      wavesurfer.seekTo(globalPlaybackTime / wavesurfer.getDuration());
-    }
-
-    // Start this waveform
-    wavesurfer.play();
+    // Start this waveform with a small delay to ensure sync
+    setTimeout(() => wavesurfer.play(), 16);
 
     // Start interval to keep playing waveforms in sync if not already running
     if (!playbackIntervalRef.current) {
-      playbackIntervalRef.current = window.setInterval(updateGlobalTime, 50);
+      playbackIntervalRef.current = window.setInterval(updateGlobalTime, 16);
     }
   };
 
