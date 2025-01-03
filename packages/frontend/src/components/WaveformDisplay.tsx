@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import WaveSurfer from "wavesurfer.js";
+import { usePlayback } from "../contexts/PlaybackContext";
 
 interface WaveformDisplayProps {
   waveformData: number[];
@@ -18,18 +19,15 @@ export function WaveformDisplay({
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const { registerWaveform, unregisterWaveform, startPlayback, stopPlayback } =
+    usePlayback();
 
-  useEffect(() => {
-    if (!containerRef.current || !waveformData?.length) return;
-
-    // Convert waveform data to Float32Array
-    const peaks = [new Float32Array(waveformData)];
-
-    // Create WaveSurfer instance
-    const wavesurfer = WaveSurfer.create({
+  // Memoize the initial configuration to prevent unnecessary recreations
+  const initialConfig = useMemo(
+    () => ({
       container: containerRef.current,
       height,
       waveColor: color,
@@ -42,61 +40,101 @@ export function WaveformDisplay({
       barRadius: 2,
       fillParent: true,
       minPxPerSec: 1,
-      mediaControls: false,
-      autoplay: false,
+      backend: "WebAudio" as const,
+      peaks: [new Float32Array(waveformData)],
       url: audioUrl,
-      peaks: peaks,
-    });
+      autoplay: false,
+    }),
+    // Only include dependencies that should cause a full recreation
+    [audioUrl]
+  );
 
-    // Add event listeners
-    wavesurfer.on("play", () => {
-      console.log("Playing...");
-      setIsPlaying(true);
-    });
+  // Initialize WaveSurfer instance
+  useEffect(() => {
+    if (!containerRef.current || !waveformData?.length) return;
 
-    wavesurfer.on("pause", () => {
-      console.log("Paused");
-      setIsPlaying(false);
-    });
+    // Only create if we don't have an instance
+    if (!wavesurferRef.current) {
+      const wavesurfer = WaveSurfer.create({
+        ...initialConfig,
+        container: containerRef.current, // Need to set this here as it might not be available during useMemo
+      });
 
-    wavesurfer.on("finish", () => {
-      console.log("Finished");
-      setIsPlaying(false);
-    });
+      wavesurfer.on("loading", () => {
+        setIsLoading(true);
+      });
 
-    wavesurfer.on("loading", (progress) => {
-      console.log("Loading:", progress);
-      setIsLoading(true);
-    });
+      wavesurfer.on("ready", () => {
+        setIsLoading(false);
+        setIsReady(true);
+        registerWaveform(wavesurfer);
+      });
 
-    wavesurfer.on("ready", () => {
-      console.log("Ready to play");
-      setIsLoading(false);
-      setIsReady(true);
-    });
+      wavesurfer.on("play", () => {
+        setIsPlaying(true);
+      });
 
-    wavesurfer.on("error", (error) => {
-      console.error("WaveSurfer error:", error);
-    });
+      wavesurfer.on("pause", () => {
+        setIsPlaying(false);
+      });
 
-    wavesurferRef.current = wavesurfer;
+      wavesurfer.on("finish", () => {
+        setIsPlaying(false);
+        stopPlayback(wavesurfer);
+      });
+
+      wavesurfer.on("error", (error) => {
+        console.error("WaveSurfer error:", error);
+        setIsLoading(false);
+        setIsReady(false);
+      });
+
+      wavesurferRef.current = wavesurfer;
+    }
 
     // Cleanup on unmount
     return () => {
-      if (wavesurferRef.current) {
-        wavesurferRef.current.destroy();
+      const wavesurfer = wavesurferRef.current;
+      if (wavesurfer) {
+        // Only cleanup if we're actually unmounting, not just re-rendering
+        if (!document.body.contains(containerRef.current)) {
+          unregisterWaveform(wavesurfer);
+          wavesurfer.destroy();
+          wavesurferRef.current = null;
+        }
       }
     };
-  }, [waveformData, height, color, progressColor, audioUrl]);
+  }, [initialConfig]);
+
+  // Update WaveSurfer options when props change
+  useEffect(() => {
+    const currentWavesurfer = wavesurferRef.current;
+    if (!currentWavesurfer) return;
+
+    currentWavesurfer.setOptions({
+      height,
+      waveColor: color,
+      progressColor,
+    });
+  }, [height, color, progressColor]);
+
+  // Handle waveform data changes
+  useEffect(() => {
+    const currentWavesurfer = wavesurferRef.current;
+    if (!currentWavesurfer || !waveformData?.length) return;
+
+    const peaks = new Float32Array(waveformData);
+    currentWavesurfer.setOptions({ peaks: [peaks] });
+  }, [waveformData]);
 
   const handlePlayPause = async () => {
-    if (!wavesurferRef.current) return;
+    if (!wavesurferRef.current || !isReady) return;
 
     try {
       if (isPlaying) {
-        await wavesurferRef.current.pause();
+        stopPlayback(wavesurferRef.current);
       } else {
-        await wavesurferRef.current.play();
+        startPlayback(wavesurferRef.current);
       }
     } catch (error) {
       console.error("Playback error:", error);
@@ -149,7 +187,7 @@ export function WaveformDisplay({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M10 9v6m4-6v6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              d="M15.75 5.25v13.5m-7.5-13.5v13.5"
             />
           </svg>
         ) : (
