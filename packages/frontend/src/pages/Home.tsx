@@ -40,98 +40,25 @@ export function Home() {
   const token = getToken();
 
   const {
-    data: userTracks,
-    isLoading: isLoadingUserTracks,
-    error: userTracksError,
+    data: tracks,
+    isLoading,
+    error,
   } = useQuery({
-    queryKey: ["tracks"],
-    queryFn: () => api.tracks.list(token!),
-    enabled: !!token,
+    queryKey: ["tracks", !!token],
+    queryFn: () => (token ? api.tracks.list(token) : api.tracks.listPublic()),
   });
 
-  const {
-    data: publicTracks,
-    isLoading: isLoadingPublicTracks,
-    error: publicTracksError,
-  } = useQuery({
-    queryKey: ["tracks", "public"],
-    queryFn: () => api.tracks.listPublic(),
-  });
-
-  const {
-    data: sharedTracks,
-    isLoading: isLoadingSharedTracks,
-    error: sharedTracksError,
-  } = useQuery({
-    queryKey: ["tracks", "shared"],
-    queryFn: () => api.tracks.listShared(token!),
-    enabled: !!token,
-  });
-
-  if (isLoadingUserTracks || isLoadingPublicTracks || isLoadingSharedTracks) {
-    return <LoadingState message="Loading tracks..." />;
-  }
-
-  if (userTracksError || publicTracksError || sharedTracksError) {
-    return (
-      <ErrorState
-        message="Failed to load tracks"
-        retry={() => {
-          if (token) {
-            void api.tracks.list(token);
-            void api.tracks.listShared(token);
-          }
-          void api.tracks.listPublic();
-        }}
-      />
-    );
-  }
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message={(error as Error).message} />;
+  if (!tracks?.length)
+    return <div className="text-center p-4">No tracks found</div>;
 
   return (
-    <div className="space-y-8 p-4">
-      {token && userTracks && userTracks.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Your Tracks</h2>
-          <TrackList tracks={userTracks} />
-        </section>
-      )}
-
-      {token && sharedTracks && sharedTracks.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Shared With You</h2>
-          <TrackList tracks={sharedTracks} />
-        </section>
-      )}
-
-      {publicTracks && publicTracks.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold mb-4">Public Tracks</h2>
-          <TrackList tracks={publicTracks} />
-        </section>
-      )}
-
-      {(!token || !userTracks?.length) &&
-        !sharedTracks?.length &&
-        !publicTracks?.length && (
-          <div className="text-center py-12">
-            <p className="text-gray-600">
-              {token ? (
-                <>
-                  No tracks available. Click the "Upload" button to share your
-                  first track!
-                </>
-              ) : (
-                <>
-                  No tracks available.{" "}
-                  <Link to="/login" className="text-primary hover:underline">
-                    Log in
-                  </Link>{" "}
-                  to start sharing your music!
-                </>
-              )}
-            </p>
-          </div>
-        )}
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">
+        {token ? "Your Tracks" : "Public Tracks"}
+      </h1>
+      <TrackList tracks={tracks} />
     </div>
   );
 }

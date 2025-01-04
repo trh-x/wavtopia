@@ -180,27 +180,25 @@ router.get(
   }
 );
 
-// Get all public tracks
-router.get("/public", async (req: Request, res: Response, next) => {
-  try {
-    const publicTracks = await prisma.track.findMany({
-      where: {
-        isPublic: true,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-          },
+// Get public tracks
+router.get("/public", async (req: Request, res: Response) => {
+  const publicTracks = await prisma.track.findMany({
+    where: {
+      isPublic: true,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
         },
       },
-    });
-    res.json(publicTracks);
-  } catch (error) {
-    next(error);
-  }
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+  res.json(publicTracks);
 });
 
 // Apply authentication middleware for all other routes
