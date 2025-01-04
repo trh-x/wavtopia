@@ -935,10 +935,34 @@ router.patch(
     try {
       const { isPublic } = z.object({ isPublic: z.boolean() }).parse(req.body);
 
+      // First check if the track exists and belongs to the user
+      const existingTrack = await prisma.track.findFirst({
+        where: {
+          id: req.params.id,
+          OR: [
+            { userId: req.user!.id },
+            { sharedWith: { some: { userId: req.user!.id } } },
+            { isPublic: true },
+          ],
+        },
+      });
+
+      if (!existingTrack) {
+        throw new AppError(404, "Track not found or you don't have permission");
+      }
+
+      // Only allow the owner to change visibility
+      if (existingTrack.userId !== req.user!.id) {
+        throw new AppError(
+          403,
+          "Only the track owner can change visibility settings"
+        );
+      }
+
+      // Then update the track
       const track = await prisma.track.update({
         where: {
           id: req.params.id,
-          userId: req.user!.id,
         },
         data: {
           isPublic,
