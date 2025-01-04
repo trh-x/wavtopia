@@ -580,7 +580,7 @@ router.get("/:id", async (req, res, next) => {
 // Create track with files
 router.post("/", uploadTrackFiles, async (req, res, next) => {
   try {
-    const data = trackSchema.parse(req.body);
+    const data = trackSchema.parse(JSON.parse(req.body.data));
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
     if (!files.original?.[0]) {
