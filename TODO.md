@@ -94,3 +94,26 @@
   - [ ] Support both tracks and individual components in playlists
   - [ ] Add playlist search and filtering
   - [ ] Implement smart playlists based on tags/metadata
+
+### Mod File Support
+
+- [ ] Expand support for additional module file formats
+  - [ ] Add support for XM (FastTracker) format
+  - [ ] Add support for IT (Impulse Tracker) format
+  - [ ] Add support for S3M (ScreamTracker) format
+  - [ ] Implement proper sample extraction and conversion
+  - [ ] Add format-specific metadata display
+  - [ ] Support pattern visualization for mod formats
+  - [ ] Handle format-specific effects and commands
+  - [ ] Add mod-specific playback controls
+
+### Direct WAV Upload
+
+- [ ] Support uploading tracks without module files
+  - [ ] Add support for full track WAV upload
+  - [ ] Allow uploading multiple component WAVs
+  - [ ] Implement component labeling and organization
+  - [ ] Add validation for matching sample rates and formats
+  - [ ] Create UI for mapping components to track sections
+  - [ ] Support batch component upload
+  - [ ] Add waveform preview during upload
