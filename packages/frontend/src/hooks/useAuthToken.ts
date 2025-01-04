@@ -8,6 +8,6 @@ export function useAuthToken() {
 }
 
 export function getAudioUrl(path: string): string {
-  const { appendTokenToUrl } = useAuthToken();
-  return appendTokenToUrl(path);
+  const token = localStorage.getItem("token");
+  return `${path}?token=${token}`;
 }

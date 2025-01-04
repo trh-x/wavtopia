@@ -116,6 +116,16 @@ export const api = {
       if (!response.ok) throw new Error("Failed to upload track");
       return response.json() as Promise<Track>;
     },
+
+    listShared: async (token: string) => {
+      const response = await fetch(`${API_URL}/tracks/shared`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch shared tracks");
+      return response.json() as Promise<Track[]>;
+    },
   },
 
   users: {

@@ -62,17 +62,28 @@ export function Home() {
     queryFn: () => api.tracks.listPublic(),
   });
 
-  if (isLoadingUserTracks || isLoadingPublicTracks) {
+  const {
+    data: sharedTracks,
+    isLoading: isLoadingSharedTracks,
+    error: sharedTracksError,
+  } = useQuery({
+    queryKey: ["tracks", "shared"],
+    queryFn: () => api.tracks.listShared(token!),
+    enabled: !!token,
+  });
+
+  if (isLoadingUserTracks || isLoadingPublicTracks || isLoadingSharedTracks) {
     return <LoadingState message="Loading tracks..." />;
   }
 
-  if (userTracksError || publicTracksError) {
+  if (userTracksError || publicTracksError || sharedTracksError) {
     return (
       <ErrorState
         message="Failed to load tracks"
         retry={() => {
           if (token) {
             void api.tracks.list(token);
+            void api.tracks.listShared(token);
           }
           void api.tracks.listPublic();
         }}
@@ -89,6 +100,13 @@ export function Home() {
         </section>
       )}
 
+      {token && sharedTracks && sharedTracks.length > 0 && (
+        <section>
+          <h2 className="text-2xl font-bold mb-4">Shared With You</h2>
+          <TrackList tracks={sharedTracks} />
+        </section>
+      )}
+
       {publicTracks && publicTracks.length > 0 && (
         <section>
           <h2 className="text-2xl font-bold mb-4">Public Tracks</h2>
@@ -96,26 +114,28 @@ export function Home() {
         </section>
       )}
 
-      {(!token || !userTracks?.length) && !publicTracks?.length && (
-        <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400">
-            {token ? (
-              <>
-                No tracks available. Click the "Upload" button to share your
-                first track!
-              </>
-            ) : (
-              <>
-                No tracks available.{" "}
-                <Link to="/login" className="text-primary hover:underline">
-                  Log in
-                </Link>{" "}
-                to start sharing your music!
-              </>
-            )}
-          </p>
-        </div>
-      )}
+      {(!token || !userTracks?.length) &&
+        !sharedTracks?.length &&
+        !publicTracks?.length && (
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">
+              {token ? (
+                <>
+                  No tracks available. Click the "Upload" button to share your
+                  first track!
+                </>
+              ) : (
+                <>
+                  No tracks available.{" "}
+                  <Link to="/login" className="text-primary hover:underline">
+                    Log in
+                  </Link>{" "}
+                  to start sharing your music!
+                </>
+              )}
+            </p>
+          </div>
+        )}
     </div>
   );
 }
