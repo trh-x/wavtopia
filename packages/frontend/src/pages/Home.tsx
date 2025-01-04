@@ -13,7 +13,7 @@ function TrackList({ tracks }: { tracks: Track[] }) {
         <Link
           key={track.id}
           to={`/track/${track.id}`}
-          className="block p-4 rounded-lg border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="block p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
         >
           <div className="flex items-center space-x-4">
             {track.coverArt && (
@@ -25,12 +25,8 @@ function TrackList({ tracks }: { tracks: Track[] }) {
             )}
             <div>
               <h3 className="font-medium">{track.title}</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {track.artist}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500">
-                by {track.user.username}
-              </p>
+              <p className="text-sm text-gray-600">{track.artist}</p>
+              <p className="text-xs text-gray-500">by {track.user.username}</p>
             </div>
           </div>
         </Link>
@@ -118,7 +114,7 @@ export function Home() {
         !sharedTracks?.length &&
         !publicTracks?.length && (
           <div className="text-center py-12">
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-gray-600">
               {token ? (
                 <>
                   No tracks available. Click the "Upload" button to share your

@@ -1,5 +1,3 @@
-import { styles } from "../../styles/common";
-
 interface TrackHeaderProps {
   title: string;
   artist: string;
@@ -18,7 +16,7 @@ export function TrackHeader({ title, artist, coverArt }: TrackHeaderProps) {
       )}
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
-        <p className="text-gray-600 dark:text-gray-400">{artist}</p>
+        <p className="text-gray-600">{artist}</p>
       </div>
     </div>
   );
