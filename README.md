@@ -39,7 +39,7 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 
 ### export-to-wav Installation
 
-The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. Currently, this utility is only available in [this pending pull request](https://github.com/milkytracker/MilkyTracker/pull/372). To install it:
+The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. Currently, this utility is only available in [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372). To install it:
 
 1. Clone MilkyTracker and checkout the PR branch:
 
@@ -57,7 +57,7 @@ git checkout trh/export-to-wav
 
 3. The utility will be available at `build/src/tools/export-to-wav/export-to-wav`. Copy or symlink it to a location in your PATH (e.g., /usr/local/bin/).
 
-Note: This is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
+Note: This is hopefully a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
 
 ### Installation Steps
 
