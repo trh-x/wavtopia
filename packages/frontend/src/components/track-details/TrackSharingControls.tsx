@@ -124,9 +124,9 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
             {track.sharedWith.map((share) => (
               <li
                 key={share.userId}
-                className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-2 rounded"
+                className="flex items-center justify-between bg-white border border-gray-200 p-2 rounded"
               >
-                <span>{share.user.email}</span>
+                <span className="text-gray-900">{share.user.email}</span>
                 <Button
                   variant="ghost"
                   size="sm"
