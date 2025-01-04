@@ -28,6 +28,12 @@ const trackSchema = z.object({
   artist: z.string().min(1),
   originalFormat: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
+  isPublic: z.boolean().optional(),
+});
+
+// Schema for track sharing
+const shareTrackSchema = z.object({
+  userIds: z.array(z.string()),
 });
 
 // Get original track file (before global auth middleware)
@@ -285,6 +291,32 @@ router.get(
   }
 );
 
+// Get all public tracks
+router.get(
+  "/public",
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const publicTracks = await prisma.track.findMany({
+        where: {
+          isPublic: true,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+        },
+      });
+      res.json(publicTracks);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Apply authentication to all other routes
 router.use(authenticate);
 
@@ -297,6 +329,13 @@ router.get("/", async (req, res, next) => {
       },
       include: {
         components: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
       },
     });
     res.json(tracks);
@@ -569,5 +608,155 @@ router.delete("/:id", async (req, res, next) => {
     next(error);
   }
 });
+
+// Get tracks shared with the current user
+router.get(
+  "/shared",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const sharedTracks = await prisma.track.findMany({
+        where: {
+          sharedWith: {
+            some: {
+              userId: req.user!.id,
+            },
+          },
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+            },
+          },
+        },
+      });
+      res.json(sharedTracks);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Share a track with other users
+router.post(
+  "/:id/share",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const { userIds } = shareTrackSchema.parse(req.body);
+
+      // Verify track ownership
+      const track = await prisma.track.findUnique({
+        where: {
+          id: req.params.id,
+          userId: req.user!.id,
+        },
+      });
+
+      if (!track) {
+        throw new AppError(404, "Track not found or you don't have permission");
+      }
+
+      // Create share records
+      const shares = await prisma.$transaction(
+        userIds.map((userId) =>
+          prisma.trackShare.create({
+            data: {
+              trackId: track.id,
+              userId,
+            },
+          })
+        )
+      );
+
+      res.json({ message: "Track shared successfully", shares });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Remove track sharing for specific users
+router.delete(
+  "/:id/share",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const { userIds } = shareTrackSchema.parse(req.body);
+
+      // Verify track ownership
+      const track = await prisma.track.findUnique({
+        where: {
+          id: req.params.id,
+          userId: req.user!.id,
+        },
+      });
+
+      if (!track) {
+        throw new AppError(404, "Track not found or you don't have permission");
+      }
+
+      // Remove share records
+      await prisma.trackShare.deleteMany({
+        where: {
+          trackId: track.id,
+          userId: {
+            in: userIds,
+          },
+        },
+      });
+
+      res.json({ message: "Track sharing removed successfully" });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Update track visibility
+router.patch(
+  "/:id/visibility",
+  authenticate,
+  async (req: AuthenticatedRequest, res: Response, next) => {
+    try {
+      const { isPublic } = z.object({ isPublic: z.boolean() }).parse(req.body);
+
+      const track = await prisma.track.update({
+        where: {
+          id: req.params.id,
+          userId: req.user!.id,
+        },
+        data: {
+          isPublic,
+        },
+      });
+
+      res.json(track);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Modify the existing track routes to check for public access
+const canAccessTrack = async (trackId: string, userId?: string) => {
+  const track = await prisma.track.findUnique({
+    where: {
+      id: trackId,
+    },
+    include: {
+      sharedWith: true,
+    },
+  });
+
+  if (!track) return false;
+
+  return (
+    track.isPublic ||
+    track.userId === userId ||
+    track.sharedWith.some((share) => share.userId === userId)
+  );
+};
 
 export { router as trackRoutes };

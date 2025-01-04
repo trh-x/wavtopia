@@ -1,65 +1,132 @@
-import { useAuthToken } from "../hooks/useAuthToken";
+import { Track, User } from "../types";
 
-class ApiError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
-
-async function handleResponse(response: Response) {
-  const data = await response.json();
-  if (!response.ok) {
-    throw new ApiError(response.status, data.message || "An error occurred");
-  }
-  return data;
-}
+const API_URL = "/api";
 
 export const api = {
   auth: {
     login: async (email: string, password: string) => {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, password }),
       });
-      return handleResponse(response);
+      if (!response.ok) throw new Error("Login failed");
+      return response.json();
     },
+
     register: async (email: string, username: string, password: string) => {
-      const response = await fetch("/api/auth/signup", {
+      const response = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ email, username, password }),
       });
-      return handleResponse(response);
+      if (!response.ok) throw new Error("Registration failed");
+      return response.json();
     },
+
     me: async (token: string) => {
-      const response = await fetch("/api/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      return handleResponse(response);
+      if (!response.ok) throw new Error("Failed to get user info");
+      return response.json();
     },
   },
+
   tracks: {
     list: async (token: string) => {
-      const response = await fetch("/api/tracks", {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/tracks`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      return handleResponse(response);
+      if (!response.ok) throw new Error("Failed to fetch tracks");
+      return response.json() as Promise<Track[]>;
     },
+
     get: async (id: string, token: string) => {
-      const response = await fetch(`/api/tracks/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`${API_URL}/tracks/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      return handleResponse(response);
+      if (!response.ok) throw new Error("Failed to fetch track");
+      return response.json() as Promise<Track>;
     },
-    upload: async (formData: FormData, token: string) => {
-      const response = await fetch("/api/tracks", {
+
+    listPublic: async () => {
+      const response = await fetch(`${API_URL}/tracks/public`);
+      if (!response.ok) throw new Error("Failed to fetch public tracks");
+      return response.json() as Promise<Track[]>;
+    },
+
+    share: async (id: string, userIds: string[], token: string) => {
+      const response = await fetch(`${API_URL}/tracks/${id}/share`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userIds }),
+      });
+      if (!response.ok) throw new Error("Failed to share track");
+      return response.json();
+    },
+
+    unshare: async (id: string, userIds: string[], token: string) => {
+      const response = await fetch(`${API_URL}/tracks/${id}/share`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userIds }),
+      });
+      if (!response.ok) throw new Error("Failed to remove track sharing");
+      return response.json();
+    },
+
+    updateVisibility: async (id: string, isPublic: boolean, token: string) => {
+      const response = await fetch(`${API_URL}/tracks/${id}/visibility`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isPublic }),
+      });
+      if (!response.ok) throw new Error("Failed to update track visibility");
+      return response.json() as Promise<Track>;
+    },
+
+    upload: async (formData: FormData, token: string) => {
+      const response = await fetch(`${API_URL}/tracks`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
-      return handleResponse(response);
+      if (!response.ok) throw new Error("Failed to upload track");
+      return response.json() as Promise<Track>;
+    },
+  },
+
+  users: {
+    list: async (token: string) => {
+      const response = await fetch(`${API_URL}/auth/users`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch users");
+      return response.json() as Promise<User[]>;
     },
   },
 };

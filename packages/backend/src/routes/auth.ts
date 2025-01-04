@@ -3,8 +3,10 @@ import { z } from "zod";
 import { signup, login, getUserById } from "../services/auth";
 import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
+import { PrismaClient } from "@prisma/client";
 
 const router = Router();
+const prisma = new PrismaClient();
 
 const signupSchema = z.object({
   email: z.string().email(),
@@ -61,6 +63,22 @@ router.get("/me", authenticate, async (req, res, next) => {
     // Don't send the password hash in the response
     const { password, ...userWithoutPassword } = user;
     res.json({ user: userWithoutPassword });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get all users (excluding sensitive information)
+router.get("/users", authenticate, async (req, res, next) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
+    });
+    res.json(users);
   } catch (error) {
     next(error);
   }

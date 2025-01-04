@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { Track } from "@/types";
 import { useState } from "react";
 import { PlaybackProvider } from "../contexts/PlaybackContext";
 import { useAuthToken } from "../hooks/useAuthToken";
@@ -11,6 +10,7 @@ import { ViewMode } from "../components/track-details/ViewModeToggle";
 import { LoadingState } from "../components/ui/LoadingState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { api } from "../api/client";
+import { TrackSharingControls } from "../components/track-details/TrackSharingControls";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +55,7 @@ export function TrackDetails() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />
+        <TrackSharingControls track={track} />
       </div>
     </PlaybackProvider>
   );
