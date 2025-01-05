@@ -164,6 +164,11 @@ router.get(
             { sharedWith: { some: { userId: req.user!.id } } },
           ],
         },
+        select: {
+          originalUrl: true,
+          title: true,
+          originalFormat: true,
+        },
       });
 
       if (!track) {
@@ -173,6 +178,10 @@ router.get(
       // Stream the file directly from MinIO
       const fileStream = await minioClient.getObject(bucket, track.originalUrl);
       res.setHeader("Content-Type", "application/octet-stream");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${track.title}.${track.originalFormat}"`
+      );
       fileStream.pipe(res);
     } catch (error) {
       next(error);
