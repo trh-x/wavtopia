@@ -41,10 +41,12 @@ export const api = {
 
   track: {
     get: async (id: string, token: string) => {
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const response = await fetch(`${API_URL}/track/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
       });
       if (!response.ok) throw new Error("Failed to fetch track");
       return response.json() as Promise<Track>;
