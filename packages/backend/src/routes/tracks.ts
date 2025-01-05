@@ -213,57 +213,6 @@ router.get("/public", async (req: Request, res: Response) => {
 // Apply authentication middleware for all other routes
 router.use(authenticate);
 
-// Get original track file (before global auth middleware)
-router.get("/:id/original", async (req, res, next) => {
-  try {
-    // Get token from query parameter
-    const token = req.query.token as string;
-    if (!token) {
-      throw new AppError(401, "No token provided");
-    }
-
-    // Set the token in the Authorization header for the authenticate middleware
-    req.headers.authorization = `Bearer ${token}`;
-
-    // Call authenticate middleware manually
-    await new Promise((resolve, reject) => {
-      authenticate(req, res, (err) => {
-        if (err) reject(err);
-        else resolve(undefined);
-      });
-    });
-
-    const track = await prisma.track.findUnique({
-      where: {
-        id: req.params.id,
-        userId: req.user!.id, // Only get user's own track
-      },
-      include: {
-        components: true,
-      },
-    });
-
-    if (!track) {
-      throw new AppError(404, "Track not found");
-    }
-
-    // Stream the file directly from MinIO
-    const fileStream = await minioClient.getObject(bucket, track.originalUrl);
-
-    // Set headers for file download
-    res.setHeader("Content-Type", "application/octet-stream");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=original.${track.originalFormat}`
-    );
-
-    // Pipe the file stream directly to the response
-    fileStream.pipe(res);
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Shared function for token authentication
 async function authenticateWithToken(req: AuthenticatedRequest, res: Response) {
   const token = req.query.token as string;
