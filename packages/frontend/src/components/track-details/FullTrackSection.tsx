@@ -23,7 +23,9 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         <DownloadLink href={`/api/tracks/${track.id}/original`}>
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
-        <DownloadLink href={`/api/tracks/${track.id}/full`}>WAV</DownloadLink>
+        <DownloadLink href={`/api/tracks/${track.id}/full.wav`}>
+          WAV
+        </DownloadLink>
         <DownloadLink href={`/api/tracks/${track.id}/full.mp3`}>
           MP3
         </DownloadLink>
