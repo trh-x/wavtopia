@@ -19,7 +19,7 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
   const { user } = useAuth();
 
   // If the current user doesn't own the track, don't render anything
-  if (track.userId !== user?.id) {
+  if (!user || track.userId !== user.id) {
     return null;
   }
 
