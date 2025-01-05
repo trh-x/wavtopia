@@ -27,24 +27,25 @@ function PublicTracks() {
   );
 }
 
-function AllTracks() {
+function AllTracks({ token }: { token: string }) {
   const {
-    data: publicTracks,
-    isLoading: isLoadingPublicTracks,
-    error: publicTracksError,
+    data: allTracks,
+    isLoading: isLoadingAllTracks,
+    error: allTracksError,
   } = useQuery({
-    queryKey: ["public-tracks"],
-    queryFn: () => api.tracks.listPublic(),
+    queryKey: ["all-tracks", token],
+    queryFn: () => api.tracks.listAll(token),
+    // enabled: !!token,
   });
 
-  if (isLoadingPublicTracks) return <LoadingState />;
-  if (publicTracksError)
-    return <ErrorState message={(publicTracksError as Error).message} />;
+  if (isLoadingAllTracks) return <LoadingState />;
+  if (allTracksError)
+    return <ErrorState message={(allTracksError as Error).message} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">All Tracks</h1>
-      <TrackList tracks={publicTracks || []} />
+      <TrackList tracks={allTracks || []} />
     </div>
   );
 }
@@ -57,5 +58,5 @@ export function Home() {
     return <PublicTracks />;
   }
 
-  return <AllTracks />;
+  return <AllTracks token={token} />;
 }
