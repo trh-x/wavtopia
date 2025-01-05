@@ -24,7 +24,7 @@ export function TrackDetails() {
     refetch,
   } = useQuery({
     queryKey: ["track", id],
-    queryFn: () => api.tracks.get(id!, getToken()!),
+    queryFn: () => api.track.get(id!, getToken()!),
     enabled: !!id,
   });
 

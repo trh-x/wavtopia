@@ -44,7 +44,7 @@ export function UploadTrack() {
           formData.append("coverArt", values.coverArt);
         }
 
-        const data = await api.tracks.upload(formData, getToken()!);
+        const data = await api.track.upload(formData, getToken()!);
         navigate(`/track/${data.id}`);
       },
     });

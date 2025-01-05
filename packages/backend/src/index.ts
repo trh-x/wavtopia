@@ -1,7 +1,8 @@
 import express from "express";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
-import { trackRoutes } from "./routes/tracks";
+import { trackRoutes } from "./routes/track";
+import { tracksRoutes } from "./routes/tracks";
 import { authRoutes } from "./routes/auth";
 import { errorHandler } from "./middleware/errorHandler";
 import { initializeStorage } from "./services/storage";
@@ -30,7 +31,8 @@ app.get("/health", (req, res) => {
 
 // API routes
 app.use("/api/auth", authRoutes);
-app.use("/api/tracks", trackRoutes);
+app.use("/api/track", trackRoutes);
+app.use("/api/tracks", tracksRoutes);
 
 // Error handling
 app.use(errorHandler);

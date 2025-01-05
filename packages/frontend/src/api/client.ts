@@ -39,19 +39,9 @@ export const api = {
     },
   },
 
-  tracks: {
-    list: async (token: string) => {
-      const response = await fetch(`${API_URL}/tracks`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) throw new Error("Failed to fetch tracks");
-      return response.json() as Promise<Track[]>;
-    },
-
+  track: {
     get: async (id: string, token: string) => {
-      const response = await fetch(`${API_URL}/tracks/${id}`, {
+      const response = await fetch(`${API_URL}/track/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -60,14 +50,8 @@ export const api = {
       return response.json() as Promise<Track>;
     },
 
-    listPublic: async () => {
-      const response = await fetch(`${API_URL}/tracks/public`);
-      if (!response.ok) throw new Error("Failed to fetch public tracks");
-      return response.json() as Promise<Track[]>;
-    },
-
     share: async (id: string, userIds: string[], token: string) => {
-      const response = await fetch(`${API_URL}/tracks/${id}/share`, {
+      const response = await fetch(`${API_URL}/track/${id}/share`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -80,7 +64,7 @@ export const api = {
     },
 
     unshare: async (id: string, userIds: string[], token: string) => {
-      const response = await fetch(`${API_URL}/tracks/${id}/share`, {
+      const response = await fetch(`${API_URL}/track/${id}/share`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +77,7 @@ export const api = {
     },
 
     updateVisibility: async (id: string, isPublic: boolean, token: string) => {
-      const response = await fetch(`${API_URL}/tracks/${id}/visibility`, {
+      const response = await fetch(`${API_URL}/track/${id}/visibility`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -106,7 +90,7 @@ export const api = {
     },
 
     upload: async (formData: FormData, token: string) => {
-      const response = await fetch(`${API_URL}/tracks`, {
+      const response = await fetch(`${API_URL}/track`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -115,6 +99,24 @@ export const api = {
       });
       if (!response.ok) throw new Error("Failed to upload track");
       return response.json() as Promise<Track>;
+    },
+  },
+
+  tracks: {
+    list: async (token: string) => {
+      const response = await fetch(`${API_URL}/tracks`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch tracks");
+      return response.json() as Promise<Track[]>;
+    },
+
+    listPublic: async () => {
+      const response = await fetch(`${API_URL}/tracks/public`);
+      if (!response.ok) throw new Error("Failed to fetch public tracks");
+      return response.json() as Promise<Track[]>;
     },
 
     listShared: async (token: string) => {
