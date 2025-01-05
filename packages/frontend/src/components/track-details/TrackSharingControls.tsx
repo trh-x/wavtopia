@@ -30,7 +30,7 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
 
   const shareTrackMutation = useMutation({
     mutationFn: async (userIds: string[]) => {
-      const response = await fetch(`/api/tracks/${track.id}/share`, {
+      const response = await fetch(`/api/track/${track.id}/share`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -49,7 +49,7 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
 
   const unshareTrackMutation = useMutation({
     mutationFn: async (userIds: string[]) => {
-      const response = await fetch(`/api/tracks/${track.id}/share`, {
+      const response = await fetch(`/api/track/${track.id}/share`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
 
   const updateVisibilityMutation = useMutation({
     mutationFn: async (isPublic: boolean) => {
-      const response = await fetch(`/api/tracks/${track.id}/visibility`, {
+      const response = await fetch(`/api/track/${track.id}/visibility`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

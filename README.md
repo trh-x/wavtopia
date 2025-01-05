@@ -149,16 +149,21 @@ The backend provides the following main endpoints:
 - `POST /api/auth/login` - Log in to existing account
 - `GET /api/auth/me` - Get current user info
 
+### Track
+
+- `POST /api/track` - Upload a new track
+- `GET /api/track/:id` - Get track details
+- `PATCH /api/track/:id` - Update track details
+- `DELETE /api/track/:id` - Delete a track
+- `GET /api/track/:id/original` - Download original .xm file
+- `GET /api/track/:id/full` - Download full track WAV
+- `GET /api/track/:id/component/:componentId` - Download component WAV
+
 ### Tracks
 
-- `GET /api/tracks` - List all tracks
-- `POST /api/tracks` - Upload a new track
-- `GET /api/tracks/:id` - Get track details
-- `PATCH /api/tracks/:id` - Update track details
-- `DELETE /api/tracks/:id` - Delete a track
-- `GET /api/tracks/:id/original` - Download original .xm file
-- `GET /api/tracks/:id/full` - Download full track WAV
-- `GET /api/tracks/:id/component/:componentId` - Download component WAV
+- `GET /api/tracks` - List all tracks for the current user
+- `GET /api/tracks/public` - List all public tracks
+- `GET /api/tracks/shared` - List all shared tracks for the current user
 
 ## Troubleshooting
 

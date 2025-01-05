@@ -41,7 +41,7 @@ export function TrackComponent({
         color="#4b5563"
         progressColor="#6366f1"
         audioUrl={getAudioUrl(
-          `/api/tracks/${trackId}/component/${component.id}.mp3`
+          `/api/track/${trackId}/component/${component.id}.mp3`
         )}
       />
     </div>
