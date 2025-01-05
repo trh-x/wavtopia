@@ -3,7 +3,7 @@ import { Track, User } from "../types";
 const API_URL = "/api";
 
 interface FetchOptions extends RequestInit {
-  token?: string;
+  token?: string | null;
   contentType?: string;
 }
 
@@ -54,7 +54,7 @@ export const api = {
   },
 
   track: {
-    get: async (id: string, token: string) => {
+    get: async (id: string, token: string | null) => {
       return apiRequest(`/track/${id}`, { token }) as Promise<Track>;
     },
 

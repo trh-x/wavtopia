@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Track } from "@/types";
 import { api } from "../../api/client";
-import { useAuthToken } from "../../hooks/useAuthToken";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
@@ -9,30 +8,24 @@ import { Switch } from "../ui/Switch";
 
 interface TrackSharingControlsProps {
   track: Track;
+  token: string;
 }
 
-export function TrackSharingControls({ track }: TrackSharingControlsProps) {
+export function TrackSharingControls({
+  track,
+  token,
+}: TrackSharingControlsProps) {
   const [userEmail, setUserEmail] = useState("");
-  const { getToken } = useAuthToken();
   const queryClient = useQueryClient();
 
   const { data: users } = useQuery({
     queryKey: ["users"],
-    queryFn: () => api.users.list(getToken()!),
+    queryFn: () => api.users.list(token),
   });
 
   const shareTrackMutation = useMutation({
     mutationFn: async (userIds: string[]) => {
-      const response = await fetch(`/api/track/${track.id}/share`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({ userIds }),
-      });
-      if (!response.ok) throw new Error("Failed to share track");
-      return response.json();
+      return api.track.share(track.id, userIds, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["track", track.id] });
@@ -42,16 +35,7 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
 
   const unshareTrackMutation = useMutation({
     mutationFn: async (userIds: string[]) => {
-      const response = await fetch(`/api/track/${track.id}/share`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({ userIds }),
-      });
-      if (!response.ok) throw new Error("Failed to remove track sharing");
-      return response.json();
+      return api.track.unshare(track.id, userIds, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["track", track.id] });
@@ -60,16 +44,7 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
 
   const updateVisibilityMutation = useMutation({
     mutationFn: async (isPublic: boolean) => {
-      const response = await fetch(`/api/track/${track.id}/visibility`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify({ isPublic }),
-      });
-      if (!response.ok) throw new Error("Failed to update track visibility");
-      return response.json();
+      return api.track.updateVisibility(track.id, isPublic, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["track", track.id] });

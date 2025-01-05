@@ -1,3 +1,4 @@
+import { api } from "@/api/client";
 import { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -39,17 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await fetch("/api/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to load user");
-        }
-
-        const data = await response.json();
+        const data = await api.auth.me(token);
         setUser(data.user);
       } catch (error) {
         localStorage.removeItem("token");

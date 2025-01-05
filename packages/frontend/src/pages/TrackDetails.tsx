@@ -19,6 +19,8 @@ export function TrackDetails() {
   const { getToken } = useAuthToken();
   const { user } = useAuth();
 
+  const token = getToken();
+
   const {
     data: track,
     isLoading,
@@ -26,7 +28,7 @@ export function TrackDetails() {
     refetch,
   } = useQuery({
     queryKey: ["track", id],
-    queryFn: () => api.track.get(id!, getToken()!),
+    queryFn: () => api.track.get(id!, token),
     enabled: !!id,
   });
 
@@ -59,8 +61,8 @@ export function TrackDetails() {
         />
 
         {/* If the current user doesn't own the track, don't render the sharing controls */}
-        {user && track.userId === user.id && (
-          <TrackSharingControls track={track} />
+        {token && user && track.userId === user.id && (
+          <TrackSharingControls track={track} token={token} />
         )}
       </div>
     </PlaybackProvider>
