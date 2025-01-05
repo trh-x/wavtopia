@@ -44,33 +44,64 @@ const shareTrackSchema = z.object({
 });
 
 // Authentication helper that checks both header and query token
-const authenticateFileAccess: RequestHandler = async (
+const authenticateTrackAccess: RequestHandler = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {
   try {
+    // Get track ID from URL path
+    const trackId = req.params.id;
+    if (!trackId) {
+      return next(new AppError(400, "Track ID is required"));
+    }
+
+    // First check if track is public
+    const track = await prisma.track.findUnique({
+      where: { id: trackId },
+    });
+
+    if (!track) {
+      return next(new AppError(404, "Track not found"));
+    }
+
+    if (track.isPublic) {
+      return next();
+    }
+
+    // If not public, validate token
     const token =
       (req.query.token as string) || req.headers.authorization?.split(" ")[1];
     if (!token) {
-      throw new AppError(401, "No token provided");
+      return next(new AppError(401, "No token provided"));
     }
 
-    const decoded = verifyToken(token);
-    req.user = {
-      id: decoded.userId,
-      role: decoded.role,
-    };
-    next();
+    try {
+      const decoded = verifyToken(token);
+      req.user = {
+        id: decoded.userId,
+        role: decoded.role,
+      };
+
+      // Check if user has access to track
+      const hasAccess = await canAccessTrack(trackId, decoded.userId);
+      if (!hasAccess) {
+        return next(new AppError(403, "You don't have access to this track"));
+      }
+
+      next();
+    } catch (error) {
+      next(new AppError(401, "Invalid token"));
+    }
   } catch (error) {
-    next(new AppError(401, "Invalid token"));
+    next(error);
   }
 };
 
 // Get track component file (before auth middleware)
 router.get(
   "/:id/component/:componentId.:format",
-  authenticateFileAccess,
+  authenticateTrackAccess,
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
       const track = await prisma.track.findFirst({
@@ -117,7 +148,7 @@ router.get(
 // Get full track file (before auth middleware)
 router.get(
   "/:id/full.:format",
-  authenticateFileAccess,
+  authenticateTrackAccess,
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
       const track = await prisma.track.findFirst({
@@ -155,7 +186,7 @@ router.get(
 // Get original track file (before auth middleware)
 router.get(
   "/:id/original",
-  authenticateFileAccess,
+  authenticateTrackAccess,
   async (req: AuthenticatedRequest, res: Response, next) => {
     try {
       const track = await prisma.track.findFirst({
