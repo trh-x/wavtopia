@@ -19,13 +19,6 @@ import { Prisma, Role } from "@prisma/client";
 import { generateWaveformData } from "../services/waveform";
 
 // Extend Request type to include user property
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    role: Role;
-  };
-}
-
 const prisma = new PrismaClient();
 const router = Router();
 
@@ -159,7 +152,7 @@ const authenticateTrackAccess: RequestHandler = async (
 router.get(
   "/:id/component/:componentId.:format",
   authenticateTrackAccess,
-  async (req: AuthenticatedRequest, res: Response, next) => {
+  async (req: Request, res: Response, next) => {
     try {
       const track = await prisma.track.findFirst({
         where: {
@@ -206,7 +199,7 @@ router.get(
 router.get(
   "/:id/full.:format",
   authenticateTrackAccess,
-  async (req: AuthenticatedRequest, res: Response, next) => {
+  async (req: Request, res: Response, next) => {
     try {
       const track = await prisma.track.findFirst({
         where: {
@@ -244,7 +237,7 @@ router.get(
 router.get(
   "/:id/original",
   authenticateTrackAccess,
-  async (req: AuthenticatedRequest, res: Response, next) => {
+  async (req: Request, res: Response, next) => {
     try {
       const track = await prisma.track.findFirst({
         where: {
@@ -560,7 +553,7 @@ router.delete("/:id", async (req, res, next) => {
 router.post(
   "/:id/share",
   authenticate,
-  async (req: AuthenticatedRequest, res: Response, next) => {
+  async (req: Request, res: Response, next) => {
     try {
       const { userIds } = shareTrackSchema.parse(req.body);
 
@@ -599,7 +592,7 @@ router.post(
 router.delete(
   "/:id/share",
   authenticate,
-  async (req: AuthenticatedRequest, res: Response, next) => {
+  async (req: Request, res: Response, next) => {
     try {
       const { userIds } = shareTrackSchema.parse(req.body);
 
@@ -636,7 +629,7 @@ router.delete(
 router.patch(
   "/:id/visibility",
   authenticate,
-  async (req: AuthenticatedRequest, res: Response, next) => {
+  async (req: Request, res: Response, next) => {
     try {
       const { isPublic } = z.object({ isPublic: z.boolean() }).parse(req.body);
 
