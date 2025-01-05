@@ -61,19 +61,20 @@ const authenticateTrackAccess: RequestHandler = async (
       return next(new AppError(404, "Track not found"));
     }
 
-    if (!track.isPublic) {
-      // If track is not public, validate token and check if user has access to track
-      const token =
-        (req.query.token as string) || req.headers.authorization?.split(" ")[1];
-      if (!token) {
-        return next(new AppError(401, "No token provided"));
-      }
+    const token =
+      (req.query.token as string) || req.headers.authorization?.split(" ")[1];
 
+    if (!track.isPublic && !token) {
+      return next(new AppError(401, "No token provided"));
+    }
+
+    if (token) {
       try {
         const decoded = verifyToken(token);
 
         // Check if user has access to track
         const hasAccess =
+          track.isPublic ||
           track.userId === decoded.userId ||
           track.sharedWith.some((share) => share.userId === decoded.userId);
 
@@ -86,7 +87,9 @@ const authenticateTrackAccess: RequestHandler = async (
           role: decoded.role,
         };
       } catch (error) {
-        return next(new AppError(401, "Invalid token"));
+        return next(
+          new AppError(401, "Invalid token: " + error + ", " + token)
+        );
       }
     }
 
@@ -139,7 +142,7 @@ const authenticateTrackAccess: RequestHandler = async (
       };
       (req as any).track = publicTrack; // TODO: Fix this `any`
     } else {
-      (req as any).track = track; // TODO: Fix this `any`
+      (req as any).track = reqTrack; // TODO: Fix this `any`
     }
 
     next();
@@ -147,6 +150,16 @@ const authenticateTrackAccess: RequestHandler = async (
     next(error);
   }
 };
+
+// Get single track
+router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
+  try {
+    const track = (req as any).track; // TODO: Fix this `any`
+    res.json(track);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Get track component file (before auth middleware)
 router.get(
