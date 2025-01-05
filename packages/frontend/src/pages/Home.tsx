@@ -7,6 +7,9 @@ import { LoadingState } from "../components/ui/LoadingState";
 import { ErrorState } from "../components/ui/ErrorState";
 
 function TrackList({ tracks }: { tracks: Track[] }) {
+  if (!tracks?.length)
+    return <div className="text-gray-500">No tracks found</div>;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {tracks.map((track) => (
@@ -35,30 +38,92 @@ function TrackList({ tracks }: { tracks: Track[] }) {
   );
 }
 
+function TrackSection({
+  title,
+  tracks,
+  isLoading,
+  error,
+}: {
+  title: string;
+  tracks: Track[] | undefined;
+  isLoading: boolean;
+  error: unknown;
+}) {
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message={(error as Error).message} />;
+
+  return (
+    <div className="mb-12">
+      <h2 className="text-2xl font-bold mb-6">{title}</h2>
+      <TrackList tracks={tracks || []} />
+    </div>
+  );
+}
+
 export function Home() {
   const { getToken } = useAuthToken();
   const token = getToken();
 
   const {
-    data: tracks,
-    isLoading,
-    error,
+    data: userTracks,
+    isLoading: isLoadingUserTracks,
+    error: userTracksError,
   } = useQuery({
-    queryKey: ["tracks", !!token],
-    queryFn: () => (token ? api.tracks.list(token) : api.tracks.listPublic()),
+    queryKey: ["tracks", token],
+    queryFn: async () => (token ? api.tracks.list(token) : undefined),
+    enabled: !!token,
   });
 
-  if (isLoading) return <LoadingState />;
-  if (error) return <ErrorState message={(error as Error).message} />;
-  if (!tracks?.length)
-    return <div className="text-center p-4">No tracks found</div>;
+  const {
+    data: sharedTracks,
+    isLoading: isLoadingSharedTracks,
+    error: sharedTracksError,
+  } = useQuery({
+    queryKey: ["shared-tracks", token],
+    queryFn: async () => (token ? api.tracks.listShared(token) : undefined),
+    enabled: !!token,
+  });
+
+  const {
+    data: publicTracks,
+    isLoading: isLoadingPublicTracks,
+    error: publicTracksError,
+  } = useQuery({
+    queryKey: ["public-tracks"],
+    queryFn: () => api.tracks.listPublic(),
+  });
+
+  if (!token) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Public Tracks</h1>
+        <TrackList tracks={publicTracks || []} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">
-        {token ? "Your Tracks" : "Public Tracks"}
-      </h1>
-      <TrackList tracks={tracks} />
+      <TrackSection
+        title="Your Tracks"
+        tracks={userTracks}
+        isLoading={isLoadingUserTracks}
+        error={userTracksError}
+      />
+
+      <TrackSection
+        title="Shared With You"
+        tracks={sharedTracks}
+        isLoading={isLoadingSharedTracks}
+        error={sharedTracksError}
+      />
+
+      <TrackSection
+        title="Public Tracks"
+        tracks={publicTracks}
+        isLoading={isLoadingPublicTracks}
+        error={publicTracksError}
+      />
     </div>
   );
 }
