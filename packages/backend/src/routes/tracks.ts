@@ -264,59 +264,6 @@ router.get("/:id/original", async (req, res, next) => {
   }
 });
 
-// Get component WAV file (before global auth middleware)
-router.get("/:id/component/:componentId.wav", async (req, res, next) => {
-  try {
-    // Get token from query parameter
-    const token = req.query.token as string;
-    if (!token) {
-      throw new AppError(401, "No token provided");
-    }
-
-    // Set the token in the Authorization header for the authenticate middleware
-    req.headers.authorization = `Bearer ${token}`;
-
-    // Call authenticate middleware manually
-    await new Promise((resolve, reject) => {
-      authenticate(req, res, (err) => {
-        if (err) reject(err);
-        else resolve(undefined);
-      });
-    });
-
-    const track = await prisma.track.findUnique({
-      where: {
-        id: req.params.id,
-        userId: req.user!.id, // Only get user's own track
-      },
-      include: {
-        components: true,
-      },
-    });
-
-    if (!track || track.components.length === 0) {
-      throw new AppError(404, "Track or component not found");
-    }
-
-    const component = track.components[0];
-
-    // Stream the file directly from MinIO
-    const fileStream = await minioClient.getObject(bucket, component.wavUrl);
-
-    // Set headers for file download
-    res.setHeader("Content-Type", "audio/wav");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${component.name}.wav"`
-    );
-
-    // Pipe the file stream directly to the response
-    fileStream.pipe(res);
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Shared function for token authentication
 async function authenticateWithToken(req: AuthenticatedRequest, res: Response) {
   const token = req.query.token as string;
@@ -332,55 +279,6 @@ async function authenticateWithToken(req: AuthenticatedRequest, res: Response) {
     });
   });
 }
-
-router.get(
-  "/:id/component/:componentId.mp3",
-  async (req: AuthenticatedRequest, res: Response, next) => {
-    try {
-      console.log("Component MP3 request params:", {
-        trackId: req.params.id,
-        componentId: req.params.componentId,
-      });
-
-      await authenticateWithToken(req, res);
-
-      console.log("Authenticated user:", req.user?.id);
-
-      const component = await prisma.component.findFirst({
-        where: {
-          id: req.params.componentId,
-          trackId: req.params.id,
-          track: {
-            userId: req.user!.id,
-          },
-        },
-      });
-
-      console.log("Found component:", component);
-
-      if (!component) {
-        throw new AppError(404, "Track or component not found");
-      }
-
-      console.log("Component details:", {
-        id: component.id,
-        name: component.name,
-        mp3Url: component.mp3Url,
-      });
-
-      const fileStream = await minioClient.getObject(bucket, component.mp3Url);
-      res.setHeader("Content-Type", "audio/mpeg");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${component.name}.mp3"`
-      );
-      fileStream.pipe(res);
-    } catch (error) {
-      console.error("Error in component MP3 endpoint:", error);
-      next(error);
-    }
-  }
-);
 
 // Get all tracks
 router.get("/", async (req, res, next) => {
