@@ -139,9 +139,10 @@ router.get(
 
       // Stream the file directly from MinIO
       const fileStream = await minioClient.getObject(bucket, filePath);
+      res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
-        "Content-Type",
-        format === "mp3" ? "audio/mpeg" : "audio/wav"
+        "Content-Disposition",
+        `attachment; filename="${track.title}.${format}"`
       );
       fileStream.pipe(res);
     } catch (error) {
