@@ -93,7 +93,7 @@ router.get("/shared", async (req: Request, res: Response, next) => {
 });
 
 // Get all tracks accessible to the current user
-router.get("/all", async (req: Request, res: Response, next) => {
+router.get("/available", async (req: Request, res: Response, next) => {
   try {
     const allTracks = await prisma.track.findMany({
       where: {

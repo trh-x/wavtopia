@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
-import { TrackList, TrackSection } from "@/components/track-list/TrackList";
+import { TrackList } from "@/components/track-list/TrackList";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorState } from "@/components/ui/ErrorState";
 
@@ -27,25 +27,25 @@ function PublicTracks() {
   );
 }
 
-function AllTracks({ token }: { token: string }) {
+function AvailableTracks({ token }: { token: string }) {
   const {
-    data: allTracks,
-    isLoading: isLoadingAllTracks,
-    error: allTracksError,
+    data: availableTracks,
+    isLoading: isLoadingAvailableTracks,
+    error: availableTracksError,
   } = useQuery({
-    queryKey: ["all-tracks", token],
-    queryFn: () => api.tracks.listAll(token),
+    queryKey: ["available-tracks", token],
+    queryFn: () => api.tracks.listAvailable(token),
     // enabled: !!token,
   });
 
-  if (isLoadingAllTracks) return <LoadingState />;
-  if (allTracksError)
-    return <ErrorState message={(allTracksError as Error).message} />;
+  if (isLoadingAvailableTracks) return <LoadingState />;
+  if (availableTracksError)
+    return <ErrorState message={(availableTracksError as Error).message} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">All Tracks</h1>
-      <TrackList tracks={allTracks || []} />
+      <h1 className="text-2xl font-bold mb-6">Available Tracks</h1>
+      <TrackList tracks={availableTracks || []} />
     </div>
   );
 }
@@ -58,5 +58,5 @@ export function Home() {
     return <PublicTracks />;
   }
 
-  return <AllTracks token={token} />;
+  return <AvailableTracks token={token} />;
 }
