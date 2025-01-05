@@ -11,11 +11,13 @@ import { LoadingState } from "../components/ui/LoadingState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { api } from "../api/client";
 import { TrackSharingControls } from "../components/track-details/TrackSharingControls";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { getToken } = useAuthToken();
+  const { user } = useAuth();
 
   const {
     data: track,
@@ -55,7 +57,11 @@ export function TrackDetails() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />
-        <TrackSharingControls track={track} />
+
+        {/* If the current user doesn't own the track, don't render the sharing controls */}
+        {user && track.userId === user.id && (
+          <TrackSharingControls track={track} />
+        )}
       </div>
     </PlaybackProvider>
   );

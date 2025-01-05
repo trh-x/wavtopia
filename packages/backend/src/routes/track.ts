@@ -167,25 +167,9 @@ router.get(
   authenticateTrackAccess,
   async (req: Request, res: Response, next) => {
     try {
-      const track = await prisma.track.findFirst({
-        where: {
-          id: req.params.id,
-          OR: [
-            { userId: req.user!.id },
-            { sharedWith: { some: { userId: req.user!.id } } },
-          ],
-        },
-        include: {
-          components: true,
-        },
-      });
-
-      if (!track) {
-        throw new AppError(404, "Track not found");
-      }
-
+      const track = (req as any).track; // TODO: Fix this `any`
       const component = track.components.find(
-        (c) => c.id === req.params.componentId
+        (c: any) => c.id === req.params.componentId // TODO: Fix this `any`
       );
       if (!component) {
         throw new AppError(404, "Component not found");
@@ -214,20 +198,7 @@ router.get(
   authenticateTrackAccess,
   async (req: Request, res: Response, next) => {
     try {
-      const track = await prisma.track.findFirst({
-        where: {
-          id: req.params.id,
-          OR: [
-            { userId: req.user!.id },
-            { sharedWith: { some: { userId: req.user!.id } } },
-          ],
-        },
-      });
-
-      if (!track) {
-        throw new AppError(404, "Track not found");
-      }
-
+      const track = (req as any).track; // TODO: Fix this `any`
       const format = req.params.format.toLowerCase();
       const filePath =
         format === "mp3" ? track.fullTrackMp3Url : track.fullTrackUrl;

@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Switch } from "../ui/Switch";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface TrackSharingControlsProps {
   track: Track;
@@ -16,12 +15,6 @@ export function TrackSharingControls({ track }: TrackSharingControlsProps) {
   const [userEmail, setUserEmail] = useState("");
   const { getToken } = useAuthToken();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  // If the current user doesn't own the track, don't render anything
-  if (!user || track.userId !== user.id) {
-    return null;
-  }
 
   const { data: users } = useQuery({
     queryKey: ["users"],
