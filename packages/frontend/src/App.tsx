@@ -10,6 +10,7 @@ import { TrackDetails } from "@/pages/TrackDetails";
 import { Login } from "@/pages/Login";
 import { Register } from "@/pages/Register";
 import { UploadTrack } from "@/pages/UploadTrack";
+import { MyTracks } from "./pages/MyTracks";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ function AppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/" element={<Home />} />
         <Route path="/track/:id" element={<TrackDetails />} />
+        <Route path="/my-tracks" element={<MyTracks />} />
         <Route
           path="/upload"
           element={
