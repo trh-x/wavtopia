@@ -29,7 +29,7 @@ router.get("/public", async (req: Request, res: Response) => {
 // Apply authentication middleware for all other routes
 router.use(authenticate);
 
-// Get all tracks
+// Get all tracks owned by the current user
 router.get("/", async (req, res, next) => {
   try {
     const tracks = await prisma.track.findMany({
@@ -87,6 +87,33 @@ router.get("/shared", async (req: Request, res: Response, next) => {
       },
     });
     res.json(sharedTracks);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get all tracks accessible to the current user
+router.get("/available", async (req: Request, res: Response, next) => {
+  try {
+    const allTracks = await prisma.track.findMany({
+      where: {
+        OR: [
+          { userId: req.user!.id },
+          { isPublic: true },
+          { sharedWith: { some: { userId: req.user!.id } } },
+        ],
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+      },
+    });
+    res.json(allTracks);
   } catch (error) {
     next(error);
   }

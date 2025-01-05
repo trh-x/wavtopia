@@ -106,6 +106,10 @@ export const api = {
     listShared: async (token: string) => {
       return apiRequest("/tracks/shared", { token }) as Promise<Track[]>;
     },
+
+    listAvailable: async (token: string) => {
+      return apiRequest("/tracks/available", { token }) as Promise<Track[]>;
+    },
   },
 
   users: {

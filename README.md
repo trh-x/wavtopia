@@ -161,9 +161,10 @@ The backend provides the following main endpoints:
 
 ### Tracks
 
-- `GET /api/tracks` - List all tracks for the current user
+- `GET /api/tracks` - List all tracks owned by the current user
 - `GET /api/tracks/public` - List all public tracks
-- `GET /api/tracks/shared` - List all shared tracks for the current user
+- `GET /api/tracks/shared` - List all tracks shared with the current user
+- `GET /api/tracks/available` - List all tracks that are accessible to the current user
 
 ## Troubleshooting
 
