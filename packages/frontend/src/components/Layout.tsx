@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutProps {
@@ -7,6 +7,8 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
 
   return (
     <div className="min-h-screen">
@@ -16,7 +18,7 @@ export function Layout({ children }: LayoutProps) {
             <Link to="/" className="text-xl font-bold">
               Wavtopia
             </Link>
-            {user && (
+            {user ? (
               <div className="flex items-center gap-4">
                 <Link
                   to="/upload"
@@ -32,6 +34,15 @@ export function Layout({ children }: LayoutProps) {
                   Logout
                 </button>
               </div>
+            ) : (
+              !isLoginPage && (
+                <Link
+                  to="/login"
+                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                >
+                  Login
+                </Link>
+              )
             )}
           </div>
         </div>

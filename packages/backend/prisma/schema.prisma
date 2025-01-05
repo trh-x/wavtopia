@@ -11,14 +11,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  role      Role     @default(USER)
-  tracks    Track[]
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String      @id @default(uuid())
+  email        String      @unique
+  username     String      @unique
+  password     String
+  role         Role        @default(USER)
+  tracks       Track[]
+  sharedTracks TrackShare[] @relation("SharedWithUser")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -39,13 +40,28 @@ model Track {
   waveformData   Float[]     @map("waveform_data")
   coverArt       String?     @map("cover_art")
   metadata       Json?
+  isPublic       Boolean     @default(false) @map("is_public")
   components     Component[]
   userId         String      @map("user_id")
   user           User        @relation(fields: [userId], references: [id])
+  sharedWith     TrackShare[] @relation("SharedTracks")
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
   @@map("tracks")
+}
+
+model TrackShare {
+  id        String   @id @default(uuid())
+  trackId   String   @map("track_id")
+  track     Track    @relation("SharedTracks", fields: [trackId], references: [id])
+  userId    String   @map("user_id")
+  user      User     @relation("SharedWithUser", fields: [userId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([trackId, userId])
+  @@map("track_shares")
 }
 
 model Component {

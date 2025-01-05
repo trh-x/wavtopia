@@ -1,87 +1,129 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Track } from "@/types";
-import { LoadingState } from "@/components/ui/LoadingState";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { useAuthToken } from "@/hooks/useAuthToken";
-import { api } from "@/api/client";
+import { useAuthToken } from "../hooks/useAuthToken";
+import { api } from "../api/client";
+import { LoadingState } from "../components/ui/LoadingState";
+import { ErrorState } from "../components/ui/ErrorState";
 
-function TrackCard({ track }: { track: Track }) {
+function TrackList({ tracks }: { tracks: Track[] }) {
+  if (!tracks?.length)
+    return <div className="text-gray-500">No tracks found</div>;
+
   return (
-    <Link
-      to={`/track/${track.id}`}
-      className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
-    >
-      {track.coverArt && (
-        <img
-          src={track.coverArt}
-          alt={track.title}
-          className="w-full h-48 object-cover rounded-t-lg"
-        />
-      )}
-      <div className="p-4">
-        <h2 className="text-xl font-semibold">{track.title}</h2>
-        <p className="text-gray-600">{track.artist}</p>
-        <p className="text-sm text-gray-500 mt-2">
-          Format: {track.originalFormat}
-        </p>
-      </div>
-    </Link>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {tracks.map((track) => (
+        <Link
+          key={track.id}
+          to={`/track/${track.id}`}
+          className="block p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center space-x-4">
+            {track.coverArt && (
+              <img
+                src={track.coverArt}
+                alt={`${track.title} cover art`}
+                className="h-16 w-16 rounded object-cover"
+              />
+            )}
+            <div>
+              <h3 className="font-medium">{track.title}</h3>
+              <p className="text-sm text-gray-600">{track.artist}</p>
+              <p className="text-xs text-gray-500">by {track.user.username}</p>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function TrackSection({
+  title,
+  tracks,
+  isLoading,
+  error,
+}: {
+  title: string;
+  tracks: Track[] | undefined;
+  isLoading: boolean;
+  error: unknown;
+}) {
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message={(error as Error).message} />;
+
+  return (
+    <div className="mb-12">
+      <h2 className="text-2xl font-bold mb-6">{title}</h2>
+      <TrackList tracks={tracks || []} />
+    </div>
   );
 }
 
 export function Home() {
   const { getToken } = useAuthToken();
+  const token = getToken();
 
   const {
-    data: tracks,
-    isLoading,
-    error,
-    refetch,
+    data: userTracks,
+    isLoading: isLoadingUserTracks,
+    error: userTracksError,
   } = useQuery({
-    queryKey: ["tracks"],
-    queryFn: () => api.tracks.list(getToken()!),
+    queryKey: ["tracks", token],
+    queryFn: async () => (token ? api.tracks.list(token) : undefined),
+    enabled: !!token,
   });
 
-  if (isLoading) {
-    return <LoadingState message="Loading tracks..." />;
-  }
+  const {
+    data: sharedTracks,
+    isLoading: isLoadingSharedTracks,
+    error: sharedTracksError,
+  } = useQuery({
+    queryKey: ["shared-tracks", token],
+    queryFn: async () => (token ? api.tracks.listShared(token) : undefined),
+    enabled: !!token,
+  });
 
-  if (error) {
+  const {
+    data: publicTracks,
+    isLoading: isLoadingPublicTracks,
+    error: publicTracksError,
+  } = useQuery({
+    queryKey: ["public-tracks"],
+    queryFn: () => api.tracks.listPublic(),
+  });
+
+  if (!token) {
     return (
-      <ErrorState message="Failed to load tracks" retry={() => refetch()} />
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6">Public Tracks</h1>
+        <TrackList tracks={publicTracks || []} />
+      </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Available Tracks</h1>
-        <Link
-          to="/upload"
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-        >
-          Upload Track
-        </Link>
-      </div>
+    <div className="container mx-auto px-4 py-8">
+      <TrackSection
+        title="Your Tracks"
+        tracks={userTracks}
+        isLoading={isLoadingUserTracks}
+        error={userTracksError}
+      />
 
-      {tracks?.length === 0 ? (
-        <div className="text-center text-gray-600 py-12">
-          <p className="mb-4">No tracks available yet.</p>
-          <Link
-            to="/upload"
-            className="text-primary-600 hover:text-primary-700"
-          >
-            Upload your first track
-          </Link>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tracks?.map((track: Track) => (
-            <TrackCard key={track.id} track={track} />
-          ))}
-        </div>
-      )}
+      <TrackSection
+        title="Shared With You"
+        tracks={sharedTracks}
+        isLoading={isLoadingSharedTracks}
+        error={sharedTracksError}
+      />
+
+      <TrackSection
+        title="Public Tracks"
+        tracks={publicTracks}
+        isLoading={isLoadingPublicTracks}
+        error={publicTracksError}
+      />
     </div>
   );
 }

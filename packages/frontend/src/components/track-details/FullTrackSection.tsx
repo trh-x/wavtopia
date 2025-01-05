@@ -15,16 +15,18 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         <WaveformDisplay
           waveformData={track.waveformData}
           height={96}
-          audioUrl={getAudioUrl(`/api/tracks/${track.id}/full.mp3`)}
+          audioUrl={getAudioUrl(`/api/track/${track.id}/full.mp3`)}
           isFullTrack={true}
         />
       </div>
       <div className="mt-4 flex flex-wrap gap-4">
-        <DownloadLink href={`/api/tracks/${track.id}/original`}>
+        <DownloadLink href={`/api/track/${track.id}/original`}>
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
-        <DownloadLink href={`/api/tracks/${track.id}/full`}>WAV</DownloadLink>
-        <DownloadLink href={`/api/tracks/${track.id}/full.mp3`}>
+        <DownloadLink href={`/api/track/${track.id}/full.wav`}>
+          WAV
+        </DownloadLink>
+        <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
           MP3
         </DownloadLink>
       </div>

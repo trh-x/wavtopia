@@ -45,13 +45,13 @@ export function ComponentDownloadButtons({
   return (
     <div className="space-x-2">
       <DownloadLink
-        href={`/api/tracks/${trackId}/component/${componentId}.wav`}
+        href={`/api/track/${trackId}/component/${componentId}.wav`}
         small
       >
         WAV
       </DownloadLink>
       <DownloadLink
-        href={`/api/tracks/${trackId}/component/${componentId}.mp3`}
+        href={`/api/track/${trackId}/component/${componentId}.mp3`}
         small
       >
         MP3

@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { Track } from "@/types";
 import { useState } from "react";
 import { PlaybackProvider } from "../contexts/PlaybackContext";
 import { useAuthToken } from "../hooks/useAuthToken";
@@ -11,11 +10,16 @@ import { ViewMode } from "../components/track-details/ViewModeToggle";
 import { LoadingState } from "../components/ui/LoadingState";
 import { ErrorState } from "../components/ui/ErrorState";
 import { api } from "../api/client";
+import { TrackSharingControls } from "../components/track-details/TrackSharingControls";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { getToken } = useAuthToken();
+  const { user } = useAuth();
+
+  const token = getToken();
 
   const {
     data: track,
@@ -24,7 +28,7 @@ export function TrackDetails() {
     refetch,
   } = useQuery({
     queryKey: ["track", id],
-    queryFn: () => api.tracks.get(id!, getToken()!),
+    queryFn: () => api.track.get(id!, token),
     enabled: !!id,
   });
 
@@ -55,6 +59,11 @@ export function TrackDetails() {
           viewMode={viewMode}
           onViewModeChange={setViewMode}
         />
+
+        {/* If the current user doesn't own the track, don't render the sharing controls */}
+        {token && user && track.userId === user.id && (
+          <TrackSharingControls track={track} token={token} />
+        )}
       </div>
     </PlaybackProvider>
   );

@@ -1,65 +1,116 @@
-import { useAuthToken } from "../hooks/useAuthToken";
+import { Track, User } from "../types";
 
-class ApiError extends Error {
-  constructor(public statusCode: number, message: string) {
-    super(message);
-    this.name = "ApiError";
-  }
+const API_URL = "/api";
+
+interface FetchOptions extends RequestInit {
+  token?: string | null;
+  contentType?: string;
 }
 
-async function handleResponse(response: Response) {
-  const data = await response.json();
+const apiRequest = async (endpoint: string, options: FetchOptions = {}) => {
+  const { token, contentType, headers: customHeaders = {}, ...rest } = options;
+
+  const headers = new Headers(customHeaders);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (contentType) {
+    headers.set("Content-Type", contentType);
+  }
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    headers,
+    ...rest,
+  });
+
   if (!response.ok) {
-    throw new ApiError(response.status, data.message || "An error occurred");
+    throw new Error(`API request failed: ${response.statusText}`);
   }
-  return data;
-}
+
+  return response.json();
+};
 
 export const api = {
   auth: {
     login: async (email: string, password: string) => {
-      const response = await fetch("/api/auth/login", {
+      return apiRequest("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        contentType: "application/json",
         body: JSON.stringify({ email, password }),
       });
-      return handleResponse(response);
     },
+
     register: async (email: string, username: string, password: string) => {
-      const response = await fetch("/api/auth/signup", {
+      return apiRequest("/auth/signup", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        contentType: "application/json",
         body: JSON.stringify({ email, username, password }),
       });
-      return handleResponse(response);
     },
+
     me: async (token: string) => {
-      const response = await fetch("/api/auth/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return handleResponse(response);
+      return apiRequest("/auth/me", { token });
     },
   },
+
+  track: {
+    get: async (id: string, token: string | null) => {
+      return apiRequest(`/track/${id}`, { token }) as Promise<Track>;
+    },
+
+    share: async (id: string, userIds: string[], token: string) => {
+      return apiRequest(`/track/${id}/share`, {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ userIds }),
+      });
+    },
+
+    unshare: async (id: string, userIds: string[], token: string) => {
+      return apiRequest(`/track/${id}/share`, {
+        method: "DELETE",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ userIds }),
+      });
+    },
+
+    updateVisibility: async (id: string, isPublic: boolean, token: string) => {
+      return apiRequest(`/track/${id}/visibility`, {
+        method: "PATCH",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ isPublic }),
+      }) as Promise<Track>;
+    },
+
+    upload: async (formData: FormData, token: string) => {
+      return apiRequest("/track", {
+        method: "POST",
+        token,
+        body: formData,
+      }) as Promise<Track>;
+    },
+  },
+
   tracks: {
     list: async (token: string) => {
-      const response = await fetch("/api/tracks", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return handleResponse(response);
+      return apiRequest("/tracks", { token }) as Promise<Track[]>;
     },
-    get: async (id: string, token: string) => {
-      const response = await fetch(`/api/tracks/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return handleResponse(response);
+
+    listPublic: async () => {
+      return apiRequest("/tracks/public") as Promise<Track[]>;
     },
-    upload: async (formData: FormData, token: string) => {
-      const response = await fetch("/api/tracks", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      return handleResponse(response);
+
+    listShared: async (token: string) => {
+      return apiRequest("/tracks/shared", { token }) as Promise<Track[]>;
+    },
+  },
+
+  users: {
+    list: async (token: string) => {
+      return apiRequest("/auth/users", { token }) as Promise<User[]>;
     },
   },
 };

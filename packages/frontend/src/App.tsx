@@ -32,22 +32,8 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <Home />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/track/:id"
-          element={
-            <PrivateRoute>
-              <TrackDetails />
-            </PrivateRoute>
-          }
-        />
+        <Route path="/" element={<Home />} />
+        <Route path="/track/:id" element={<TrackDetails />} />
         <Route
           path="/upload"
           element={
