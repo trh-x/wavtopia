@@ -20,6 +20,7 @@ export async function canAccessTrack(trackId: string, userId?: string) {
   );
 }
 
+// TODO: Remove this unused middleware. Maybe copy its "store track for later use" logic to the authenticateTrackAccess middleware.
 export function requireTrackAccess(options: { allowPublic?: boolean } = {}) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {

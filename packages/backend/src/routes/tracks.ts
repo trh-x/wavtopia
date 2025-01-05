@@ -56,43 +56,100 @@ const authenticateTrackAccess: RequestHandler = async (
       return next(new AppError(400, "Track ID is required"));
     }
 
+    console.log("Authenticating track access for track:", trackId);
+
     // First check if track is public
     const track = await prisma.track.findUnique({
       where: { id: trackId },
+      include: { sharedWith: true },
     });
 
     if (!track) {
       return next(new AppError(404, "Track not found"));
     }
 
-    if (track.isPublic) {
-      return next();
-    }
-
-    // If not public, validate token
-    const token =
-      (req.query.token as string) || req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return next(new AppError(401, "No token provided"));
-    }
-
-    try {
-      const decoded = verifyToken(token);
-      req.user = {
-        id: decoded.userId,
-        role: decoded.role,
-      };
-
-      // Check if user has access to track
-      const hasAccess = await canAccessTrack(trackId, decoded.userId);
-      if (!hasAccess) {
-        return next(new AppError(403, "You don't have access to this track"));
+    if (!track.isPublic) {
+      // If track is not public, validate token and check if user has access to track
+      const token =
+        (req.query.token as string) || req.headers.authorization?.split(" ")[1];
+      if (!token) {
+        return next(new AppError(401, "No token provided"));
       }
 
-      next();
-    } catch (error) {
-      next(new AppError(401, "Invalid token"));
+      try {
+        const decoded = verifyToken(token);
+
+        // Check if user has access to track
+        const hasAccess =
+          track.userId === decoded.userId ||
+          track.sharedWith.some((share) => share.userId === decoded.userId);
+
+        if (!hasAccess) {
+          return next(new AppError(403, "You don't have access to this track"));
+        }
+
+        req.user = {
+          id: decoded.userId,
+          role: decoded.role,
+        };
+      } catch (error) {
+        return next(new AppError(401, "Invalid token"));
+      }
     }
+
+    // Store the track in the request for later use
+    const reqTrack = await prisma.track.findUnique({
+      where: { id: trackId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+          },
+        },
+        components: true,
+        sharedWith: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!reqTrack) {
+      return next(new AppError(404, "Track not found"));
+    }
+
+    // Only allow access to certain fields for public tracks when user is not authenticated
+    if (reqTrack.isPublic && !req.user) {
+      const publicTrack = {
+        id: reqTrack.id,
+        title: reqTrack.title,
+        artist: reqTrack.artist,
+        coverArt: reqTrack.coverArt,
+        isPublic: reqTrack.isPublic,
+        fullTrackUrl: reqTrack.fullTrackUrl,
+        fullTrackMp3Url: reqTrack.fullTrackMp3Url,
+        originalFormat: reqTrack.originalFormat,
+        waveformData: reqTrack.waveformData,
+        components: reqTrack.components,
+        user: reqTrack.user,
+        createdAt: reqTrack.createdAt,
+        updatedAt: reqTrack.updatedAt,
+      };
+      (req as any).track = publicTrack; // TODO: Fix this `any`
+    } else {
+      (req as any).track = track; // TODO: Fix this `any`
+    }
+
+    next();
   } catch (error) {
     next(error);
   }
@@ -243,24 +300,18 @@ router.get("/public", async (req: Request, res: Response) => {
   res.json(publicTracks);
 });
 
+// Get single track
+router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
+  try {
+    const track = (req as any).track;
+    res.json(track);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Apply authentication middleware for all other routes
 router.use(authenticate);
-
-// Shared function for token authentication
-async function authenticateWithToken(req: AuthenticatedRequest, res: Response) {
-  const token = req.query.token as string;
-  if (!token) {
-    throw new AppError(401, "No token provided");
-  }
-
-  req.headers.authorization = `Bearer ${token}`;
-  await new Promise<void>((resolve, reject) => {
-    authenticate(req, res, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-}
 
 // Get all tracks
 router.get("/", async (req, res, next) => {
@@ -327,56 +378,6 @@ router.get(
     }
   }
 );
-
-// Get single track
-router.get("/:id", async (req, res, next) => {
-  try {
-    const track = await prisma.track.findFirst({
-      where: {
-        id: req.params.id,
-        OR: [
-          { userId: req.user!.id }, // User's own track
-          {
-            sharedWith: {
-              some: {
-                userId: req.user!.id,
-              },
-            },
-          }, // Track shared with user
-        ],
-      },
-      include: {
-        components: true,
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-          },
-        },
-        sharedWith: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!track) {
-      throw new AppError(404, "Track not found");
-    }
-
-    res.json(track);
-  } catch (error) {
-    next(error);
-  }
-});
 
 // Create track with files
 router.post("/", uploadTrackFiles, async (req, res, next) => {
