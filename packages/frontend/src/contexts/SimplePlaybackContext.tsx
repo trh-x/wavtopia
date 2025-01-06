@@ -1,5 +1,6 @@
-import { createContext, useContext, useRef, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import WaveSurfer from "wavesurfer.js";
+import { useBasePlayback } from "./useBasePlayback";
 
 interface SimplePlaybackContextType {
   isAnyPlaying: boolean;
@@ -15,24 +16,15 @@ const SimplePlaybackContext = createContext<SimplePlaybackContextType | null>(
 );
 
 export function SimplePlaybackProvider({ children }: { children: ReactNode }) {
-  const [isAnyPlaying, setIsAnyPlaying] = useState(false);
-  const activeWaveformsRef = useRef<Set<WaveSurfer>>(new Set());
-  const playingWaveformsRef = useRef<Set<WaveSurfer>>(new Set());
-
-  const registerWaveform = (wavesurfer: WaveSurfer) => {
-    console.log("Registering waveform in simple context");
-    activeWaveformsRef.current.add(wavesurfer);
-  };
-
-  const unregisterWaveform = (wavesurfer: WaveSurfer) => {
-    console.log("Unregistering waveform from simple context");
-    activeWaveformsRef.current.delete(wavesurfer);
-    playingWaveformsRef.current.delete(wavesurfer);
-
-    if (playingWaveformsRef.current.size === 0) {
-      setIsAnyPlaying(false);
-    }
-  };
+  const {
+    isAnyPlaying,
+    setIsAnyPlaying,
+    playingWaveformsRef,
+    registerWaveform: baseRegisterWaveform,
+    unregisterWaveform,
+    stopPlayback,
+    stopAll,
+  } = useBasePlayback(false);
 
   const startPlayback = (wavesurfer: WaveSurfer) => {
     console.log("Starting playback in simple context");
@@ -50,30 +42,11 @@ export function SimplePlaybackProvider({ children }: { children: ReactNode }) {
     setIsAnyPlaying(true);
   };
 
-  const stopPlayback = (wavesurfer: WaveSurfer) => {
-    console.log("Stopping playback in simple context");
-    playingWaveformsRef.current.delete(wavesurfer);
-    wavesurfer.pause();
-
-    if (playingWaveformsRef.current.size === 0) {
-      setIsAnyPlaying(false);
-    }
-  };
-
-  const stopAll = () => {
-    console.log("Stopping all playback in simple context");
-    playingWaveformsRef.current.forEach((wavesurfer) => {
-      wavesurfer.pause();
-    });
-    playingWaveformsRef.current.clear();
-    setIsAnyPlaying(false);
-  };
-
   return (
     <SimplePlaybackContext.Provider
       value={{
         isAnyPlaying,
-        registerWaveform,
+        registerWaveform: (wavesurfer) => baseRegisterWaveform(wavesurfer),
         unregisterWaveform,
         startPlayback,
         stopPlayback,
