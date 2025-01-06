@@ -2,8 +2,11 @@ import { Link } from "react-router-dom";
 import { Track } from "../../types";
 import { LoadingState } from "../ui/LoadingState";
 import { ErrorState } from "../ui/ErrorState";
+import { useAuthToken } from "@/hooks/useAuthToken";
 
 export function TrackList({ tracks }: { tracks: Track[] }) {
+  const { appendTokenToUrl } = useAuthToken();
+
   if (!tracks?.length)
     return <div className="text-gray-500">No tracks found</div>;
 
@@ -18,7 +21,7 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
           <div className="flex items-center space-x-4">
             {track.coverArt && (
               <img
-                src={track.coverArt}
+                src={appendTokenToUrl(`/api/track/${track.id}/cover`)}
                 alt={`${track.title} cover art`}
                 className="h-16 w-16 rounded object-cover"
               />
