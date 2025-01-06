@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useMemo } from "react";
-import WaveSurfer from "wavesurfer.js";
+import { useEffect } from "react";
 import { useSimplePlayback } from "../../contexts/SimplePlaybackContext";
+import { useBaseWaveform } from "../../hooks/useBaseWaveform";
 
 interface SimpleWaveformDisplayProps {
   waveformData: number[];
@@ -17,120 +17,39 @@ export function SimpleWaveformDisplay({
   color = "#1f2937",
   progressColor = "#4f46e5",
 }: SimpleWaveformDisplayProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const wavesurferRef = useRef<WaveSurfer | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const { registerWaveform, unregisterWaveform, startPlayback, stopPlayback } =
     useSimplePlayback();
 
-  // Memoize the initial configuration to prevent unnecessary recreations
-  const initialConfig = useMemo(
-    () => ({
-      container: containerRef.current,
+  const { containerRef, wavesurferRef, state, setupWaveSurfer } =
+    useBaseWaveform({
+      waveformData,
+      audioUrl,
       height,
-      waveColor: color,
+      color,
       progressColor,
-      normalize: true,
-      interact: true,
-      cursorWidth: 1,
-      barWidth: 2,
-      barGap: 1,
-      barRadius: 2,
-      fillParent: true,
-      minPxPerSec: 1,
-      backend: "WebAudio" as const,
-      peaks: [new Float32Array(waveformData)],
-      url: audioUrl,
-      autoplay: false,
-    }),
-    [audioUrl]
-  );
+    });
 
   // Initialize WaveSurfer instance
   useEffect(() => {
-    if (!containerRef.current || !waveformData?.length) return;
-
-    // Only create if we don't have an instance
-    if (!wavesurferRef.current) {
-      const wavesurfer = WaveSurfer.create({
-        ...initialConfig,
-        container: containerRef.current,
-      });
-
-      wavesurfer.on("loading", () => {
-        setIsLoading(true);
-      });
-
-      wavesurfer.on("ready", () => {
-        setIsLoading(false);
-        setIsReady(true);
+    const cleanup = setupWaveSurfer(
+      // onReady
+      (wavesurfer) => {
         registerWaveform(wavesurfer);
-      });
-
-      wavesurfer.on("play", () => {
-        setIsPlaying(true);
-      });
-
-      wavesurfer.on("pause", () => {
-        setIsPlaying(false);
-      });
-
-      wavesurfer.on("finish", () => {
-        setIsPlaying(false);
-        stopPlayback(wavesurfer);
-      });
-
-      wavesurfer.on("error", (error) => {
-        console.error("WaveSurfer error:", error);
-        setIsLoading(false);
-        setIsReady(false);
-      });
-
-      wavesurferRef.current = wavesurfer;
-    }
-
-    // Cleanup on unmount
-    return () => {
-      const wavesurfer = wavesurferRef.current;
-      if (wavesurfer) {
-        // Only cleanup if we're actually unmounting, not just re-rendering
-        if (!document.body.contains(containerRef.current)) {
-          unregisterWaveform(wavesurfer);
-          wavesurfer.destroy();
-          wavesurferRef.current = null;
-        }
+      },
+      // onDestroy
+      (wavesurfer) => {
+        unregisterWaveform(wavesurfer);
       }
-    };
-  }, [initialConfig]);
+    );
 
-  // Update WaveSurfer options when props change
-  useEffect(() => {
-    const currentWavesurfer = wavesurferRef.current;
-    if (!currentWavesurfer) return;
-
-    currentWavesurfer.setOptions({
-      height,
-      waveColor: color,
-      progressColor,
-    });
-  }, [height, color, progressColor]);
-
-  // Handle waveform data changes
-  useEffect(() => {
-    const currentWavesurfer = wavesurferRef.current;
-    if (!currentWavesurfer || !waveformData?.length) return;
-
-    const peaks = new Float32Array(waveformData);
-    currentWavesurfer.setOptions({ peaks: [peaks] });
-  }, [waveformData]);
+    return cleanup;
+  }, [audioUrl]);
 
   const handlePlayPause = async () => {
-    if (!wavesurferRef.current || !isReady) return;
+    if (!wavesurferRef.current || !state.isReady) return;
 
     try {
-      if (isPlaying) {
+      if (state.isPlaying) {
         stopPlayback(wavesurferRef.current);
       } else {
         startPlayback(wavesurferRef.current);
@@ -144,7 +63,7 @@ export function SimpleWaveformDisplay({
     <div className="flex items-center gap-4">
       <button
         onClick={handlePlayPause}
-        disabled={isLoading || !isReady}
+        disabled={state.isLoading || !state.isReady}
         className={`
           flex-shrink-0
           p-2.5 rounded-full 
@@ -152,15 +71,15 @@ export function SimpleWaveformDisplay({
           transition-all duration-200
           border
           ${
-            isLoading || !isReady
+            state.isLoading || !state.isReady
               ? "cursor-not-allowed opacity-50 border-gray-200"
-              : isPlaying
+              : state.isPlaying
               ? "bg-blue-50 hover:bg-blue-100 border-blue-200"
               : "opacity-70 bg-red-50 hover:bg-red-100 border-red-200"
           }
         `}
       >
-        {isLoading ? (
+        {state.isLoading ? (
           <svg
             className="w-5 h-5 animate-spin text-gray-600"
             viewBox="0 0 24 24"
@@ -180,7 +99,7 @@ export function SimpleWaveformDisplay({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-        ) : isPlaying ? (
+        ) : state.isPlaying ? (
           <svg
             className="w-5 h-5 text-blue-600"
             fill="none"
@@ -212,7 +131,7 @@ export function SimpleWaveformDisplay({
       </button>
       <div
         ref={containerRef}
-        className={`flex-grow ${isPlaying ? "" : "opacity-70"}`}
+        className={`flex-grow ${state.isPlaying ? "" : "opacity-70"}`}
         style={{ minHeight: `${height}px` }}
       />
     </div>
