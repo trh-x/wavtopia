@@ -52,6 +52,7 @@ export function TrackDetails() {
           title={track.title}
           artist={track.artist}
           coverArt={track.coverArt}
+          trackId={track.id}
         />
         <FullTrackSection track={track} />
         <ComponentsSection
