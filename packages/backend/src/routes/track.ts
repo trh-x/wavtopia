@@ -161,6 +161,39 @@ router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
   }
 });
 
+// Get cover art file (before auth middleware)
+router.get(
+  "/:id/cover",
+  authenticateTrackAccess,
+  async (req: Request, res: Response, next) => {
+    try {
+      const track = (req as any).track; // TODO: Fix this `any`
+      if (!track.coverArt) {
+        throw new AppError(404, "Cover art not found");
+      }
+
+      // Get file extension and determine mime type
+      const ext = track.coverArt.split(".").pop()?.toLowerCase();
+      const mimeTypes: { [key: string]: string } = {
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        gif: "image/gif",
+        webp: "image/webp",
+        svg: "image/svg+xml",
+      };
+      const contentType = mimeTypes[ext || ""] || "application/octet-stream";
+
+      // Stream the file directly from MinIO
+      const fileStream = await minioClient.getObject(bucket, track.coverArt);
+      res.setHeader("Content-Type", contentType);
+      fileStream.pipe(res);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Get track component file (before auth middleware)
 router.get(
   "/:id/component/:componentId.:format",
