@@ -11,7 +11,10 @@ import WaveSurfer from "wavesurfer.js";
 export interface PlaybackContextType {
   globalPlaybackTime: number;
   isAnyPlaying: boolean;
-  registerWaveform: (wavesurfer: WaveSurfer, isFullTrack: boolean) => void;
+  registerWaveform: (
+    wavesurfer: WaveSurfer,
+    options: { isFullTrack: boolean }
+  ) => void;
   unregisterWaveform: (wavesurfer: WaveSurfer) => void;
   startPlayback: (wavesurfer: WaveSurfer) => void;
   stopPlayback: (wavesurfer: WaveSurfer) => void;
@@ -65,7 +68,10 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
     }
   }, [globalPlaybackTime]);
 
-  const registerWaveform = (wavesurfer: WaveSurfer, isFullTrack: boolean) => {
+  const registerWaveform = (
+    wavesurfer: WaveSurfer,
+    { isFullTrack }: { isFullTrack: boolean }
+  ) => {
     console.log(
       "Registering waveform",
       isFullTrack ? "full track" : "component"

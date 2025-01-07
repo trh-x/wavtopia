@@ -81,7 +81,7 @@ export function WaveformDisplay({
       wavesurfer.on("ready", () => {
         setIsLoading(false);
         setIsReady(true);
-        registerWaveform(wavesurfer, isFullTrack);
+        registerWaveform(wavesurfer, { isFullTrack });
       });
 
       wavesurfer.on("play", () => {
