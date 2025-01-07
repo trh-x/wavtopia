@@ -44,7 +44,15 @@ export function TrackListPlaybackProvider({
   };
 
   const stopPlayback = (ws: WaveSurfer) => ws.pause();
-  const stopAll = () => {};
+
+  const stopAll = () => {
+    waveformsRef.current.forEach((waveform) => {
+      if (waveform.isPlaying()) {
+        waveform.pause();
+      }
+    });
+  };
+
   const isMuted = () => false;
   const soloComponent = () => {};
   const isSoloed = () => false;

@@ -26,6 +26,7 @@ export function TrackListWaveform({
       height={height}
       color={color}
       progressColor={progressColor}
+      isFullTrack={true}
     />
   );
 }
