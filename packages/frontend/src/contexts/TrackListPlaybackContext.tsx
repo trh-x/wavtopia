@@ -43,12 +43,20 @@ export function TrackListPlaybackProvider({
     ws.play();
   };
 
-  const stopPlayback = (ws: WaveSurfer) => ws.pause();
+  const stopPlayback = (ws: WaveSurfer) => {
+    if (ws.isPlaying()) {
+      ws.pause();
+    } else {
+      ws.seekTo(0);
+    }
+  };
 
   const stopAll = () => {
     waveformsRef.current.forEach((waveform) => {
       if (waveform.isPlaying()) {
         waveform.pause();
+      } else {
+        waveform.seekTo(0);
       }
     });
   };
