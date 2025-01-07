@@ -1,5 +1,5 @@
 import { Track } from "@/types";
-import { WaveformDisplay } from "../WaveformDisplay";
+import { SyncedWaveform } from "../waveform/SyncedWaveform";
 import { ComponentDownloadButtons } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
@@ -35,7 +35,7 @@ export function TrackComponent({
           componentId={component.id}
         />
       </div>
-      <WaveformDisplay
+      <SyncedWaveform
         waveformData={component.waveformData}
         height={isGridView ? 48 : 64}
         color="#4b5563"

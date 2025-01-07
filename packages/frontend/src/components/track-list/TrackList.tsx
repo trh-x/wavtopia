@@ -3,8 +3,8 @@ import { Track } from "../../types";
 import { LoadingState } from "../ui/LoadingState";
 import { ErrorState } from "../ui/ErrorState";
 import { useAuthToken } from "@/hooks/useAuthToken";
-import { WaveformDisplay } from "../WaveformDisplay";
-import { PlaybackProvider } from "@/contexts/PlaybackContext";
+import { TrackListWaveform } from "../waveform/TrackListWaveform";
+import { TrackListPlaybackProvider } from "@/contexts/TrackListPlaybackContext";
 
 export function TrackList({ tracks }: { tracks: Track[] }) {
   const { appendTokenToUrl } = useAuthToken();
@@ -13,7 +13,7 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
     return <div className="text-gray-500">No tracks found</div>;
 
   return (
-    <PlaybackProvider>
+    <TrackListPlaybackProvider>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tracks.map((track) => (
           <div
@@ -40,18 +40,17 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
                 </div>
               </div>
             </Link>
-            <WaveformDisplay
+            <TrackListWaveform
               waveformData={track.waveformData}
               audioUrl={appendTokenToUrl(`/api/track/${track.id}/full.mp3`)}
               height={48}
               color="#4b5563"
               progressColor="#6366f1"
-              isFullTrack={true}
             />
           </div>
         ))}
       </div>
-    </PlaybackProvider>
+    </TrackListPlaybackProvider>
   );
 }
 

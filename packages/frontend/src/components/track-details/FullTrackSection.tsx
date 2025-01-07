@@ -1,5 +1,5 @@
 import { Track } from "@/types";
-import { WaveformDisplay } from "../WaveformDisplay";
+import { SyncedWaveform } from "../waveform/SyncedWaveform";
 import { DownloadLink } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
@@ -12,7 +12,7 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
   return (
     <div className={styles.container.section}>
       <div className={styles.container.card}>
-        <WaveformDisplay
+        <SyncedWaveform
           waveformData={track.waveformData}
           height={96}
           audioUrl={getAudioUrl(`/api/track/${track.id}/full.mp3`)}

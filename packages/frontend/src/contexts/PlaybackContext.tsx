@@ -8,7 +8,7 @@ import {
 } from "react";
 import WaveSurfer from "wavesurfer.js";
 
-interface PlaybackContextType {
+export interface PlaybackContextType {
   globalPlaybackTime: number;
   isAnyPlaying: boolean;
   registerWaveform: (wavesurfer: WaveSurfer, isFullTrack: boolean) => void;

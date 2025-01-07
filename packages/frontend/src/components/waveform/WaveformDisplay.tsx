@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import WaveSurfer from "wavesurfer.js";
-import { usePlayback } from "../contexts/PlaybackContext";
+import { TrackListPlaybackContextType } from "@/contexts/TrackListPlaybackContext";
+import { PlaybackContextType } from "@/contexts/PlaybackContext";
 
 interface WaveformDisplayProps {
+  context: TrackListPlaybackContextType | PlaybackContextType;
   waveformData: number[];
   audioUrl: string;
   height?: number;
@@ -12,6 +14,7 @@ interface WaveformDisplayProps {
 }
 
 export function WaveformDisplay({
+  context,
   waveformData,
   audioUrl,
   height = 128,
@@ -24,6 +27,7 @@ export function WaveformDisplay({
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+
   const {
     registerWaveform,
     unregisterWaveform,
@@ -33,7 +37,7 @@ export function WaveformDisplay({
     isMuted,
     soloComponent,
     isSoloed,
-  } = usePlayback();
+  } = context;
 
   // Memoize the initial configuration to prevent unnecessary recreations
   const initialConfig = useMemo(
