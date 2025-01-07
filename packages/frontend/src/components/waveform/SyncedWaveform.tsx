@@ -1,4 +1,4 @@
-import { usePlayback } from "@/contexts/PlaybackContext";
+import { useSyncedPlayback } from "@/contexts/SyncedPlaybackContext";
 import { WaveformDisplay } from "./WaveformDisplay";
 
 interface SyncedWaveformProps {
@@ -18,7 +18,7 @@ export function SyncedWaveform({
   progressColor = "#4f46e5",
   isFullTrack = false,
 }: SyncedWaveformProps) {
-  const playbackContext = usePlayback();
+  const playbackContext = useSyncedPlayback();
 
   return (
     <WaveformDisplay

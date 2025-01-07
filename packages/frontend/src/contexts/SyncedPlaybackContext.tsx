@@ -8,7 +8,7 @@ import {
 } from "react";
 import WaveSurfer from "wavesurfer.js";
 
-export interface PlaybackContextType {
+export interface SyncedPlaybackContextType {
   globalPlaybackTime: number;
   isAnyPlaying: boolean;
   registerWaveform: (
@@ -24,7 +24,9 @@ export interface PlaybackContextType {
   isSoloed: (wavesurfer: WaveSurfer) => boolean;
 }
 
-const PlaybackContext = createContext<PlaybackContextType | null>(null);
+const SyncedPlaybackContext = createContext<SyncedPlaybackContextType | null>(
+  null
+);
 
 interface WaveformInfo {
   wavesurfer: WaveSurfer;
@@ -33,7 +35,7 @@ interface WaveformInfo {
   isSoloed: boolean;
 }
 
-export function PlaybackProvider({ children }: { children: ReactNode }) {
+export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
   const [isAnyPlaying, setIsAnyPlaying] = useState(false);
   const [globalPlaybackTime, setGlobalPlaybackTime] = useState(0);
   const activeWaveformsRef = useRef<Map<WaveSurfer, WaveformInfo>>(new Map());
@@ -292,7 +294,7 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <PlaybackContext.Provider
+    <SyncedPlaybackContext.Provider
       value={{
         globalPlaybackTime,
         isAnyPlaying,
@@ -307,14 +309,16 @@ export function PlaybackProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </PlaybackContext.Provider>
+    </SyncedPlaybackContext.Provider>
   );
 }
 
-export function usePlayback() {
-  const context = useContext(PlaybackContext);
+export function useSyncedPlayback() {
+  const context = useContext(SyncedPlaybackContext);
   if (!context) {
-    throw new Error("usePlayback must be used within a PlaybackProvider");
+    throw new Error(
+      "useSyncedPlayback must be used within a SyncedPlaybackProvider"
+    );
   }
   return context;
 }

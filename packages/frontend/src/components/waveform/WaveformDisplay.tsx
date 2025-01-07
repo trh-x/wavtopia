@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import WaveSurfer from "wavesurfer.js";
 import { TrackListPlaybackContextType } from "@/contexts/TrackListPlaybackContext";
-import { PlaybackContextType } from "@/contexts/PlaybackContext";
+import { SyncedPlaybackContextType } from "@/contexts/SyncedPlaybackContext";
 
 interface WaveformDisplayProps {
-  context: TrackListPlaybackContextType | PlaybackContextType;
+  context: TrackListPlaybackContextType | SyncedPlaybackContextType;
   waveformData: number[];
   audioUrl: string;
   height?: number;

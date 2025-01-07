@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useState } from "react";
-import { PlaybackProvider } from "../contexts/PlaybackContext";
+import { SyncedPlaybackProvider } from "../contexts/SyncedPlaybackContext";
 import { useAuthToken } from "../hooks/useAuthToken";
 import { TrackHeader } from "../components/track-details/TrackHeader";
 import { FullTrackSection } from "../components/track-details/FullTrackSection";
@@ -46,7 +46,7 @@ export function TrackDetails() {
   }
 
   return (
-    <PlaybackProvider>
+    <SyncedPlaybackProvider>
       <div>
         <TrackHeader
           title={track.title}
@@ -66,6 +66,6 @@ export function TrackDetails() {
           <TrackSharingControls track={track} token={token} />
         )}
       </div>
-    </PlaybackProvider>
+    </SyncedPlaybackProvider>
   );
 }
