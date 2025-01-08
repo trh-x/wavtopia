@@ -33,7 +33,6 @@ export function WaveformDisplay({
     unregisterWaveform,
     startPlayback,
     stopPlayback,
-    stopAll,
     isMuted,
     soloComponent,
     isSoloed,
@@ -260,7 +259,7 @@ export function WaveformDisplay({
         </button>
         {isFullTrack && (
           <button
-            onClick={stopAll}
+            onClick={() => stopPlayback(wavesurferRef.current!)}
             disabled={isLoading || !isReady}
             className={`
               flex-shrink-0
