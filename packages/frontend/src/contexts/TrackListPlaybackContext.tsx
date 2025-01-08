@@ -47,7 +47,11 @@ export function TrackListPlaybackProvider({
     if (ws.isPlaying()) {
       ws.pause();
     } else {
-      ws.seekTo(0);
+      if (ws.getCurrentTime() === 0) {
+        stopAll();
+      } else {
+        ws.seekTo(0);
+      }
     }
   };
 

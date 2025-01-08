@@ -213,14 +213,19 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     if (wavesurfer.isPlaying()) {
       wavesurfer.pause();
     } else {
-      wavesurfer.seekTo(0);
-      setGlobalPlaybackTime(0);
-      // Also reset all other waveforms to maintain sync
-      activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
-        if (otherWavesurfer !== wavesurfer) {
-          otherWavesurfer.seekTo(0);
-        }
-      });
+      // If already at start position, stop all playback
+      if (wavesurfer.getCurrentTime() === 0) {
+        stopAll();
+      } else {
+        wavesurfer.seekTo(0);
+        setGlobalPlaybackTime(0);
+        // Also reset all other waveforms to maintain sync
+        activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
+          if (otherWavesurfer !== wavesurfer) {
+            otherWavesurfer.seekTo(0);
+          }
+        });
+      }
     }
 
     // Update playing state and clear interval if no waveforms are playing
