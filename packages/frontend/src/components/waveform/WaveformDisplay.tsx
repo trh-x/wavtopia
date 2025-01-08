@@ -27,9 +27,6 @@ export function WaveformDisplay({
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [stopButtonState, setStopButtonState] = useState<
-    "playing" | "stopped" | "reset"
-  >("stopped");
 
   const {
     registerWaveform,
@@ -40,6 +37,7 @@ export function WaveformDisplay({
     isMuted,
     soloComponent,
     isSoloed,
+    triggerUpdate,
   } = context;
 
   const getCurrentTime = () => wavesurferRef.current?.getCurrentTime() ?? 0;
@@ -50,15 +48,7 @@ export function WaveformDisplay({
     } else {
       stopPlayback(wavesurferRef.current!);
     }
-
-    // Update button state based on current conditions
-    if (isPlaying) {
-      setStopButtonState("stopped");
-    } else if (getCurrentTime() === 0) {
-      setStopButtonState("reset");
-    } else {
-      setStopButtonState("playing");
-    }
+    triggerUpdate();
   };
 
   const getStopButtonTitle = () => {

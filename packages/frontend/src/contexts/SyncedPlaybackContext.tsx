@@ -23,6 +23,7 @@ export interface SyncedPlaybackContextType {
   isMuted: (wavesurfer: WaveSurfer) => boolean;
   soloComponent: (wavesurfer: WaveSurfer) => void;
   isSoloed: (wavesurfer: WaveSurfer) => boolean;
+  triggerUpdate: () => void;
 }
 
 const SyncedPlaybackContext = createContext<SyncedPlaybackContextType | null>(
@@ -323,6 +324,10 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     return info ? info.isSoloed : false;
   };
 
+  // Changes to force re-render when stop button is clicked
+  const [, setUpdateTrigger] = useState(false);
+  const triggerUpdate = () => setUpdateTrigger((prev) => !prev);
+
   return (
     <SyncedPlaybackContext.Provider
       value={{
@@ -337,6 +342,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
         isMuted,
         soloComponent,
         isSoloed,
+        triggerUpdate,
       }}
     >
       {children}

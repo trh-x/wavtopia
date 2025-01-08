@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 
 export interface TrackListPlaybackContextType {
@@ -11,6 +11,7 @@ export interface TrackListPlaybackContextType {
   isMuted: () => boolean;
   soloComponent: () => void;
   isSoloed: () => boolean;
+  triggerUpdate: () => void;
 }
 
 const TrackListPlaybackContext =
@@ -70,6 +71,10 @@ export function TrackListPlaybackProvider({
   const soloComponent = () => {};
   const isSoloed = () => false;
 
+  // Changes to force re-render when stop button is clicked
+  const [, setUpdateTrigger] = useState(false);
+  const triggerUpdate = () => setUpdateTrigger((prev) => !prev);
+
   return (
     <TrackListPlaybackContext.Provider
       value={{
@@ -82,6 +87,7 @@ export function TrackListPlaybackProvider({
         isMuted,
         soloComponent,
         isSoloed,
+        triggerUpdate,
       }}
     >
       {children}
