@@ -39,6 +39,19 @@ export function WaveformDisplay({
     isSoloed,
   } = context;
 
+  const getStopButtonTitle = () => {
+    if (isPlaying) {
+      return "Stop Playback";
+    }
+
+    const currentTime = wavesurferRef.current?.getCurrentTime();
+    if (currentTime === 0) {
+      return "Stop All Tracks";
+    }
+
+    return "Reset to Start";
+  };
+
   // Memoize the initial configuration to prevent unnecessary recreations
   const initialConfig = useMemo(
     () => ({
@@ -279,15 +292,7 @@ export function WaveformDisplay({
                   : "bg-red-50 hover:bg-red-100 border-red-200"
               }
             `}
-            title={
-              context.type === "synced"
-                ? isPlaying
-                  ? "Stop Playback"
-                  : wavesurferRef.current?.getCurrentTime() === 0
-                  ? "Stop All Tracks"
-                  : "Reset to Start"
-                : "Stop Playback"
-            }
+            title={getStopButtonTitle()}
           >
             <svg
               className="w-5 h-5 text-red-500"
