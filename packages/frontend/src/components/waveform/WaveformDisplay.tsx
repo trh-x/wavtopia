@@ -33,10 +33,69 @@ export function WaveformDisplay({
     unregisterWaveform,
     startPlayback,
     stopPlayback,
+    stopAll,
     isMuted,
     soloComponent,
     isSoloed,
+    triggerUpdate,
   } = context;
+
+  const getCurrentTime = () => wavesurferRef.current?.getCurrentTime() ?? 0;
+
+  const handleStopButton = () => {
+    if (context.type === "synced") {
+      stopAll();
+    } else {
+      stopPlayback(wavesurferRef.current!);
+    }
+    triggerUpdate();
+  };
+
+  const getStopButtonTitle = () => {
+    if (isPlaying) {
+      return "Stop Playback";
+    }
+
+    if (getCurrentTime() === 0) {
+      return context.type === "synced"
+        ? "" // Nothing to do in this state
+        : "Stop All Tracks";
+    }
+
+    return "Reset to Start";
+  };
+
+  const getStopButtonIcon = () => {
+    if (isPlaying) {
+      // Square stop icon
+      return <rect x="6" y="6" width="12" height="12" strokeWidth={2} />;
+    }
+
+    if (getCurrentTime() === 0) {
+      return context.type === "synced" ? (
+        // Square stop icon
+        <rect x="6" y="6" width="12" height="12" strokeWidth={2} />
+      ) : (
+        // Double square icon for stop all
+        <>
+          <rect x="4" y="4" width="8" height="8" strokeWidth={2} />
+          <rect x="12" y="12" width="8" height="8" strokeWidth={2} />
+        </>
+      );
+    }
+
+    // Reset/return to start icon
+    return (
+      <>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.333 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z"
+        />
+      </>
+    );
+  };
 
   // Memoize the initial configuration to prevent unnecessary recreations
   const initialConfig = useMemo(
@@ -259,7 +318,7 @@ export function WaveformDisplay({
         </button>
         {isFullTrack && (
           <button
-            onClick={() => stopPlayback(wavesurferRef.current!)}
+            onClick={handleStopButton}
             disabled={isLoading || !isReady}
             className={`
               flex-shrink-0
@@ -273,7 +332,7 @@ export function WaveformDisplay({
                   : "bg-red-50 hover:bg-red-100 border-red-200"
               }
             `}
-            title="Stop All Playback"
+            title={getStopButtonTitle()}
           >
             <svg
               className="w-5 h-5 text-red-500"
@@ -281,7 +340,7 @@ export function WaveformDisplay({
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <rect x="6" y="6" width="12" height="12" strokeWidth={2} />
+              {getStopButtonIcon()}
             </svg>
           </button>
         )}

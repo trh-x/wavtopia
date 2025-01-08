@@ -9,6 +9,7 @@ import {
 import WaveSurfer from "wavesurfer.js";
 
 export interface SyncedPlaybackContextType {
+  type: "synced";
   globalPlaybackTime: number;
   isAnyPlaying: boolean;
   registerWaveform: (
@@ -22,6 +23,7 @@ export interface SyncedPlaybackContextType {
   isMuted: (wavesurfer: WaveSurfer) => boolean;
   soloComponent: (wavesurfer: WaveSurfer) => void;
   isSoloed: (wavesurfer: WaveSurfer) => boolean;
+  triggerUpdate: () => void;
 }
 
 const SyncedPlaybackContext = createContext<SyncedPlaybackContextType | null>(
@@ -213,14 +215,19 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     if (wavesurfer.isPlaying()) {
       wavesurfer.pause();
     } else {
-      wavesurfer.seekTo(0);
-      setGlobalPlaybackTime(0);
-      // Also reset all other waveforms to maintain sync
-      activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
-        if (otherWavesurfer !== wavesurfer) {
-          otherWavesurfer.seekTo(0);
-        }
-      });
+      // If already at start position, stop all playback
+      if (wavesurfer.getCurrentTime() === 0) {
+        stopAll();
+      } else {
+        wavesurfer.seekTo(0);
+        setGlobalPlaybackTime(0);
+        // Also reset all other waveforms to maintain sync
+        activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
+          if (otherWavesurfer !== wavesurfer) {
+            otherWavesurfer.seekTo(0);
+          }
+        });
+      }
     }
 
     // Update playing state and clear interval if no waveforms are playing
@@ -317,9 +324,14 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     return info ? info.isSoloed : false;
   };
 
+  // Changes to force re-render when stop button is clicked
+  const [, setUpdateTrigger] = useState(false);
+  const triggerUpdate = () => setUpdateTrigger((prev) => !prev);
+
   return (
     <SyncedPlaybackContext.Provider
       value={{
+        type: "synced",
         globalPlaybackTime,
         isAnyPlaying,
         registerWaveform,
@@ -330,6 +342,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
         isMuted,
         soloComponent,
         isSoloed,
+        triggerUpdate,
       }}
     >
       {children}

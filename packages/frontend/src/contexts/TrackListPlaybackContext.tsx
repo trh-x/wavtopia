@@ -1,7 +1,8 @@
-import { createContext, useContext, useRef } from "react";
+import { createContext, useContext, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 
 export interface TrackListPlaybackContextType {
+  type: "tracklist";
   registerWaveform: (waveform: WaveSurfer) => void;
   unregisterWaveform: (waveform: WaveSurfer) => void;
   startPlayback: (ws: WaveSurfer) => void;
@@ -10,6 +11,7 @@ export interface TrackListPlaybackContextType {
   isMuted: () => boolean;
   soloComponent: () => void;
   isSoloed: () => boolean;
+  triggerUpdate: () => void;
 }
 
 const TrackListPlaybackContext =
@@ -47,7 +49,11 @@ export function TrackListPlaybackProvider({
     if (ws.isPlaying()) {
       ws.pause();
     } else {
-      ws.seekTo(0);
+      if (ws.getCurrentTime() === 0) {
+        stopAll();
+      } else {
+        ws.seekTo(0);
+      }
     }
   };
 
@@ -65,9 +71,14 @@ export function TrackListPlaybackProvider({
   const soloComponent = () => {};
   const isSoloed = () => false;
 
+  // Changes to force re-render when stop button is clicked
+  const [, setUpdateTrigger] = useState(false);
+  const triggerUpdate = () => setUpdateTrigger((prev) => !prev);
+
   return (
     <TrackListPlaybackContext.Provider
       value={{
+        type: "tracklist",
         registerWaveform,
         unregisterWaveform,
         startPlayback,
@@ -76,6 +87,7 @@ export function TrackListPlaybackProvider({
         isMuted,
         soloComponent,
         isSoloed,
+        triggerUpdate,
       }}
     >
       {children}
