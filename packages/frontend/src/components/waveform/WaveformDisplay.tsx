@@ -57,7 +57,9 @@ export function WaveformDisplay({
     }
 
     if (getCurrentTime() === 0) {
-      return "Stop All Tracks";
+      return context.type === "synced"
+        ? "" // Nothing to do in this state
+        : "Stop All Tracks";
     }
 
     return "Reset to Start";
@@ -70,8 +72,11 @@ export function WaveformDisplay({
     }
 
     if (getCurrentTime() === 0) {
-      // Double square icon for stop all
-      return (
+      return context.type === "synced" ? (
+        // Square stop icon
+        <rect x="6" y="6" width="12" height="12" strokeWidth={2} />
+      ) : (
+        // Double square icon for stop all
         <>
           <rect x="4" y="4" width="8" height="8" strokeWidth={2} />
           <rect x="12" y="12" width="8" height="8" strokeWidth={2} />
