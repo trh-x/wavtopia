@@ -2,6 +2,7 @@ import { createContext, useContext, useRef } from "react";
 import WaveSurfer from "wavesurfer.js";
 
 export interface TrackListPlaybackContextType {
+  type: "tracklist";
   registerWaveform: (waveform: WaveSurfer) => void;
   unregisterWaveform: (waveform: WaveSurfer) => void;
   startPlayback: (ws: WaveSurfer) => void;
@@ -72,6 +73,7 @@ export function TrackListPlaybackProvider({
   return (
     <TrackListPlaybackContext.Provider
       value={{
+        type: "tracklist",
         registerWaveform,
         unregisterWaveform,
         startPlayback,

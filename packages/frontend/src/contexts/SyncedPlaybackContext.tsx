@@ -9,6 +9,7 @@ import {
 import WaveSurfer from "wavesurfer.js";
 
 export interface SyncedPlaybackContextType {
+  type: "synced";
   globalPlaybackTime: number;
   isAnyPlaying: boolean;
   registerWaveform: (
@@ -325,6 +326,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
   return (
     <SyncedPlaybackContext.Provider
       value={{
+        type: "synced",
         globalPlaybackTime,
         isAnyPlaying,
         registerWaveform,

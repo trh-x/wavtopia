@@ -33,6 +33,7 @@ export function WaveformDisplay({
     unregisterWaveform,
     startPlayback,
     stopPlayback,
+    stopAll,
     isMuted,
     soloComponent,
     isSoloed,
@@ -259,7 +260,12 @@ export function WaveformDisplay({
         </button>
         {isFullTrack && (
           <button
-            onClick={() => stopPlayback(wavesurferRef.current!)}
+            onClick={
+              () =>
+                context.type === "synced"
+                  ? stopAll() // SyncedPlaybackContext
+                  : stopPlayback(wavesurferRef.current!) // TrackListPlaybackContext
+            }
             disabled={isLoading || !isReady}
             className={`
               flex-shrink-0
@@ -273,7 +279,15 @@ export function WaveformDisplay({
                   : "bg-red-50 hover:bg-red-100 border-red-200"
               }
             `}
-            title="Stop All Playback"
+            title={
+              context.type === "synced"
+                ? isPlaying
+                  ? "Stop Playback"
+                  : wavesurferRef.current?.getCurrentTime() === 0
+                  ? "Stop All Tracks"
+                  : "Reset to Start"
+                : "Stop Playback"
+            }
           >
             <svg
               className="w-5 h-5 text-red-500"
