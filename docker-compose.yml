@@ -24,6 +24,24 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  media:
+    build:
+      context: ./packages/media
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=wavtopia
+      - MINIO_SECRET_KEY=wavtopia123
+    volumes:
+      - media_tmp:/tmp
+    depends_on:
+      - minio
+
 volumes:
   postgres_data:
   minio_data:
+  media_tmp:
