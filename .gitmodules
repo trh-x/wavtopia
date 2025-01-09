@@ -1,0 +1,4 @@
+[submodule "packages/media/deps/milkytracker"]
+	path = packages/media/deps/milkytracker
+	url = https://github.com/trh-x/MilkyTracker.git
+	branch = trh/export-to-wav
