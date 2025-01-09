@@ -5,7 +5,6 @@ import {
   NextFunction,
   RequestHandler,
 } from "express";
-import { PrismaClient } from "@prisma/client";
 import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
 import { verifyToken } from "../services/auth";
@@ -17,9 +16,9 @@ import { z } from "zod";
 import { minioClient, bucket } from "../services/storage";
 import { Prisma, Role } from "@prisma/client";
 import { generateWaveformData } from "../services/waveform";
+import { prisma } from "../lib/prisma";
 
 // Extend Request type to include user property
-const prisma = new PrismaClient();
 const router = Router();
 
 // Schema for track creation/update

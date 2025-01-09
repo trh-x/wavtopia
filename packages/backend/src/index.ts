@@ -1,20 +1,12 @@
 import express from "express";
 import cors from "cors";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "./lib/prisma";
+import { errorHandler } from "./middleware/errorHandler";
+import { authRoutes } from "./routes/auth";
 import { trackRoutes } from "./routes/track";
 import { tracksRoutes } from "./routes/tracks";
-import { authRoutes } from "./routes/auth";
-import { errorHandler } from "./middleware/errorHandler";
 import { initializeStorage } from "./services/storage";
 import config from "./config";
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: config.database.url,
-    },
-  },
-});
 
 const app = express();
 
