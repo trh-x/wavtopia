@@ -1,6 +1,7 @@
 import { User, Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import { AppError } from "../middleware/errorHandler";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
