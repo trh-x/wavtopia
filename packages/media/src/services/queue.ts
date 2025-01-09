@@ -32,10 +32,18 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
   try {
     const { trackId } = job.data;
 
-    // First check if track is public
+    // First check if track exists
     const track = await prisma.track.findUnique({
       where: { id: trackId },
     });
+
+    if (!track) {
+      throw new Error(`Track not found: ${trackId}`);
+    }
+
+    if (!track.originalUrl) {
+      throw new Error(`Track ${trackId} has no original file URL`);
+    }
 
     const originalFile = await getLocalFile(track.originalUrl);
     const originalName = track.originalUrl.replace(/\.[^/.]+$/, "");
