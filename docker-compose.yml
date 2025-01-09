@@ -31,6 +31,8 @@ services:
     command: redis-server --appendonly yes
 
   media:
+    profiles:
+      - production
     build:
       context: .
       dockerfile: packages/media/Dockerfile

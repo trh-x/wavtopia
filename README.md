@@ -119,6 +119,41 @@ cd packages/frontend && pnpm dev
 cd packages/backend && pnpm dev
 ```
 
+### Docker Services
+
+The project uses Docker Compose to manage its service dependencies. You can start the services in different ways depending on your development needs:
+
+1. Start core services (for local development):
+
+```bash
+# This starts PostgreSQL, MinIO, and Redis
+docker-compose up -d
+```
+
+2. Start all services including the media service:
+
+```bash
+# This starts all services including the containerized media service
+docker-compose --profile production up -d
+```
+
+3. For local media service development:
+
+```bash
+# First, start the core services
+docker-compose up -d
+
+# Then run the media service locally
+cd packages/media && pnpm dev
+```
+
+The services will be available at:
+
+- PostgreSQL: localhost:5432
+- MinIO: localhost:9000 (API) and localhost:9001 (Console)
+- Redis: localhost:6379
+- Media Service: localhost:3001 (when running)
+
 The frontend will be available at http://localhost:5173
 The backend API will be available at http://localhost:3000
 The MinIO Console will be available at http://localhost:9001
