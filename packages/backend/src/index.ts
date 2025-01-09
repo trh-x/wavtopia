@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { prisma } from "./lib/prisma";
+import { prisma, prismaService } from "./lib/prisma";
 import { errorHandler } from "./middleware/errorHandler";
 import { authRoutes } from "./routes/auth";
 import { trackRoutes } from "./routes/track";
@@ -36,7 +36,7 @@ async function main() {
     console.log("Storage initialized");
 
     // Connect to database
-    await prisma.$connect();
+    await prismaService.connect();
     console.log("Connected to database");
 
     const server = app.listen(config.server.port, () => {
@@ -54,7 +54,7 @@ async function main() {
 main()
   .catch(console.error)
   .finally(async () => {
-    await prisma.$disconnect();
+    await prismaService.disconnect();
   });
 
 export { app };

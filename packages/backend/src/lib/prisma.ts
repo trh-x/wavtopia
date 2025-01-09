@@ -1,22 +1,19 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaService } from "@wavtopia/core-storage";
 import config from "../config";
 
 declare global {
-  var prisma: PrismaClient | undefined;
+  var prismaService: PrismaService | undefined;
 }
 
 // Prevent multiple instances of Prisma Client in development
-// due to hot reloading creating new instances
-export const prisma =
-  global.prisma ||
-  new PrismaClient({
-    datasources: {
-      db: {
-        url: config.database.url,
-      },
-    },
+export const prismaService =
+  global.prismaService ||
+  new PrismaService({
+    databaseUrl: config.database.url,
   });
 
+export const prisma = prismaService.db;
+
 if (process.env.NODE_ENV !== "production") {
-  global.prisma = prisma;
+  global.prismaService = prismaService;
 }
