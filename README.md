@@ -39,25 +39,21 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 
 ### export-to-wav Installation
 
-The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. Currently, this utility is only available in [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372). To install it:
+The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. This utility is included as a git submodule from [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372).
 
-1. Clone MilkyTracker and checkout the PR branch:
-
-```bash
-git clone https://github.com/trh-x/MilkyTracker.git
-cd MilkyTracker
-git checkout trh/export-to-wav
-```
-
-2. Build MilkyTracker with the export-to-wav utility:
+When cloning the repository, make sure to initialize the submodules:
 
 ```bash
-./build.sh
+# If cloning for the first time:
+git clone --recursive https://github.com/your-repo/wavtopia.git
+
+# If you've already cloned the repository:
+git submodule update --init --recursive
 ```
 
-3. The utility will be available at `build/src/tools/export-to-wav/export-to-wav`. Copy or symlink it to a location in your PATH (e.g., /usr/local/bin/).
+The media service's Dockerfile will automatically build and install the `export-to-wav` utility during container build.
 
-Note: This is hopefully a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
+Note: This is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
 
 ### Installation Steps
 
