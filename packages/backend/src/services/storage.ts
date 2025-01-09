@@ -44,11 +44,18 @@ export async function uploadFile(
 ): Promise<string> {
   try {
     const fileName = `${prefix}${Date.now()}-${file.originalname}`;
+    const metadata = {
+      "content-type": file.mimetype,
+      "content-length": file.buffer.length.toString(),
+      "original-filename": file.originalname,
+    };
+
     await minioClient.putObject(
       bucket,
       fileName,
       file.buffer,
-      file.buffer.length
+      undefined,
+      metadata
     );
 
     return fileName;
@@ -69,7 +76,11 @@ export async function deleteFile(fileName: string): Promise<void> {
 
 export async function getFileUrl(fileName: string): Promise<string> {
   try {
-    return await minioClient.presignedGetObject(bucket, fileName, 24 * 60 * 60); // 24 hour expiry
+    return await minioClient.presignedGetObject(
+      bucket,
+      fileName,
+      7 * 24 * 60 * 60
+    );
   } catch (error) {
     console.error("Failed to get file URL:", error);
     throw new AppError(500, "Failed to get file URL");
