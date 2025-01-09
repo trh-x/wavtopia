@@ -1,4 +1,4 @@
-import Queue from "bull";
+import Queue, { Job } from "bull";
 import { convertToWav } from "./converter";
 
 interface ConversionJob {
@@ -15,7 +15,7 @@ export const conversionQueue = new Queue<ConversionJob>("audio-conversion", {
 });
 
 // Process jobs
-conversionQueue.process(async (job) => {
+conversionQueue.process(async (job: Job<ConversionJob>) => {
   console.log(
     `Processing conversion job ${job.id} for file: ${job.data.originalName}`
   );
@@ -52,10 +52,10 @@ export const queueConversion = async (
 };
 
 // Event handlers for monitoring
-conversionQueue.on("completed", (job) => {
+conversionQueue.on("completed", (job: Job<ConversionJob>) => {
   console.log(`Job ${job.id} completed successfully`);
 });
 
-conversionQueue.on("failed", (job, error) => {
+conversionQueue.on("failed", (job: Job<ConversionJob>, error: Error) => {
   console.error(`Job ${job.id} failed:`, error);
 });

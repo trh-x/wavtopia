@@ -37,7 +37,7 @@ router.get("/status/:jobId", async (req, res, next) => {
     }
 
     const state = await job.getState();
-    const progress = job._progress;
+    const progress = job.progress;
 
     res.json({
       status: "success",

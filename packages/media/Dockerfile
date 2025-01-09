@@ -15,15 +15,14 @@ WORKDIR /app
 # Copy workspace files
 COPY pnpm-*.yaml ./
 COPY package.json ./
-
-# Copy the media service package
-COPY packages/media ./packages/media
-
-# Ensure .npmrc is used
-COPY packages/media/.npmrc ./packages/media/
+COPY packages/media/package.json ./packages/media/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
+
+# Copy source code
+COPY packages/media/src ./packages/media/src
+COPY packages/media/tsconfig.json ./packages/media/
 
 # Build TypeScript code
 RUN cd packages/media && pnpm build
