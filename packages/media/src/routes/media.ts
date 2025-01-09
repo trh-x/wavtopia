@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { convertToWav } from "../services/converter";
 import { AppError } from "../middleware/errorHandler";
 import { uploadHandler } from "../middleware/upload";
+import { queueConversion, conversionQueue } from "../services/queue";
 
 export const router = Router();
 
@@ -12,11 +12,39 @@ router.post("/convert-to-wav", uploadHandler, async (req, res, next) => {
       throw new AppError(400, "No file uploaded");
     }
 
-    const outputPath = await convertToWav(req.file.path);
+    const jobId = await queueConversion(req.file.path, req.file.originalname);
+
     res.json({
       status: "success",
       data: {
-        outputPath,
+        jobId,
+        message: "File conversion has been queued",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get conversion status
+router.get("/status/:jobId", async (req, res, next) => {
+  try {
+    const { jobId } = req.params;
+    const job = await conversionQueue.getJob(jobId);
+
+    if (!job) {
+      throw new AppError(404, "Job not found");
+    }
+
+    const state = await job.getState();
+    const progress = job._progress;
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        state,
+        progress,
       },
     });
   } catch (error) {
