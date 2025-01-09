@@ -10,12 +10,9 @@ import { authenticate } from "../middleware/auth";
 import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, deleteFile, getFileUrl } from "../services/storage";
-import { convertXMToWAV } from "../services/wav-converter";
-import { convertWAVToMP3 } from "../services/mp3-converter";
 import { z } from "zod";
 import { minioClient, bucket } from "../services/storage";
 import { Prisma, Role } from "@prisma/client";
-import { generateWaveformData } from "../services/waveform";
 import { prisma } from "../lib/prisma";
 
 // Extend Request type to include user property
@@ -308,107 +305,19 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
     });
 
     const originalFile = files.original[0];
-    const originalName = originalFile.originalname.replace(/\.[^/.]+$/, "");
 
-    // Upload original file
-    console.log("Uploading original file...");
-    const originalUrl = await uploadFile(originalFile, "originals/");
-    console.log("Original file uploaded:", originalUrl);
+    // Store original file on disk for later conversion
+    console.log("Storing original file on disk...");
+    // originalFileUrl is a file:// path at this point
+    const originalFileUrl = await storeLocalFile(originalFile);
 
-    // Upload cover art if provided
+    // Store cover art if provided
     let coverArtUrl: string | undefined;
     if (files.coverArt?.[0]) {
-      console.log("Uploading cover art...");
-      coverArtUrl = await uploadFile(files.coverArt[0], "covers/");
-      console.log("Cover art uploaded:", coverArtUrl);
+      console.log("Storing cover art on disk...");
+      // coverArtUrl is a file:// path at this point
+      coverArtUrl = await storeLocalFile(files.coverArt[0]);
     }
-
-    // Convert XM to WAV
-    console.log("Converting XM to WAV...");
-    const { fullTrackBuffer, components } = await convertXMToWAV(
-      originalFile.buffer
-    );
-    console.log("XM conversion complete. Components:", components.length);
-
-    // Generate waveform data for full track
-    console.log("Generating waveform data for full track...");
-    const fullTrackWaveform = await generateWaveformData(fullTrackBuffer);
-    console.log("Full track waveform data generated");
-
-    // Convert full track to MP3
-    console.log("Converting full track to MP3...");
-    const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackBuffer);
-    console.log("Full track MP3 conversion complete");
-
-    // Upload full track files
-    console.log("Uploading full track files...");
-    const [fullTrackUrl, fullTrackMp3Url] = await Promise.all([
-      uploadFile(
-        {
-          buffer: fullTrackBuffer,
-          originalname: `${originalName}_full.wav`,
-          mimetype: "audio/wav",
-        } as Express.Multer.File,
-        "tracks/"
-      ),
-      uploadFile(
-        {
-          buffer: fullTrackMp3Buffer,
-          originalname: `${originalName}_full.mp3`,
-          mimetype: "audio/mpeg",
-        } as Express.Multer.File,
-        "tracks/"
-      ),
-    ]);
-    console.log("Full track files uploaded");
-
-    // Convert and upload component files
-    console.log("Processing components...");
-    const componentUploads = await Promise.all(
-      components.map(async (component, index) => {
-        console.log(
-          `Processing component ${index + 1}/${components.length}: ${
-            component.name
-          }`
-        );
-        const mp3Buffer = await convertWAVToMP3(component.buffer);
-        const componentName = `${originalName}_${component.name.replace(
-          /[^a-z0-9]/gi,
-          "_"
-        )}`;
-
-        const waveformData = await generateWaveformData(component.buffer);
-        console.log(`Generated waveform data for component: ${component.name}`);
-
-        const [wavUrl, mp3Url] = await Promise.all([
-          uploadFile(
-            {
-              buffer: component.buffer,
-              originalname: `${componentName}.wav`,
-              mimetype: "audio/wav",
-            } as Express.Multer.File,
-            "components/"
-          ),
-          uploadFile(
-            {
-              buffer: mp3Buffer,
-              originalname: `${componentName}.mp3`,
-              mimetype: "audio/mpeg",
-            } as Express.Multer.File,
-            "components/"
-          ),
-        ]);
-
-        console.log(`Component ${component.name} files uploaded`);
-        return {
-          name: component.name,
-          type: component.type,
-          wavUrl,
-          mp3Url,
-          waveformData,
-        };
-      })
-    );
 
     console.log("Creating database record...");
     try {
@@ -417,19 +326,10 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
           title: data.title,
           artist: data.artist,
           originalFormat: data.originalFormat,
-          originalUrl: originalUrl,
-          fullTrackUrl: fullTrackUrl,
-          fullTrackMp3Url: fullTrackMp3Url,
-          waveformData: fullTrackWaveform,
+          originalUrl: originalFileUrl,
           coverArt: coverArtUrl,
           metadata: data.metadata as Prisma.InputJsonValue,
           userId: req.user!.id,
-          components: {
-            create: componentUploads,
-          },
-        },
-        include: {
-          components: true,
         },
       });
 
@@ -442,14 +342,8 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       console.log("Cleaning up uploaded files...");
       try {
         await Promise.all([
-          deleteFile(originalUrl),
-          deleteFile(fullTrackUrl),
-          deleteFile(fullTrackMp3Url),
-          ...(coverArtUrl ? [deleteFile(coverArtUrl)] : []),
-          ...componentUploads.flatMap((comp) => [
-            deleteFile(comp.wavUrl),
-            deleteFile(comp.mp3Url),
-          ]),
+          deleteLocalFile(originalFileUrl),
+          ...(coverArtUrl ? [deleteLocalFile(coverArtUrl)] : []),
         ]);
         console.log("Cleanup completed");
       } catch (cleanupError) {

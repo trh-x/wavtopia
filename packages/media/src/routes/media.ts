@@ -1,24 +1,27 @@
 import { Router } from "express";
 import { AppError } from "../middleware/errorHandler";
-import { uploadHandler } from "../middleware/upload";
 import { queueConversion, conversionQueue } from "../services/queue";
+import { z } from "zod";
 
 export const router = Router();
 
-// Convert audio to WAV format
-router.post("/convert-to-wav", uploadHandler, async (req, res, next) => {
-  try {
-    if (!req.file) {
-      throw new AppError(400, "No file uploaded");
-    }
+const conversionOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+});
 
-    const jobId = await queueConversion(req.file.path, req.file.originalname);
+// Convert XM file to WAV/MP3 format
+router.post("/convert", async (req, res, next) => {
+  try {
+    // Parse conversion options
+    const options = conversionOptionsSchema.parse(req.body);
+
+    const jobId = await queueConversion(options.trackId);
 
     res.json({
       status: "success",
       data: {
         jobId,
-        message: "File conversion has been queued",
+        message: "Track conversion has been queued",
       },
     });
   } catch (error) {
@@ -38,6 +41,7 @@ router.get("/status/:jobId", async (req, res, next) => {
 
     const state = await job.getState();
     const progress = job.progress;
+    const result = job.returnvalue;
 
     res.json({
       status: "success",
@@ -45,6 +49,7 @@ router.get("/status/:jobId", async (req, res, next) => {
         jobId,
         state,
         progress,
+        result,
       },
     });
   } catch (error) {

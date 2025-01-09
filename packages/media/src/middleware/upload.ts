@@ -13,6 +13,7 @@ const storage = multer.diskStorage({
   },
 });
 
+// TODO: Remove this unused middleware
 export const uploadHandler = multer({
   storage,
   fileFilter: (req: Request, file: Express.Multer.File, cb) => {
