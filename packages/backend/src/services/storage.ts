@@ -48,8 +48,7 @@ export async function uploadFile(
       bucket,
       fileName,
       file.buffer,
-      file.buffer.length,
-      { "Content-Type": file.mimetype }
+      file.buffer.length
     );
 
     return fileName;
@@ -70,7 +69,7 @@ export async function deleteFile(fileName: string): Promise<void> {
 
 export async function getFileUrl(fileName: string): Promise<string> {
   try {
-    return await minioClient.presignedGetObject(bucket, fileName);
+    return await minioClient.presignedGetObject(bucket, fileName, 24 * 60 * 60); // 24 hour expiry
   } catch (error) {
     console.error("Failed to get file URL:", error);
     throw new AppError(500, "Failed to get file URL");
