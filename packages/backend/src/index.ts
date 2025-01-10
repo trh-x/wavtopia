@@ -6,7 +6,7 @@ import { authRoutes } from "./routes/auth";
 import { trackRoutes } from "./routes/track";
 import { tracksRoutes } from "./routes/tracks";
 import { initializeStorage } from "./services/storage";
-import config from "./config";
+import { config } from "./config";
 
 const app = express();
 

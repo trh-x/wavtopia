@@ -1,15 +1,7 @@
-import { StorageService } from "@wavtopia/core-storage";
+import { StorageService, config } from "@wavtopia/core-storage";
 import { AppError } from "../middleware/errorHandler";
-import config from "../config";
 
-const storageService = new StorageService({
-  endpoint: config.storage.endpoint,
-  port: config.storage.port,
-  useSSL: config.storage.useSSL,
-  accessKey: config.storage.accessKey,
-  secretKey: config.storage.secretKey,
-  bucket: config.storage.bucket,
-});
+const storageService = new StorageService(config.storage);
 
 export async function initializeStorage(): Promise<void> {
   try {

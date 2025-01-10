@@ -2,25 +2,18 @@ import Queue, { Job } from "bull";
 import { convertXMToWAV } from "../services/wav-converter";
 import { convertWAVToMP3 } from "../services/mp3-converter";
 import { generateWaveformData } from "../services/waveform";
-import { PrismaService } from "@wavtopia/core-storage";
+import { PrismaService, config } from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../services/storage";
 
 interface ConversionJob {
   trackId: string;
 }
 
-const prisma = new PrismaService({
-  databaseUrl:
-    process.env.DATABASE_URL ||
-    "postgresql://postgres:postgres@localhost:5432/wavtopia",
-}).db;
+const prisma = new PrismaService(config.database).db;
 
 // Create a new queue
 export const conversionQueue = new Queue<ConversionJob>("audio-conversion", {
-  redis: {
-    host: process.env.REDIS_HOST || "localhost",
-    port: parseInt(process.env.REDIS_PORT || "6379"),
-  },
+  redis: config.redis,
 });
 
 // Process jobs

@@ -1,5 +1,4 @@
-import { PrismaService } from "@wavtopia/core-storage";
-import config from "../config";
+import { PrismaService, config } from "@wavtopia/core-storage";
 
 declare global {
   var prismaService: PrismaService | undefined;
@@ -7,10 +6,7 @@ declare global {
 
 // Prevent multiple instances of Prisma Client in development
 export const prismaService =
-  global.prismaService ||
-  new PrismaService({
-    databaseUrl: config.database.url,
-  });
+  global.prismaService || new PrismaService(config.database);
 
 export const prisma = prismaService.db;
 

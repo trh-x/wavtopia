@@ -1,24 +1,11 @@
 import { Client } from "minio";
-import { z } from "zod";
-
-export const StorageConfigSchema = z.object({
-  endpoint: z.string(),
-  port: z.number(),
-  useSSL: z.boolean(),
-  accessKey: z.string(),
-  secretKey: z.string(),
-  bucket: z.string(),
-});
-
-export type StorageConfig = z.infer<typeof StorageConfigSchema>;
+import type { StorageConfig } from "../config";
 
 export class StorageService {
   private client: Client;
   private bucket: string;
 
   constructor(config: StorageConfig) {
-    StorageConfigSchema.parse(config);
-
     this.client = new Client({
       endPoint: config.endpoint,
       port: config.port,

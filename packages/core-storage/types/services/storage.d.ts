@@ -1,27 +1,4 @@
-import { z } from "zod";
-export declare const StorageConfigSchema: z.ZodObject<{
-    endpoint: z.ZodString;
-    port: z.ZodNumber;
-    useSSL: z.ZodBoolean;
-    accessKey: z.ZodString;
-    secretKey: z.ZodString;
-    bucket: z.ZodString;
-}, "strip", z.ZodTypeAny, {
-    endpoint: string;
-    port: number;
-    useSSL: boolean;
-    accessKey: string;
-    secretKey: string;
-    bucket: string;
-}, {
-    endpoint: string;
-    port: number;
-    useSSL: boolean;
-    accessKey: string;
-    secretKey: string;
-    bucket: string;
-}>;
-export type StorageConfig = z.infer<typeof StorageConfigSchema>;
+import type { StorageConfig } from "../config";
 export declare class StorageService {
     private client;
     private bucket;

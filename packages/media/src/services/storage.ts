@@ -1,15 +1,9 @@
-import { StorageService } from "@wavtopia/core-storage";
+import { StorageService, config } from "@wavtopia/core-storage";
 import fs from "fs/promises";
 
-const storageService = new StorageService({
-  endpoint: process.env.STORAGE_ENDPOINT || "localhost",
-  port: parseInt(process.env.STORAGE_PORT || "9000"),
-  useSSL: process.env.STORAGE_USE_SSL === "true",
-  accessKey: process.env.STORAGE_ACCESS_KEY || "minioadmin",
-  secretKey: process.env.STORAGE_SECRET_KEY || "minioadmin",
-  bucket: process.env.STORAGE_BUCKET || "wavtopia",
-});
+const storageService = new StorageService(config.storage);
 
+// TODO: Harmonize or share this with the backend package equivalent
 export async function initializeStorage(): Promise<void> {
   await storageService.initialize();
 }

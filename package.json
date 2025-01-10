@@ -9,7 +9,7 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
-    "db:setup": "cd packages/backend && pnpm prisma migrate dev && pnpm prisma generate"
+    "db:setup": "cd packages/core-storage && pnpm prisma migrate dev && pnpm prisma generate"
   },
   "engines": {
     "node": ">=18.0.0",

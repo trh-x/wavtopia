@@ -10,14 +10,13 @@
     "init-storage": "ts-node scripts/init-storage.ts"
   },
   "dependencies": {
-    "@wavtopia/core-storage": "workspace:*",
     "@types/uuid": "^10.0.0",
+    "@wavtopia/core-storage": "workspace:*",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
     "uuid": "^11.0.3",
-    "wav": "^1.0.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -27,7 +26,6 @@
     "@types/jsonwebtoken": "^9.0.7",
     "@types/multer": "^1.4.12",
     "@types/node": "^20.10.5",
-    "@types/wav": "^1.0.4",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "eslint": "^8.55.0",

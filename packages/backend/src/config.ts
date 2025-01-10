@@ -1,46 +1,24 @@
-interface Config {
-  database: {
-    url: string;
-  };
-  storage: {
-    endpoint: string;
-    port: number;
-    useSSL: boolean;
-    accessKey: string;
-    secretKey: string;
-    bucket: string;
-  };
-  server: {
-    port: number;
-    jwtSecret: string;
-  };
-  tools: {
-    exportToWavPath: string;
-  };
+import { z } from "zod";
+
+export const ServerConfigSchema = z.object({
+  port: z.number().default(3000),
+  jwtSecret: z.string().default("your-secret-key"),
+});
+
+export const SharedConfigSchema = z.object({
+  server: ServerConfigSchema,
+});
+
+export type ServerConfig = z.infer<typeof ServerConfigSchema>;
+export type SharedConfig = z.infer<typeof SharedConfigSchema>;
+
+function loadConfig(): SharedConfig {
+  return SharedConfigSchema.parse({
+    server: {
+      port: parseInt(process.env.PORT || "3000"),
+      jwtSecret: process.env.JWT_SECRET || "your-secret-key",
+    },
+  });
 }
 
-const config: Config = {
-  database: {
-    url:
-      process.env.DATABASE_URL ||
-      "postgresql://wavtopia:wavtopia@localhost:5432/wavtopia",
-  },
-  storage: {
-    endpoint: process.env.MINIO_ENDPOINT || "localhost",
-    port: parseInt(process.env.MINIO_PORT || "9000"),
-    useSSL: process.env.MINIO_USE_SSL === "true",
-    accessKey: process.env.MINIO_ROOT_USER || "wavtopia",
-    secretKey: process.env.MINIO_ROOT_PASSWORD || "wavtopia123",
-    bucket: process.env.MINIO_BUCKET || "wavtopia",
-  },
-  server: {
-    port: parseInt(process.env.PORT || "3000"),
-    jwtSecret: process.env.JWT_SECRET || "your-secret-key",
-  },
-  tools: {
-    exportToWavPath:
-      process.env.EXPORT_TO_WAV_PATH || "/usr/local/bin/export-to-wav",
-  },
-};
-
-export default config;
+export const config = loadConfig();

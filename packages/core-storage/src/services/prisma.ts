@@ -1,24 +1,16 @@
 import { PrismaClient } from "@prisma/client";
-import { z } from "zod";
-
-export const PrismaConfigSchema = z.object({
-  databaseUrl: z.string().url(),
-});
-
-export type PrismaConfig = z.infer<typeof PrismaConfigSchema>;
+import type { DatabaseConfig } from "../config";
 
 export class PrismaService {
   private static instance: PrismaClient | null = null;
   private client: PrismaClient;
 
-  constructor(config: PrismaConfig) {
-    PrismaConfigSchema.parse(config);
-
+  constructor(config: DatabaseConfig) {
     if (!PrismaService.instance) {
       PrismaService.instance = new PrismaClient({
         datasources: {
           db: {
-            url: config.databaseUrl,
+            url: config.url,
           },
         },
       });
