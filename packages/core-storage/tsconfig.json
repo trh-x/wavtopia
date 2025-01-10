@@ -13,10 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "inlineSources": true,
-    "paths": {
-      "@prisma/client": ["./node_modules/.prisma/client"]
-    }
+    "inlineSources": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "types"]
