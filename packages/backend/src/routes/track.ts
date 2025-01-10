@@ -12,7 +12,7 @@ import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, deleteFile, getFileUrl } from "../services/storage";
 import { z } from "zod";
 import { minioClient, bucket } from "../services/storage";
-import { Prisma, Role } from "@prisma/client";
+import { Prisma, Role } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 
 // Extend Request type to include user property

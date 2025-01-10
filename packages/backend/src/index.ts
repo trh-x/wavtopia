@@ -17,7 +17,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cors());
 
 // Health check endpoint
-app.get("/health", (req, res) => {
+app.get("/health", (_, res) => {
   res.json({ status: "ok" });
 });
 

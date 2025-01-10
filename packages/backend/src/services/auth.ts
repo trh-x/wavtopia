@@ -1,4 +1,4 @@
-import { User, Role } from "@prisma/client";
+import { User, Role } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";

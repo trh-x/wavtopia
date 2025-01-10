@@ -9,4 +9,4 @@ export {
 } from "./config";
 
 // Re-export types from @prisma/client for convenience
-export * from "@prisma/client";
+export { Prisma, Role, User } from "@prisma/client";

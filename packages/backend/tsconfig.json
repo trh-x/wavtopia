@@ -15,7 +15,6 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "preserveSymlinks": true,
     "sourceMap": true,
     "inlineSources": true
   },
