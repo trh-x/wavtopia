@@ -3,7 +3,13 @@ import { z } from "zod";
 export const StorageConfigSchema = z.object({
   endpoint: z.string().default("localhost"),
   port: z.coerce.number().default(9000),
-  useSSL: z.coerce.boolean().default(false),
+  // TODO: Improve this boolean parsing
+  useSSL: z
+    .preprocess((val: unknown) => {
+      if (typeof val === "string") return val === "true";
+      return val;
+    }, z.boolean())
+    .default(false),
   accessKey: z.string().default("wavtopia"),
   secretKey: z.string().default("wavtopia123"),
   bucket: z.string().default("wavtopia"),

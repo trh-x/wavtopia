@@ -2,7 +2,7 @@ import { z } from "zod";
 export declare const StorageConfigSchema: z.ZodObject<{
     endpoint: z.ZodDefault<z.ZodString>;
     port: z.ZodDefault<z.ZodNumber>;
-    useSSL: z.ZodDefault<z.ZodBoolean>;
+    useSSL: z.ZodDefault<z.ZodEffects<z.ZodBoolean, boolean, unknown>>;
     accessKey: z.ZodDefault<z.ZodString>;
     secretKey: z.ZodDefault<z.ZodString>;
     bucket: z.ZodDefault<z.ZodString>;
@@ -16,7 +16,7 @@ export declare const StorageConfigSchema: z.ZodObject<{
 }, {
     endpoint?: string | undefined;
     port?: number | undefined;
-    useSSL?: boolean | undefined;
+    useSSL?: unknown;
     accessKey?: string | undefined;
     secretKey?: string | undefined;
     bucket?: string | undefined;
@@ -42,7 +42,7 @@ export declare const SharedConfigSchema: z.ZodObject<{
     storage: z.ZodObject<{
         endpoint: z.ZodDefault<z.ZodString>;
         port: z.ZodDefault<z.ZodNumber>;
-        useSSL: z.ZodDefault<z.ZodBoolean>;
+        useSSL: z.ZodDefault<z.ZodEffects<z.ZodBoolean, boolean, unknown>>;
         accessKey: z.ZodDefault<z.ZodString>;
         secretKey: z.ZodDefault<z.ZodString>;
         bucket: z.ZodDefault<z.ZodString>;
@@ -56,7 +56,7 @@ export declare const SharedConfigSchema: z.ZodObject<{
     }, {
         endpoint?: string | undefined;
         port?: number | undefined;
-        useSSL?: boolean | undefined;
+        useSSL?: unknown;
         accessKey?: string | undefined;
         secretKey?: string | undefined;
         bucket?: string | undefined;
@@ -98,7 +98,7 @@ export declare const SharedConfigSchema: z.ZodObject<{
     storage: {
         endpoint?: string | undefined;
         port?: number | undefined;
-        useSSL?: boolean | undefined;
+        useSSL?: unknown;
         accessKey?: string | undefined;
         secretKey?: string | undefined;
         bucket?: string | undefined;
