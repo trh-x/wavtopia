@@ -9,7 +9,9 @@
     "clean": "rimraf dist types",
     "dev": "tsc -w",
     "lint": "eslint src --ext .ts",
-    "generate": "prisma generate"
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "postinstall": "pnpm migrate && pnpm generate"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
