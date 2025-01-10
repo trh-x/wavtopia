@@ -42,8 +42,8 @@ services:
       - NODE_ENV=production
       - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
-      - MINIO_ACCESS_KEY=wavtopia
-      - MINIO_SECRET_KEY=wavtopia123
+      - MINIO_ROOT_USER=wavtopia
+      - MINIO_ROOT_PASSWORD=wavtopia123
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     volumes:
