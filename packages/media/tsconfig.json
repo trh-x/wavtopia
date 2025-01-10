@@ -14,6 +14,5 @@
     "inlineSources": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../core-storage" }]
+  "exclude": ["node_modules", "dist"]
 }
