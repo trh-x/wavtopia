@@ -2,7 +2,12 @@ import Queue, { Job } from "bull";
 import { convertXMToWAV } from "../services/wav-converter";
 import { convertWAVToMP3 } from "../services/mp3-converter";
 import { generateWaveformData } from "../services/waveform";
-import { PrismaService, StorageFile, config } from "@wavtopia/core-storage";
+import {
+  PrismaService,
+  StorageFile,
+  config,
+  deleteLocalFile,
+} from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../services/storage";
 
 interface ConversionJob {
@@ -39,7 +44,9 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
     }
 
     const originalFile = await getLocalFile(track.originalUrl);
-    const originalName = track.originalUrl.replace(/\.[^/.]+$/, "");
+    // TODO: Retain the original file name from the point of upload
+    const originalName = track.title.replace(/[^a-zA-Z0-9._-]/g, "_");
+    // const originalName = track.originalUrl.replace(/\.[^/.]+$/, "");
 
     const coverArtFile = track.coverArt
       ? await getLocalFile(track.coverArt)

@@ -3,6 +3,7 @@ export { PrismaService } from "./services/prisma";
 export {
   deleteLocalFile,
   ensureDirectoryExists,
+  normalizeFilePath,
 } from "./services/local-storage";
 export {
   config,

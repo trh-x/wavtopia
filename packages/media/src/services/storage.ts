@@ -1,5 +1,9 @@
-import { StorageService, config, StorageFile } from "@wavtopia/core-storage";
-import { normalizeFilePath } from "@wavtopia/core-storage/types/services/local-storage";
+import {
+  StorageFile,
+  StorageService,
+  config,
+  normalizeFilePath,
+} from "@wavtopia/core-storage";
 import fs from "fs/promises";
 
 const storageService = new StorageService(config.storage);

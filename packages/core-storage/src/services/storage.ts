@@ -10,6 +10,11 @@ export class StorageService {
   private bucket: string;
 
   constructor(config: StorageConfig) {
+    const { secretKey, ...rest } = config;
+    console.log("Initializing storage service with config:", {
+      ...rest,
+      secretKey: secretKey.slice(0, 2) + "..." + secretKey.slice(-2),
+    });
     this.client = new Client({
       endPoint: config.endpoint,
       port: config.port,
