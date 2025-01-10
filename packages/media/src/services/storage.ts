@@ -1,4 +1,4 @@
-import { StorageService, config } from "@wavtopia/core-storage";
+import { StorageService, config, StorageFile } from "@wavtopia/core-storage";
 import fs from "fs/promises";
 
 const storageService = new StorageService(config.storage);
@@ -9,7 +9,7 @@ export async function initializeStorage(): Promise<void> {
 }
 
 export async function uploadFile(
-  file: Express.Multer.File,
+  file: StorageFile,
   prefix: string = ""
 ): Promise<string> {
   return await storageService.uploadFile(file, prefix);
@@ -23,9 +23,7 @@ export async function getFileUrl(fileName: string): Promise<string> {
   return await storageService.getFileUrl(fileName);
 }
 
-export async function getLocalFile(
-  fileName: string
-): Promise<Express.Multer.File> {
+export async function getLocalFile(fileName: string): Promise<StorageFile> {
   const filePath = `/tmp/uploads/${fileName}`;
   const buffer = await fs.readFile(filePath);
   const originalname = fileName.split("/").pop() || fileName;

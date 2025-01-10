@@ -2,6 +2,9 @@ import { Client } from "minio";
 import internal from "stream";
 import type { StorageConfig } from "../config";
 
+// TODO: Remove the reference to Express.Multer.File from this package
+export type StorageFile = Express.Multer.File;
+
 export class StorageService {
   private client: Client;
   private bucket: string;
@@ -44,14 +47,7 @@ export class StorageService {
     }
   }
 
-  async uploadFile(
-    file: {
-      buffer: Buffer;
-      originalname: string;
-      mimetype: string;
-    },
-    prefix: string = ""
-  ): Promise<string> {
+  async uploadFile(file: StorageFile, prefix: string = ""): Promise<string> {
     try {
       const fileName = `${prefix}${Date.now()}-${file.originalname}`;
       const metadata = {

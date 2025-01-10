@@ -2,7 +2,7 @@ import Queue, { Job } from "bull";
 import { convertXMToWAV } from "../services/wav-converter";
 import { convertWAVToMP3 } from "../services/mp3-converter";
 import { generateWaveformData } from "../services/waveform";
-import { PrismaService, config } from "@wavtopia/core-storage";
+import { PrismaService, StorageFile, config } from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../services/storage";
 
 interface ConversionJob {
@@ -83,7 +83,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           buffer: fullTrackBuffer,
           originalname: `${originalName}_full.wav`,
           mimetype: "audio/wav",
-        } as Express.Multer.File,
+        } as StorageFile,
         "tracks/"
       ),
       uploadFile(
@@ -91,7 +91,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           buffer: fullTrackMp3Buffer,
           originalname: `${originalName}_full.mp3`,
           mimetype: "audio/mpeg",
-        } as Express.Multer.File,
+        } as StorageFile,
         "tracks/"
       ),
     ]);
@@ -121,7 +121,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
               buffer: component.buffer,
               originalname: `${componentName}.wav`,
               mimetype: "audio/wav",
-            } as Express.Multer.File,
+            } as StorageFile,
             "components/"
           ),
           uploadFile(
@@ -129,7 +129,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
               buffer: mp3Buffer,
               originalname: `${componentName}.mp3`,
               mimetype: "audio/mpeg",
-            } as Express.Multer.File,
+            } as StorageFile,
             "components/"
           ),
         ]);

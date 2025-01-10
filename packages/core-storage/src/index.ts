@@ -1,4 +1,4 @@
-export { StorageService } from "./services/storage";
+export { StorageService, type StorageFile } from "./services/storage";
 export { PrismaService } from "./services/prisma";
 export {
   deleteLocalFile,
