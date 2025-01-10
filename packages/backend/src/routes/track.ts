@@ -9,10 +9,14 @@ import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
 import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
-import { uploadFile, deleteFile, getFileUrl } from "../services/storage";
+import {
+  uploadFile,
+  deleteFile,
+  getFileUrl,
+  getObject,
+} from "../services/storage";
 import { z } from "zod";
-import { minioClient, bucket } from "../services/storage";
-import { Prisma, Role } from "@wavtopia/core-storage";
+import { Prisma } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 
 // Extend Request type to include user property
@@ -181,7 +185,7 @@ router.get(
       const contentType = mimeTypes[ext || ""] || "application/octet-stream";
 
       // Stream the file directly from MinIO
-      const fileStream = await minioClient.getObject(bucket, track.coverArt);
+      const fileStream = await getObject(track.coverArt);
       res.setHeader("Content-Type", contentType);
       fileStream.pipe(res);
     } catch (error) {
@@ -208,7 +212,7 @@ router.get(
       const filePath = format === "mp3" ? component.mp3Url : component.wavUrl;
 
       // Stream the file directly from MinIO
-      const fileStream = await minioClient.getObject(bucket, filePath);
+      const fileStream = await getObject(filePath);
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
@@ -233,7 +237,7 @@ router.get(
         format === "mp3" ? track.fullTrackMp3Url : track.fullTrackUrl;
 
       // Stream the file directly from MinIO
-      const fileStream = await minioClient.getObject(bucket, filePath);
+      const fileStream = await getObject(filePath);
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
@@ -272,7 +276,7 @@ router.get(
       }
 
       // Stream the file directly from MinIO
-      const fileStream = await minioClient.getObject(bucket, track.originalUrl);
+      const fileStream = await getObject(track.originalUrl);
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",

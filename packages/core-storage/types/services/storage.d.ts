@@ -1,4 +1,5 @@
 import type { StorageConfig } from "../config";
+import internal from "stream";
 export declare class StorageService {
     private client;
     private bucket;
@@ -11,4 +12,5 @@ export declare class StorageService {
     }, prefix?: string): Promise<string>;
     deleteFile(fileName: string): Promise<void>;
     getFileUrl(fileName: string, expiryInSeconds?: number): Promise<string>;
+    getObject(fileName: string): Promise<internal.Readable>;
 }

@@ -1,5 +1,6 @@
 import { StorageService, config } from "@wavtopia/core-storage";
 import { AppError } from "../middleware/errorHandler";
+import internal from "stream";
 
 const storageService = new StorageService(config.storage);
 
@@ -39,5 +40,14 @@ export async function getFileUrl(fileName: string): Promise<string> {
   } catch (error) {
     console.error("Failed to get file URL:", error);
     throw new AppError(500, "Failed to get file URL");
+  }
+}
+
+export async function getObject(fileName: string): Promise<internal.Readable> {
+  try {
+    return await storageService.getObject(fileName);
+  } catch (error) {
+    console.error("Failed to get object:", error);
+    throw new AppError(500, "Failed to get object");
   }
 }

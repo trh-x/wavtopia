@@ -1,5 +1,6 @@
 import { Client } from "minio";
 import type { StorageConfig } from "../config";
+import internal from "stream";
 
 export class StorageService {
   private client: Client;
@@ -98,4 +99,18 @@ export class StorageService {
       throw new Error("Failed to get file URL");
     }
   }
+
+  async getObject(fileName: string): Promise<internal.Readable> {
+    return this.client.getObject(this.bucket, fileName);
+  }
+
+  /*
+  async storeLocalFile(file: {
+    buffer: Buffer;
+    originalname: string;
+    mimetype: string;
+  }): Promise<string> {
+    return await this.uploadFile(file);
+  }
+  */
 }
