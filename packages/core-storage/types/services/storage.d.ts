@@ -1,5 +1,5 @@
-import type { StorageConfig } from "../config";
 import internal from "stream";
+import type { StorageConfig } from "../config";
 export declare class StorageService {
     private client;
     private bucket;

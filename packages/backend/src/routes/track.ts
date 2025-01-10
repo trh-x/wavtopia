@@ -16,7 +16,7 @@ import {
   getObject,
 } from "../services/storage";
 import { z } from "zod";
-import { Prisma } from "@wavtopia/core-storage";
+import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 
 // Extend Request type to include user property
@@ -310,17 +310,16 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 
     const originalFile = files.original[0];
 
-    // Store original file on disk for later conversion
-    console.log("Storing original file on disk...");
-    // originalFileUrl is a file:// path at this point
-    const originalFileUrl = await storeLocalFile(originalFile);
+    // The original file is stored on disk at this point
+    const originalFileUrl = "file://" + originalFile.path;
+    console.log("Original file URL:", originalFileUrl);
 
     // Store cover art if provided
     let coverArtUrl: string | undefined;
     if (files.coverArt?.[0]) {
-      console.log("Storing cover art on disk...");
-      // coverArtUrl is a file:// path at this point
-      coverArtUrl = await storeLocalFile(files.coverArt[0]);
+      // The cover art is stored on disk at this point
+      coverArtUrl = "file://" + files.coverArt[0].path;
+      console.log("Cover art URL:", coverArtUrl);
     }
 
     console.log("Creating database record...");
@@ -346,6 +345,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       console.log("Cleaning up uploaded files...");
       try {
         await Promise.all([
+          // Delete the local files
           deleteLocalFile(originalFileUrl),
           ...(coverArtUrl ? [deleteLocalFile(coverArtUrl)] : []),
         ]);
@@ -441,8 +441,14 @@ router.delete("/:id", async (req, res, next) => {
 
     // Delete all associated files
     await deleteFile(track.originalUrl);
-    await deleteFile(track.fullTrackUrl);
-    await deleteFile(track.fullTrackMp3Url);
+
+    if (track.fullTrackUrl) {
+      await deleteFile(track.fullTrackUrl);
+    }
+
+    if (track.fullTrackMp3Url) {
+      await deleteFile(track.fullTrackMp3Url);
+    }
 
     if (track.coverArt) {
       await deleteFile(track.coverArt);
