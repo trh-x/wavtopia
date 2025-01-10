@@ -5,6 +5,7 @@ import { Request } from "express";
 
 // Configure multer for disk storage
 const storage = multer.diskStorage({
+  // TODO: Specify the destination in the config
   destination: "/tmp/uploads",
   filename: (req: Request, file: Express.Multer.File, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;

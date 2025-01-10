@@ -1,4 +1,5 @@
 import { StorageService, config, StorageFile } from "@wavtopia/core-storage";
+import { normalizeFilePath } from "@wavtopia/core-storage/types/services/local-storage";
 import fs from "fs/promises";
 
 const storageService = new StorageService(config.storage);
@@ -23,22 +24,19 @@ export async function getFileUrl(fileName: string): Promise<string> {
   return await storageService.getFileUrl(fileName);
 }
 
-export async function getLocalFile(fileName: string): Promise<StorageFile> {
-  const filePath = `/tmp/uploads/${fileName}`;
+export async function getLocalFile(
+  filePathOrUrl: string
+): Promise<StorageFile> {
+  const filePath = normalizeFilePath(filePathOrUrl);
   const buffer = await fs.readFile(filePath);
-  const originalname = fileName.split("/").pop() || fileName;
+  // TODO: Retain the original file name from the point of upload
+  const originalname = filePath.split("/").pop() || filePath;
 
   return {
     buffer,
     originalname,
     mimetype: getMimeType(originalname),
-    fieldname: "file",
-    encoding: "7bit",
     size: buffer.length,
-    destination: "/tmp/uploads",
-    filename: fileName,
-    path: filePath,
-    stream: undefined as any,
   };
 }
 

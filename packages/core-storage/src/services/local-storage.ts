@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 
-function normalizeFilePath(filePathOrUrl: string): string {
+export function normalizeFilePath(filePathOrUrl: string): string {
   if (filePathOrUrl.startsWith("file://")) {
     // Convert file:// URL to local path
     return decodeURIComponent(filePathOrUrl.slice(7));
