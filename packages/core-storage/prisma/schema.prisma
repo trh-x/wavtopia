@@ -33,8 +33,8 @@ model Track {
   artist         String
   originalFormat String      @map("original_format")
   originalUrl    String      @map("original_url")
-  fullTrackUrl   String      @map("full_track_url")
-  fullTrackMp3Url String     @map("full_track_mp3_url")
+  fullTrackUrl   String?     @map("full_track_url")
+  fullTrackMp3Url String?    @map("full_track_mp3_url")
   waveformData   Float[]     @map("waveform_data")
   coverArt       String?     @map("cover_art")
   metadata       Json?
