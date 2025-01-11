@@ -1,4 +1,4 @@
-import { useAuthToken } from "@/hooks/useAuthToken";
+import { TrackCoverArt } from "../track-list/TrackList";
 
 interface TrackHeaderProps {
   title: string;
@@ -13,17 +13,14 @@ export function TrackHeader({
   coverArt,
   trackId,
 }: TrackHeaderProps) {
-  const { appendTokenToUrl } = useAuthToken();
-
   return (
     <div className="flex items-center space-x-4 p-4">
-      {coverArt && (
-        <img
-          src={appendTokenToUrl(`/api/track/${trackId}/cover`)}
-          alt={`${title} cover art`}
-          className="h-24 w-24 rounded-lg object-cover"
-        />
-      )}
+      <TrackCoverArt
+        coverArt={coverArt}
+        trackId={trackId}
+        title={title}
+        size="lg"
+      />
       <div>
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="text-gray-600">{artist}</p>
