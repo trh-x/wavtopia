@@ -4,7 +4,7 @@ import { writeFile, mkdtemp, rm, readdir } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import { AppError } from "../middleware/errorHandler";
-import config from "../config";
+import { config } from "../config";
 
 const execAsync = promisify(exec);
 

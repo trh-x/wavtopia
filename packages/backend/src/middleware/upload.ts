@@ -1,9 +1,23 @@
 import multer from "multer";
 import { AppError } from "./errorHandler";
+import path from "path";
+import { Request } from "express";
 
-// Configure multer for memory storage
+// Configure multer for disk storage
+const storage = multer.diskStorage({
+  // TODO: Specify the destination in the config
+  destination: "/tmp/uploads",
+  filename: (req: Request, file: Express.Multer.File, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(
+      null,
+      `${file.fieldname}-${uniqueSuffix}${path.extname(file.originalname)}`
+    );
+  },
+});
+
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },

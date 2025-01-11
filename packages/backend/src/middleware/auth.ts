@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Role } from "@prisma/client";
+import { Role } from "@wavtopia/core-storage";
 import { verifyToken, getUserById } from "../services/auth";
 import { AppError } from "./errorHandler";
 

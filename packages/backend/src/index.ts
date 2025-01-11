@@ -1,20 +1,13 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { PrismaClient } from "@prisma/client";
+import { prisma, prismaService } from "./lib/prisma";
+import { errorHandler } from "./middleware/errorHandler";
+import { authRoutes } from "./routes/auth";
 import { trackRoutes } from "./routes/track";
 import { tracksRoutes } from "./routes/tracks";
-import { authRoutes } from "./routes/auth";
-import { errorHandler } from "./middleware/errorHandler";
 import { initializeStorage } from "./services/storage";
-import config from "./config";
-
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: config.database.url,
-    },
-  },
-});
+import { config } from "./config";
 
 const app = express();
 
@@ -25,7 +18,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(cors());
 
 // Health check endpoint
-app.get("/health", (req, res) => {
+app.get("/health", (_, res) => {
   res.json({ status: "ok" });
 });
 
@@ -44,7 +37,7 @@ async function main() {
     console.log("Storage initialized");
 
     // Connect to database
-    await prisma.$connect();
+    await prismaService.connect();
     console.log("Connected to database");
 
     const server = app.listen(config.server.port, () => {
@@ -62,7 +55,7 @@ async function main() {
 main()
   .catch(console.error)
   .finally(async () => {
-    await prisma.$disconnect();
+    await prismaService.disconnect();
   });
 
 export { app };

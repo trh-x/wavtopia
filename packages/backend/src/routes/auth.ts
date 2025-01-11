@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
-import { signup, login, getUserById } from "../services/auth";
-import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
-import { PrismaClient } from "@prisma/client";
+import { AppError } from "../middleware/errorHandler";
+import { prisma } from "../lib/prisma";
+import { signup, login, getUserById } from "../services/auth";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const signupSchema = z.object({
   email: z.string().email(),

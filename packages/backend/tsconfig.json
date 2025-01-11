@@ -14,7 +14,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+    "sourceMap": true,
+    "inlineSources": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

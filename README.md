@@ -39,25 +39,21 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 
 ### export-to-wav Installation
 
-The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. Currently, this utility is only available in [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372). To install it:
+The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. This utility is included as a git submodule from [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372).
 
-1. Clone MilkyTracker and checkout the PR branch:
-
-```bash
-git clone https://github.com/trh-x/MilkyTracker.git
-cd MilkyTracker
-git checkout trh/export-to-wav
-```
-
-2. Build MilkyTracker with the export-to-wav utility:
+When cloning the repository, make sure to initialize the submodules:
 
 ```bash
-./build.sh
+# If cloning for the first time:
+git clone --recursive https://github.com/your-repo/wavtopia.git
+
+# If you've already cloned the repository:
+git submodule update --init --recursive
 ```
 
-3. The utility will be available at `build/src/tools/export-to-wav/export-to-wav`. Copy or symlink it to a location in your PATH (e.g., /usr/local/bin/).
+The media service's Dockerfile will automatically build and install the `export-to-wav` utility during container build.
 
-Note: This is hopefully a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
+Note: This is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
 
 ### Installation Steps
 
@@ -118,6 +114,41 @@ pnpm dev
 cd packages/frontend && pnpm dev
 cd packages/backend && pnpm dev
 ```
+
+### Docker Services
+
+The project uses Docker Compose to manage its service dependencies. You can start the services in different ways depending on your development needs:
+
+1. Start core services (for local development):
+
+```bash
+# This starts PostgreSQL, MinIO, and Redis
+docker-compose up -d
+```
+
+2. Start all services including the media service:
+
+```bash
+# This starts all services including the containerized media service
+docker-compose --profile production up -d
+```
+
+3. For local media service development:
+
+```bash
+# First, start the core services
+docker-compose up -d
+
+# Then run the media service locally
+cd packages/media && pnpm dev
+```
+
+The services will be available at:
+
+- PostgreSQL: localhost:5432
+- MinIO: localhost:9000 (API) and localhost:9001 (Console)
+- Redis: localhost:6379
+- Media Service: localhost:3001 (when running)
 
 The frontend will be available at http://localhost:5173
 The backend API will be available at http://localhost:3000

@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:14-alpine
@@ -24,6 +22,38 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  media:
+    profiles:
+      - production
+    build:
+      context: .
+      dockerfile: packages/media/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ROOT_USER=wavtopia
+      - MINIO_ROOT_PASSWORD=wavtopia123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - media_tmp:/tmp
+    depends_on:
+      - minio
+      - redis
+
 volumes:
   postgres_data:
   minio_data:
+  redis_data:
+  media_tmp:

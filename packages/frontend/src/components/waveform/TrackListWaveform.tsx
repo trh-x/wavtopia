@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTrackListPlayback } from "@/contexts/TrackListPlaybackContext";
 import { WaveformDisplay } from "./WaveformDisplay";
 

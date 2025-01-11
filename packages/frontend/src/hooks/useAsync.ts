@@ -7,8 +7,7 @@ interface AsyncState<T> {
 }
 
 export function useAsync<T, Args extends unknown[]>(
-  asyncFn: (...args: Args) => Promise<T>,
-  immediate = false
+  asyncFn: (...args: Args) => Promise<T>
 ) {
   const [state, setState] = useState<AsyncState<T>>({
     data: null,

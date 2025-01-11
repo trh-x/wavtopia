@@ -92,7 +92,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
       setGlobalPlaybackTime(currentTime);
 
       // Always sync on user-initiated seeks
-      activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
+      activeWaveformsRef.current.forEach((_, otherWavesurfer) => {
         if (otherWavesurfer !== wavesurfer) {
           otherWavesurfer.seekTo(currentTime / otherWavesurfer.getDuration());
         }
@@ -108,7 +108,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
       setGlobalPlaybackTime(currentTime);
 
       if (playingWaveformsRef.current.has(wavesurfer)) {
-        activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
+        activeWaveformsRef.current.forEach((_, otherWavesurfer) => {
           if (
             otherWavesurfer !== wavesurfer &&
             Math.abs(otherWavesurfer.getCurrentTime() - currentTime) > 0.02
@@ -222,7 +222,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
         wavesurfer.seekTo(0);
         setGlobalPlaybackTime(0);
         // Also reset all other waveforms to maintain sync
-        activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
+        activeWaveformsRef.current.forEach((_, otherWavesurfer) => {
           if (otherWavesurfer !== wavesurfer) {
             otherWavesurfer.seekTo(0);
           }

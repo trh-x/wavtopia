@@ -111,7 +111,7 @@ export function WaveformDisplay({
       barGap: 1,
       barRadius: 2,
       fillParent: true,
-      minPxPerSec: 1,
+      minPxPerSec: 0,
       backend: "WebAudio" as const,
       peaks: [new Float32Array(waveformData)],
       url: audioUrl,
