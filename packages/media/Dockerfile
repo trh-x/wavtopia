@@ -1,6 +1,6 @@
 FROM node:18-slim
 
-# Install FFmpeg and build dependencies
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y \
     ffmpeg \
@@ -13,12 +13,6 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install pnpm
-RUN npm install -g pnpm
-
-# Create app directory
-WORKDIR /app
-
 # Build export-to-wav utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker
 RUN cd deps/milkytracker && \
@@ -28,34 +22,41 @@ RUN cd deps/milkytracker && \
     cd ../.. && \
     rm -rf deps/milkytracker
 
+# Install pnpm and typescript globally
+RUN npm install -g pnpm typescript
+
+WORKDIR /app
+
 # Copy workspace files
-COPY pnpm-*.yaml ./
-COPY package.json ./
-COPY packages/media/package.json ./packages/media/
+COPY package.json pnpm-workspace.yaml ./
+COPY packages/media/package.json packages/media/
+COPY packages/media/.env.docker packages/media/.env
+COPY packages/core-storage/package.json packages/core-storage/
+COPY packages/core-storage/prisma packages/core-storage/prisma/
+COPY packages/core-storage/.env.docker packages/core-storage/.env
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies in two steps to handle workspace packages correctly
+RUN pnpm install --no-frozen-lockfile --ignore-scripts && \
+    cd packages/core-storage && pnpm install --no-frozen-lockfile --ignore-scripts && \
+    pnpm prisma generate && cd ../.. && \
+    cd packages/media && pnpm install --no-frozen-lockfile --ignore-scripts && cd ../..
 
-# Copy source code
-COPY packages/media/src ./packages/media/src
-COPY packages/media/tsconfig.json ./packages/media/
+# Copy source files
+COPY packages/core-storage packages/core-storage/
+COPY packages/media packages/media/
 
-# Build TypeScript code
-RUN cd packages/media && pnpm build
+# Build packages using global TypeScript
+RUN cd packages/core-storage && tsc && \
+    cd ../media && tsc
 
 # Environment variables
-ENV NODE_ENV=production
-ENV PORT=3001
-ENV REDIS_HOST=redis
-ENV REDIS_PORT=6379
-ENV EXPORT_TO_WAV_PATH=/usr/local/bin/export-to-wav
+# ENV NODE_ENV=production \
+#     PORT=3001 \
+#     EXPORT_TO_WAV_PATH=/usr/local/bin/export-to-wav
 
 # Create directories for file processing
 RUN mkdir -p /tmp/uploads /tmp/converted && \
     chmod 777 /tmp/uploads /tmp/converted
-
-# Expose port for API endpoints
-EXPOSE 3001
 
 # Set working directory to the media service
 WORKDIR /app/packages/media
