@@ -6,11 +6,17 @@ export const ServerConfigSchema = z.object({
   jwtSecret: z.string().default("your-secret-key"),
 });
 
+export const ServicesConfigSchema = z.object({
+  mediaServiceUrl: z.string().url().default("http://localhost:3001"),
+});
+
 export const SharedConfigSchema = z.object({
   server: ServerConfigSchema,
+  services: ServicesConfigSchema,
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;
+export type ServicesConfig = z.infer<typeof ServicesConfigSchema>;
 export type SharedConfig = z.infer<typeof SharedConfigSchema>;
 
 function loadConfig(): SharedConfig {
@@ -18,6 +24,9 @@ function loadConfig(): SharedConfig {
     server: {
       port: parseInt(process.env.PORT || "3000"),
       jwtSecret: process.env.JWT_SECRET || "your-secret-key",
+    },
+    services: {
+      mediaServiceUrl: process.env.MEDIA_SERVICE_URL || "http://localhost:3001",
     },
   });
 }

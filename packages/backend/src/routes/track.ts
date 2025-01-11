@@ -18,6 +18,7 @@ import {
 import { z } from "zod";
 import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
+import { config } from "@/config";
 
 // Extend Request type to include user property
 const router = Router();
@@ -337,6 +338,23 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       });
 
       console.log("Track created successfully:", track.id);
+
+      // Now POST to the media service to convert the track
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+      if (mediaServiceUrl) {
+        const response = await fetch(mediaServiceUrl + "/api/media/convert", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ trackId: track.id }),
+        });
+        const data = await response.json();
+        console.log("Media service response:", data);
+      } else {
+        console.warn("Media service URL not set");
+      }
+
       res.status(201).json(track);
     } catch (dbError) {
       console.error("Database error during track creation:", dbError);
