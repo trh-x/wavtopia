@@ -27,6 +27,8 @@ enum Role {
   ADMIN
 }
 
+// TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
+// the exception of originalUrl, which is a file:// URL until the track is converted).
 model Track {
   id             String      @id @default(uuid())
   title          String
