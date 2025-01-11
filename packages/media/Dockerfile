@@ -27,13 +27,11 @@ RUN npm install -g pnpm typescript
 
 WORKDIR /app
 
-# Copy workspace files
+# Copy workspace files and env files first
 COPY package.json pnpm-workspace.yaml ./
 COPY packages/media/package.json packages/media/
-COPY packages/media/.env.docker packages/media/.env
 COPY packages/core-storage/package.json packages/core-storage/
 COPY packages/core-storage/prisma packages/core-storage/prisma/
-COPY packages/core-storage/.env.docker packages/core-storage/.env
 
 # Install dependencies in two steps to handle workspace packages correctly
 RUN pnpm install --no-frozen-lockfile --ignore-scripts && \
@@ -45,14 +43,12 @@ RUN pnpm install --no-frozen-lockfile --ignore-scripts && \
 COPY packages/core-storage packages/core-storage/
 COPY packages/media packages/media/
 
+# Ensure .env file wasn't overwritten by the full copy
+COPY packages/media/.env.docker packages/media/.env
+
 # Build packages using global TypeScript
 RUN cd packages/core-storage && tsc && \
     cd ../media && tsc
-
-# Environment variables
-# ENV NODE_ENV=production \
-#     PORT=3001 \
-#     EXPORT_TO_WAV_PATH=/usr/local/bin/export-to-wav
 
 # Create directories for file processing
 RUN mkdir -p /tmp/uploads /tmp/converted && \
@@ -61,4 +57,7 @@ RUN mkdir -p /tmp/uploads /tmp/converted && \
 # Set working directory to the media service
 WORKDIR /app/packages/media
 
-CMD ["pnpm", "start"] 
+# Only set NODE_ENV, let other vars come from .env
+ENV NODE_ENV=production
+
+CMD ["node", "dist/index.js"] 

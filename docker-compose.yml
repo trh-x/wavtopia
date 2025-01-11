@@ -9,6 +9,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wavtopia-net
 
   minio:
     image: minio/minio
@@ -21,6 +23,8 @@ services:
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
+    networks:
+      - wavtopia-net
 
   redis:
     image: redis:7-alpine
@@ -29,6 +33,8 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    networks:
+      - wavtopia-net
 
   media:
     profiles:
@@ -43,9 +49,15 @@ services:
     depends_on:
       - minio
       - redis
+    networks:
+      - wavtopia-net
 
 volumes:
   postgres_data:
   minio_data:
   redis_data:
   media_tmp:
+
+networks:
+  wavtopia-net:
+    driver: bridge
