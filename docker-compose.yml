@@ -46,11 +46,11 @@ services:
       - "3001:3001"
     volumes:
       - media_tmp:/tmp
+    networks:
+      - wavtopia-net
     depends_on:
       - minio
       - redis
-    networks:
-      - wavtopia-net
 
 volumes:
   postgres_data:

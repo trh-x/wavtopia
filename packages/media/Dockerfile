@@ -34,6 +34,8 @@ COPY packages/core-storage/package.json packages/core-storage/
 COPY packages/core-storage/prisma packages/core-storage/prisma/
 
 # Install dependencies in two steps to handle workspace packages correctly
+# TODO: Use pnpm deploy instead of install, with a multi-stage build.
+# See https://pnpm.io/cli/deploy
 RUN pnpm install --no-frozen-lockfile --ignore-scripts && \
     cd packages/core-storage && pnpm install --no-frozen-lockfile --ignore-scripts && \
     pnpm prisma generate && cd ../.. && \
@@ -52,7 +54,7 @@ RUN cd packages/core-storage && tsc && \
 
 # Create directories for file processing
 RUN mkdir -p /tmp/uploads /tmp/converted && \
-    chmod 777 /tmp/uploads /tmp/converted
+    chmod 775 /tmp/uploads /tmp/converted
 
 # Set working directory to the media service
 WORKDIR /app/packages/media
