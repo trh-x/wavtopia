@@ -67,8 +67,7 @@ setup_remote() {
     # Create context with SSH config
     docker context create production \
         --docker "host=ssh://$user@$host:$port?ssh-config=$SSH_CONFIG_PATH" \
-        --description "Production server at $host" \
-        --default-stack-orchestrator=swarm
+        --description "Production server at $host"
     
     echo "Testing connection..."
     if docker --context production info >/dev/null 2>&1; then
