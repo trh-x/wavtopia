@@ -267,15 +267,18 @@ deploy_prod() {
     docker pull "${REGISTRY_PREFIX}wavtopia-media:latest"
     docker pull "${REGISTRY_PREFIX}wavtopia-backend:latest"
     
-    # Run database migrations
-    echo "Running database migrations..."
-    docker compose --profile production run --rm \
-      --network wavtopia_default \
-      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run migrate:deploy"
-    
-    # Deploy with pulled images
+    # Deploy services first to ensure database is running
     docker compose --profile production pull
     docker compose --profile production up -d
+    
+    # Wait a moment for the database to be ready
+    echo "Waiting for database to be ready..."
+    sleep 5
+    
+    # Run database migrations in production
+    echo "Running database migrations..."
+    docker compose --profile production run --rm \
+      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run migrate:deploy"
     
     # Switch back to default context
     docker context use default
