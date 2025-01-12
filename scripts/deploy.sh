@@ -264,8 +264,16 @@ deploy_prod() {
     export REGISTRY_PREFIX="localhost:${REGISTRY_PORT}/"
     echo "Using registry at ${REGISTRY_PREFIX}"
     
+    # Pull latest images
+    echo "Pulling latest images..."
+    docker pull "${REGISTRY_PREFIX}wavtopia-workspace:latest"
+    docker pull "${REGISTRY_PREFIX}wavtopia-media:latest"
+    docker pull "${REGISTRY_PREFIX}wavtopia-backend:latest"
+    
+    # Deploy with pulled images
+    docker compose --profile production pull
     docker compose --profile production up -d
-
+    
     # Switch back to default context
     docker context use default
     echo "Deployment complete!"
