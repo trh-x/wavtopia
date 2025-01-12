@@ -108,6 +108,9 @@ test_registry() {
     
     # Set up SSH tunnel
     setup_tunnel "$REMOTE_HOST"
+
+    # Get actual registry port
+    REGISTRY_PORT=$(get_registry_port)
     
     echo "Testing registry API..."
     curl -v http://localhost:${REGISTRY_PORT}/v2/ || {
