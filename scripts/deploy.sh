@@ -55,12 +55,38 @@ setup_remote() {
     echo "Setting up remote Docker context..."
     read -p "Enter remote server host: " host
     read -p "Enter SSH user: " user
-    docker context create production --docker "host=ssh://$user@$host"
+    read -p "Enter SSH port (default: 22): " port
+    port=${port:-22}
+    
+    # Use SSH config file for all settings including identity file
+    SSH_CONFIG_PATH="$HOME/.ssh/config"
+    if [ ! -f "$SSH_CONFIG_PATH" ]; then
+        echo "Warning: SSH config file not found at $SSH_CONFIG_PATH"
+    fi
+    
+    # Create context with SSH config
+    docker context create production \
+        --docker "host=ssh://$user@$host:$port?ssh-config=$SSH_CONFIG_PATH" \
+        --description "Production server at $host" \
+        --default-stack-orchestrator=swarm
+    
+    echo "Testing connection..."
+    if docker --context production info >/dev/null 2>&1; then
+        echo "Connection successful!"
+    else
+        echo "Connection failed. Please check your SSH configuration and try again."
+        docker context rm production
+        exit 1
+    fi
 }
 
 # Function to deploy to production
 deploy_prod() {
     echo "Deploying to production server..."
+    if ! docker --context production info >/dev/null 2>&1; then
+        echo "Cannot connect to production server. Please run setup-remote first."
+        exit 1
+    fi
     docker context use production || (echo "Please set up production context first" && exit 1)
     docker compose --profile production up -d
     docker context use default
