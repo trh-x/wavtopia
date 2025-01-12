@@ -132,13 +132,13 @@ test_registry() {
 # Function to get registry port from container
 get_registry_port() {
     # Try to get the host port from container inspection
-    local port=$(docker --context production inspect registry 2>/dev/null | grep -o '"HostPort": "[^"]*"' | cut -d'"' -f4)
+    local port=$(docker --context production inspect registry 2>/dev/null | grep -o '"HostPort": "[^"]*"' | cut -d'"' -f4 | tr -d '\n\r')
     if [ -n "$port" ]; then
-        echo "$port"
+        echo -n "$port"
         return 0
     fi
     # Fallback to default port
-    echo "${REGISTRY_PORT}"
+    echo -n "${REGISTRY_PORT}"
 }
 
 # Function to setup remote context
