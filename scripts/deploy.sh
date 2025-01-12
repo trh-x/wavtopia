@@ -282,7 +282,7 @@ deploy_prod() {
     
     # Switch back to default context
     docker context use default
-    echo "Deployment complete!"
+    echo "Services deployed! Don't forget to update the frontend too if there are any changes."
 }
 
 # Function to build workspace (used by other build commands)
