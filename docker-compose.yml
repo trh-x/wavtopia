@@ -103,6 +103,21 @@ services:
       postgres:
         condition: service_started
 
+  frontend:
+    profiles:
+      - production-frontend
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+      args:
+        - WORKSPACE_IMAGE=wavtopia-workspace
+    ports:
+      - "80:80"
+    networks:
+      - wavtopia-net
+    # depends_on:
+    # - backend
+
 volumes:
   postgres_data:
   minio_data:
