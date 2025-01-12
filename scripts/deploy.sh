@@ -51,8 +51,13 @@ setup_tunnel() {
     local remote_host="$1"
     echo "Setting up SSH tunnel for registry access..."
     
-    # Kill any existing tunnels on this port
-    lsof -ti:${REGISTRY_PORT} | xargs kill -9 2>/dev/null || true
+    # Check for existing process on the port
+    local existing_pid=$(lsof -ti:${REGISTRY_PORT})
+    if [ -n "$existing_pid" ]; then
+        echo "Error: Port ${REGISTRY_PORT} is already in use by process ${existing_pid}"
+        echo "Please stop the existing process and try again"
+        exit 1
+    fi
     
     # Start new tunnel
     ssh -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$remote_host"
