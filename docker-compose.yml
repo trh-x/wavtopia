@@ -52,8 +52,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      # args:
-      # TARGETARCH: ${TARGETARCH:-arm64}
     image: wavtopia-workspace
 
   media:

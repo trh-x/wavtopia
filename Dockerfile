@@ -19,14 +19,9 @@ WORKDIR /app
 ENV PNPM_HOME="/pnpm" \
     PATH="/pnpm:$PATH"
 
-# Detect architecture and set ARG
-# ARG TARGETARCH
-# ENV ARCH=${TARGETARCH:-arm64}
-
 # Copy workspace files first
 COPY pnpm-workspace.yaml package.json ./
 COPY pnpm-lock*.yaml ./
-# COPY pnpm-lock.${ARCH}.yaml pnpm-lock.yaml
 
 # Copy all packages
 COPY packages ./packages
