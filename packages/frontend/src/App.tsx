@@ -16,9 +16,7 @@ import { FeatureFlagsProvider } from "./hooks/useFeatureFlags";
 import { AdminRoute } from "@/components/AdminRoute";
 import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
 import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-const queryClient = new QueryClient();
+import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -40,6 +38,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/request-early-access" element={<RequestEarlyAccess />} />
         <Route path="/" element={<Home />} />
         <Route path="/track/:id" element={<TrackDetails />} />
         <Route path="/my-tracks" element={<MyTracks />} />
@@ -74,14 +73,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <FeatureFlagsProvider>
-            <AppRoutes />
-          </FeatureFlagsProvider>
-        </AuthProvider>
-      </Router>
-    </QueryClientProvider>
+    <Router>
+      <AuthProvider>
+        <FeatureFlagsProvider>
+          <AppRoutes />
+        </FeatureFlagsProvider>
+      </AuthProvider>
+    </Router>
   );
 }

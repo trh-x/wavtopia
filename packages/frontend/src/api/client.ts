@@ -55,6 +55,14 @@ export const api = {
       });
     },
 
+    requestEarlyAccess: async (email: string) => {
+      return apiRequest("/auth/request-early-access", {
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({ email }),
+      }) as Promise<{ success: boolean }>;
+    },
+
     me: async (token: string) => {
       return apiRequest("/auth/me", { token });
     },

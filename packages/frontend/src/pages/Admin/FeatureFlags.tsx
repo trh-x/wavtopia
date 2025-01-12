@@ -1,43 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/api/client";
 import { FeatureFlag } from "@wavtopia/core-storage";
 import { FormInput, FormButton } from "@/components/ui/FormInput";
 import { useAuthToken } from "@/hooks/useAuthToken";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-
-interface FeatureFlagsResponse {
-  flags: FeatureFlag[];
-}
 
 export function FeatureFlagsAdmin() {
+  const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [newFlag, setNewFlag] = useState({ name: "", description: "" });
+  const [loading, setLoading] = useState(true);
+
   const { getToken } = useAuthToken();
-  const queryClient = useQueryClient();
+
   const token = getToken();
 
-  const { data: response, isLoading } = useQuery<FeatureFlagsResponse>({
-    queryKey: ["featureFlags", token],
-    queryFn: async () => {
-      if (!token) throw new Error("No token available");
-      return api.admin.getFeatureFlags(token);
-    },
-    enabled: !!token,
-  });
+  useEffect(() => {
+    if (!token) {
+      return;
+    }
 
-  const flags = response?.flags ?? [];
+    loadFlags();
+  }, [token]);
 
   if (!token) {
     return <div>You must be logged in to view this page.</div>;
   }
 
+  const loadFlags = async () => {
+    try {
+      const response = await api.admin.getFeatureFlags(token);
+      setFlags(response.flags);
+    } catch (error) {
+      console.error("Failed to load feature flags:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleToggleFlag = async (flagId: string, isEnabled: boolean) => {
     try {
       await api.admin.updateFeatureFlag(token, flagId, { isEnabled });
-      // Invalidate both the admin feature flags list and the enabled features for users
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["featureFlags"] }),
-        queryClient.invalidateQueries({ queryKey: ["enabledFeatures"] }),
-      ]);
+      await loadFlags();
     } catch (error) {
       console.error("Failed to update feature flag:", error);
     }
@@ -48,13 +50,13 @@ export function FeatureFlagsAdmin() {
     try {
       await api.admin.createFeatureFlag(token, newFlag);
       setNewFlag({ name: "", description: "" });
-      await queryClient.invalidateQueries({ queryKey: ["featureFlags"] });
+      await loadFlags();
     } catch (error) {
       console.error("Failed to create feature flag:", error);
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="p-6">
@@ -87,7 +89,7 @@ export function FeatureFlagsAdmin() {
           <div>Status</div>
           <div>Actions</div>
         </div>
-        {flags.map((flag: FeatureFlag) => (
+        {flags.map((flag) => (
           <div
             key={flag.id}
             className="grid grid-cols-4 p-4 border rounded items-center"

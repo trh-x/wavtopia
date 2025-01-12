@@ -83,16 +83,17 @@ model Component {
 }
 
 model InviteCode {
-  id        String   @id @default(uuid())
-  code      String   @unique
-  maxUses   Int      @default(1)
-  usedCount Int      @default(0) @map("used_count")
-  expiresAt DateTime? @map("expires_at")
-  createdBy String?  @map("created_by")
-  users     User[]   @relation("UsedInviteCode")
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id          String    @id @default(uuid())
+  code        String    @unique
+  maxUses     Int       @default(1)
+  usedCount   Int       @default(0) @map("used_count")
+  expiresAt   DateTime? @map("expires_at")
+  createdBy   String?   @map("created_by")
+  users       User[]    @relation("UsedInviteCode")
+  request     EarlyAccessRequest?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 
   @@map("invite_codes")
 }
@@ -121,4 +122,22 @@ model UserFeature {
 
   @@unique([userId, featureFlagId])
   @@map("user_features")
+}
+
+model EarlyAccessRequest {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  status      RequestStatus @default(PENDING)
+  inviteCode  InviteCode?   @relation(fields: [inviteCodeId], references: [id])
+  inviteCodeId String?      @unique @map("invite_code_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("early_access_requests")
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 } 

@@ -84,7 +84,7 @@ export function Login() {
         <p className="mt-4 text-center">
           Don't have an account?{" "}
           <Link
-            to="/register"
+            to={isEarlyAccessRequired ? "/request-early-access" : "/register"}
             className="text-primary-600 hover:text-primary-700"
           >
             {isEarlyAccessRequired ? "Request early access" : "Register here"}
