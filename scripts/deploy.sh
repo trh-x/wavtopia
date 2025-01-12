@@ -131,9 +131,9 @@ test_registry() {
 
 # Function to get registry port from container
 get_registry_port() {
-    # Try to get the host port from container inspection
-    local port=$(docker --context production inspect registry 2>/dev/null | grep -o '"HostPort": "[^"]*"' | cut -d'"' -f4 | tr -d '\n\r')
-    if [ -n "$port" ]; then
+    # Try to get the host port from container inspection using jq
+    local port=$(docker --context production inspect registry 2>/dev/null | jq -r '.[0].NetworkSettings.Ports."5000/tcp"[0].HostPort')
+    if [ "$port" != "null" ] && [ -n "$port" ]; then
         echo -n "$port"
         return 0
     fi
