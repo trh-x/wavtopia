@@ -25,6 +25,8 @@ COPY pnpm-lock*.yaml ./
 
 # Copy all packages
 COPY packages ./packages
+# Copy env file for the core-storage package
+COPY packages/core-storage/.env.docker .env
 
 # Copy scripts
 COPY scripts ./scripts
