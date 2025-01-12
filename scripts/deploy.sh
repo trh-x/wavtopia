@@ -270,6 +270,10 @@ deploy_prod() {
     docker pull "${REGISTRY_PREFIX}wavtopia-media:latest"
     docker pull "${REGISTRY_PREFIX}wavtopia-backend:latest"
     
+    # Run database migrations
+    echo "Running database migrations..."
+    docker compose --profile production run --rm backend pnpm --filter @wavtopia/core-storage migrate:deploy
+    
     # Deploy with pulled images
     docker compose --profile production pull
     docker compose --profile production up -d

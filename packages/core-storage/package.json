@@ -11,6 +11,7 @@
     "lint": "eslint src --ext .ts",
     "generate": "prisma generate",
     "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
     "postinstall": "pnpm generate"
   },
   "dependencies": {
