@@ -65,8 +65,10 @@ setup_remote() {
     fi
     
     # Create context with SSH config
+    DOCKER_HOST="ssh://$user@$host:$port"
+    export DOCKER_SSH_CONFIG="$SSH_CONFIG_PATH"
     docker context create production \
-        --docker "host=ssh://$user@$host:$port?ssh-config=$SSH_CONFIG_PATH" \
+        --docker "host=$DOCKER_HOST" \
         --description "Production server at $host"
     
     echo "Testing connection..."
