@@ -256,12 +256,14 @@ deploy_prod() {
     docker push "${REGISTRY}/wavtopia-media"
     docker push "${REGISTRY}/wavtopia-backend"
 
-    # Update docker-compose to use the remote registry address
-    export REGISTRY_PREFIX="${REMOTE_HOSTNAME}:${REGISTRY_PORT}/"
-
     # Switch to production context and deploy
     echo "Deploying services..."
     docker context use production
+    
+    # Use localhost for registry when deploying since we're on the remote host
+    export REGISTRY_PREFIX="localhost:${REGISTRY_PORT}/"
+    echo "Using registry at ${REGISTRY_PREFIX}"
+    
     docker compose --profile production up -d
 
     # Switch back to default context
