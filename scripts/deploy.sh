@@ -53,10 +53,9 @@ setup_tunnel() {
     echo "Setting up SSH tunnel for registry access..."
     
     # Check for existing process on the port
-    local existing_pid=$(lsof -ti:${REGISTRY_PORT})
-    if [ -n "$existing_pid" ]; then
-        echo "Error: Port ${REGISTRY_PORT} is already in use by process ${existing_pid}"
-        echo "Please stop the existing process and try again"
+    if ss -ln | grep -q ":${REGISTRY_PORT}\\b"; then
+        echo "Error: Port ${REGISTRY_PORT} is already in use"
+        echo "Please stop any existing process using this port and try again"
         exit 1
     fi
     
@@ -68,13 +67,21 @@ setup_tunnel() {
         exit 1
     fi
     
-    # Get tunnel PID
-    TUNNEL_PID=$(lsof -ti:${REGISTRY_PORT})
+    # Wait for tunnel to be established and get PID
+    echo "Waiting for tunnel to be established..."
+    for i in {1..5}; do
+        TUNNEL_PID=$(ss -lpn | grep ":${REGISTRY_PORT}" | grep -o 'pid=\([0-9]*\)' | cut -d= -f2)
+        if [ -n "$TUNNEL_PID" ]; then
+            echo "Tunnel established with PID ${TUNNEL_PID}"
+            break
+        fi
+        sleep 1
+    done
+
     if [ -z "$TUNNEL_PID" ]; then
         echo "Failed to get tunnel PID"
         exit 1
     fi
-    echo "Tunnel established with PID ${TUNNEL_PID}"
     
     # Set up cleanup trap
     trap cleanup_tunnel EXIT
@@ -82,7 +89,7 @@ setup_tunnel() {
     # Wait for tunnel to be ready
     echo "Testing tunnel connection..."
     for i in {1..5}; do
-        if nc -zv localhost ${REGISTRY_PORT} 2>/dev/null; then
+        if nc -z localhost ${REGISTRY_PORT} 2>/dev/null; then
             echo "Port ${REGISTRY_PORT} is now accessible"
             return 0
         fi
