@@ -1,3 +1,11 @@
+# Get the workspace image name from build args
+ARG WORKSPACE_IMAGE
+FROM ${WORKSPACE_IMAGE} AS pruned
+
+# Create pruned deployment for media service
+RUN pnpm --filter @wavtopia/media --prod deploy pruned
+
+# Create the final image
 FROM node:18-slim
 
 # Install FFmpeg and build dependencies
@@ -13,12 +21,6 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install pnpm
-RUN npm install -g pnpm
-
-# Create app directory
-WORKDIR /app
-
 # Build export-to-wav utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker
 RUN cd deps/milkytracker && \
@@ -28,36 +30,18 @@ RUN cd deps/milkytracker && \
     cd ../.. && \
     rm -rf deps/milkytracker
 
-# Copy workspace files
-COPY pnpm-*.yaml ./
-COPY package.json ./
-COPY packages/media/package.json ./packages/media/
+WORKDIR /app
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Copy source code
-COPY packages/media/src ./packages/media/src
-COPY packages/media/tsconfig.json ./packages/media/
-
-# Build TypeScript code
-RUN cd packages/media && pnpm build
-
-# Environment variables
-ENV NODE_ENV=production
-ENV PORT=3001
-ENV REDIS_HOST=redis
-ENV REDIS_PORT=6379
-ENV EXPORT_TO_WAV_PATH=/usr/local/bin/export-to-wav
+# Copy the pruned deployment
+COPY --from=pruned /app/pruned .
 
 # Create directories for file processing
 RUN mkdir -p /tmp/uploads /tmp/converted && \
-    chmod 777 /tmp/uploads /tmp/converted
+    chmod 775 /tmp/uploads /tmp/converted
 
-# Expose port for API endpoints
-EXPOSE 3001
+# Copy env file for the media service
+COPY packages/media/.env.docker .env
 
-# Set working directory to the media service
-WORKDIR /app/packages/media
+ENV NODE_ENV=production
 
-CMD ["pnpm", "start"] 
+CMD ["node", "dist/index.js"] 

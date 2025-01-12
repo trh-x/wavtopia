@@ -1,5 +1,8 @@
 services:
   postgres:
+    profiles:
+      - production
+      - development
     image: postgres:14-alpine
     environment:
       POSTGRES_USER: wavtopia
@@ -9,8 +12,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wavtopia-net
 
   minio:
+    profiles:
+      - production
+      - development
     image: minio/minio
     environment:
       MINIO_ROOT_USER: wavtopia
@@ -21,14 +29,30 @@ services:
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
+    networks:
+      - wavtopia-net
 
   redis:
+    profiles:
+      - production
+      - development
     image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    networks:
+      - wavtopia-net
+
+  workspace:
+    profiles:
+      - build
+      - production
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wavtopia-workspace
 
   media:
     profiles:
@@ -36,24 +60,28 @@ services:
     build:
       context: .
       dockerfile: packages/media/Dockerfile
+      args:
+        - WORKSPACE_IMAGE=wavtopia-workspace
     ports:
       - "3001:3001"
-    environment:
-      - NODE_ENV=production
-      - MINIO_ENDPOINT=minio
-      - MINIO_PORT=9000
-      - MINIO_ROOT_USER=wavtopia
-      - MINIO_ROOT_PASSWORD=wavtopia123
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
     volumes:
       - media_tmp:/tmp
+    networks:
+      - wavtopia-net
     depends_on:
-      - minio
-      - redis
+      workspace:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      redis:
+        condition: service_started
 
 volumes:
   postgres_data:
   minio_data:
   redis_data:
   media_tmp:
+
+networks:
+  wavtopia-net:
+    driver: bridge
