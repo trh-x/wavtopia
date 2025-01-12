@@ -73,15 +73,21 @@ setup_remote() {
                 exit 1
             fi
             
-            # Set up private registry on remote host
-            echo "Setting up private registry on remote host..."
-            docker --context production run -d \
-                --restart=always \
-                --name registry \
-                -p "${REGISTRY_PORT}:5000" \
-                registry:2
-            
-            echo "Registry is running on ${host}:${REGISTRY_PORT}"
+            read -p "No registry found. Would you like to create one? [y/N] " create_registry
+            if [[ "$create_registry" =~ ^[Yy]$ ]]; then
+                # Set up private registry on remote host
+                echo "Setting up private registry on remote host..."
+                docker --context production run -d \
+                    --restart=always \
+                    --name registry \
+                    -p "${REGISTRY_PORT}:5000" \
+                    -v registry_data:/var/lib/registry \
+                    registry:2
+                
+                echo "Registry is running on ${host}:${REGISTRY_PORT}"
+            else
+                echo "Skipping registry creation. Please ensure a registry is available at ${host}:${REGISTRY_PORT}"
+            fi
         fi
     else
         echo "Connection failed. Please check your SSH configuration and try again."
