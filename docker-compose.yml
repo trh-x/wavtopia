@@ -103,6 +103,7 @@ services:
       postgres:
         condition: service_started
 
+  # Optional frontend service, for testing
   frontend:
     profiles:
       - production-frontend
@@ -115,8 +116,6 @@ services:
       - "80:80"
     networks:
       - wavtopia-net
-    # depends_on:
-    # - backend
 
 volumes:
   postgres_data:
