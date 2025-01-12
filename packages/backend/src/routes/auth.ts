@@ -4,6 +4,7 @@ import { authenticate } from "../middleware/auth";
 import { AppError } from "../middleware/errorHandler";
 import { prisma } from "../lib/prisma";
 import { signup, login, getUserById } from "../services/auth";
+import { getEnabledFeatureFlags } from "../services/featureFlags";
 
 const router = Router();
 
@@ -81,6 +82,12 @@ router.get("/users", authenticate, async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+});
+
+router.get("/enabled-features", async (req, res, next) => {
+  // Get the feature flags that are enabled for the user
+  const flags = await getEnabledFeatureFlags(req.user!.id);
+  res.json({ flags });
 });
 
 export { router as authRoutes };

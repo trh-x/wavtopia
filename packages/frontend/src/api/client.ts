@@ -60,6 +60,12 @@ export const api = {
     me: async (token: string) => {
       return apiRequest("/auth/me", { token });
     },
+
+    getEnabledFeatures: async (token: string) => {
+      return apiRequest("/auth/enabled-features", { token }) as Promise<{
+        flags: string[];
+      }>;
+    },
   },
 
   admin: {

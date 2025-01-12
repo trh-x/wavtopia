@@ -12,6 +12,7 @@ import { Register } from "@/pages/Register";
 import { UploadTrack } from "@/pages/UploadTrack";
 import { MyTracks } from "./pages/MyTracks";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { FeatureFlagsProvider } from "./hooks/useFeatureFlags";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -53,7 +54,9 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <FeatureFlagsProvider>
+          <AppRoutes />
+        </FeatureFlagsProvider>
       </AuthProvider>
     </Router>
   );
