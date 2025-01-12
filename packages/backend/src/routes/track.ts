@@ -18,7 +18,7 @@ import {
 import { z } from "zod";
 import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
-import { config } from "@/config";
+import { config } from "../config";
 
 // Extend Request type to include user property
 const router = Router();
