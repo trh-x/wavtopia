@@ -244,10 +244,8 @@ deploy_prod() {
     echo "Building images locally..."
     docker context use default
     
-    # Build and push workspace image
+    # Build workspace first since other images depend on it
     build_workspace
-    docker tag wavtopia-workspace "${REGISTRY}/wavtopia-workspace:latest"
-    docker push "${REGISTRY}/wavtopia-workspace:latest"
     
     # Build and push service images
     docker compose build media backend
@@ -266,13 +264,13 @@ deploy_prod() {
     
     # Pull latest images
     echo "Pulling latest images..."
-    docker pull "${REGISTRY_PREFIX}wavtopia-workspace:latest"
     docker pull "${REGISTRY_PREFIX}wavtopia-media:latest"
     docker pull "${REGISTRY_PREFIX}wavtopia-backend:latest"
     
     # Run database migrations
     echo "Running database migrations..."
-    docker compose --profile production run --rm backend sh -c "cd /app/packages/core-storage && npm run migrate:deploy"
+    # docker compose --profile production run --rm backend sh -c "cd /app/packages/core-storage && npm run migrate:deploy"
+    docker compose --profile production run --rm backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run migrate:deploy"
     
     # Deploy with pulled images
     docker compose --profile production pull
