@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface LoginData {
   email: string;
@@ -27,6 +28,8 @@ const validationRules: ValidationRules<LoginData> = {
 export function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isEarlyAccessRequired = isFeatureEnabled("EARLY_ACCESS_REQUIRED");
 
   const {
     values,
@@ -78,19 +81,23 @@ export function Login() {
           {isSubmitting ? "Logging in..." : "Login"}
         </FormButton>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="mt-4 text-center">
           Don't have an account?{" "}
           <Link
             to="/register"
             className="text-primary-600 hover:text-primary-700"
           >
-            Request early access
+            {isEarlyAccessRequired ? "Request early access" : "Register here"}
           </Link>
-          <br />
-          <span className="text-xs text-gray-500">
-            Wavtopia is currently in early access. You'll need an invite code to
-            register.
-          </span>
+          {isEarlyAccessRequired && (
+            <>
+              <br />
+              <span className="text-xs text-gray-500">
+                Wavtopia is currently in early access. You'll need an invite
+                code to register.
+              </span>
+            </>
+          )}
         </p>
       </form>
     </div>

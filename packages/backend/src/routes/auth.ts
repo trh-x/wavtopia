@@ -86,7 +86,7 @@ router.get("/users", authenticate, async (req, res, next) => {
 
 router.get("/enabled-features", async (req, res, next) => {
   // Get the feature flags that are enabled for the user
-  const flags = await getEnabledFeatureFlags(req.user!.id);
+  const flags = await getEnabledFeatureFlags(req.user?.id);
   res.json({ flags });
 });
 

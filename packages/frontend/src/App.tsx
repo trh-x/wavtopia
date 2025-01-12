@@ -13,6 +13,9 @@ import { UploadTrack } from "@/pages/UploadTrack";
 import { MyTracks } from "./pages/MyTracks";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { FeatureFlagsProvider } from "./hooks/useFeatureFlags";
+import { AdminRoute } from "@/components/AdminRoute";
+import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
+import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -43,6 +46,22 @@ function AppRoutes() {
             <PrivateRoute>
               <UploadTrack />
             </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/feature-flags"
+          element={
+            <AdminRoute>
+              <FeatureFlagsAdmin />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/invite-codes"
+          element={
+            <AdminRoute>
+              <InviteCodesAdmin />
+            </AdminRoute>
           }
         />
       </Routes>

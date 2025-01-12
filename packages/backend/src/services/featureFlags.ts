@@ -87,9 +87,17 @@ export async function isEarlyAccessRequired(
 }
 
 export async function getEnabledFeatureFlags(
-  userId: string
+  userId?: string
 ): Promise<string[]> {
-  // Get all feature flags
+  // If no userId provided, only get globally enabled flags
+  if (!userId) {
+    const allFlags = await prisma.featureFlag.findMany({
+      where: { isEnabled: true },
+    });
+    return allFlags.map((flag) => flag.name);
+  }
+
+  // Get all feature flags with user overrides
   const allFlags = await prisma.featureFlag.findMany({
     include: {
       userFeatures: {
