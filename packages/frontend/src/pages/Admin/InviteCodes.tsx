@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { api } from "@/api/client";
 import { InviteCode } from "@wavtopia/core-storage";
 import { FormInput, FormButton } from "@/components/ui/FormInput";
+import { useAuthToken } from "@/hooks/useAuthToken";
 
 export function InviteCodesAdmin() {
   const [codes, setCodes] = useState<InviteCode[]>([]);
@@ -10,14 +11,23 @@ export function InviteCodesAdmin() {
     expiresAt: "",
   });
   const [loading, setLoading] = useState(true);
+  const { getToken } = useAuthToken();
+  const token = getToken();
 
   useEffect(() => {
+    if (!token) {
+      return;
+    }
     loadCodes();
-  }, []);
+  }, [token]);
+
+  if (!token) {
+    return <div>You must be logged in to view this page.</div>;
+  }
 
   const loadCodes = async () => {
     try {
-      const response = await api.admin.getInviteCodes();
+      const response = await api.admin.getInviteCodes(token);
       setCodes(response.codes);
     } catch (error) {
       console.error("Failed to load invite codes:", error);
@@ -29,7 +39,7 @@ export function InviteCodesAdmin() {
   const handleCreateCode = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.admin.createInviteCode({
+      await api.admin.createInviteCode(token, {
         maxUses: newCode.maxUses,
         expiresAt: newCode.expiresAt ? new Date(newCode.expiresAt) : undefined,
       });
@@ -42,7 +52,7 @@ export function InviteCodesAdmin() {
 
   const handleToggleCode = async (codeId: string, isActive: boolean) => {
     try {
-      await api.admin.updateInviteCode(codeId, { isActive });
+      await api.admin.updateInviteCode(token, codeId, { isActive });
       await loadCodes();
     } catch (error) {
       console.error("Failed to update invite code:", error);

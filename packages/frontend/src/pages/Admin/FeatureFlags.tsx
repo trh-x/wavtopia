@@ -2,19 +2,32 @@ import { useState, useEffect } from "react";
 import { api } from "@/api/client";
 import { FeatureFlag } from "@wavtopia/core-storage";
 import { FormInput, FormButton } from "@/components/ui/FormInput";
+import { useAuthToken } from "@/hooks/useAuthToken";
 
 export function FeatureFlagsAdmin() {
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [newFlag, setNewFlag] = useState({ name: "", description: "" });
   const [loading, setLoading] = useState(true);
 
+  const { getToken } = useAuthToken();
+
+  const token = getToken();
+
   useEffect(() => {
+    if (!token) {
+      return;
+    }
+
     loadFlags();
-  }, []);
+  }, [token]);
+
+  if (!token) {
+    return <div>You must be logged in to view this page.</div>;
+  }
 
   const loadFlags = async () => {
     try {
-      const response = await api.admin.getFeatureFlags();
+      const response = await api.admin.getFeatureFlags(token);
       setFlags(response.flags);
     } catch (error) {
       console.error("Failed to load feature flags:", error);
@@ -25,7 +38,7 @@ export function FeatureFlagsAdmin() {
 
   const handleToggleFlag = async (flagId: string, isEnabled: boolean) => {
     try {
-      await api.admin.updateFeatureFlag(flagId, { isEnabled });
+      await api.admin.updateFeatureFlag(token, flagId, { isEnabled });
       await loadFlags();
     } catch (error) {
       console.error("Failed to update feature flag:", error);
@@ -35,7 +48,7 @@ export function FeatureFlagsAdmin() {
   const handleCreateFlag = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.admin.createFeatureFlag(newFlag);
+      await api.admin.createFeatureFlag(token, newFlag);
       setNewFlag({ name: "", description: "" });
       await loadFlags();
     } catch (error) {

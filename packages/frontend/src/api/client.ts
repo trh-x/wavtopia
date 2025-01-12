@@ -67,48 +67,63 @@ export const api = {
   },
 
   admin: {
-    getFeatureFlags: async () => {
-      return apiRequest("/admin/feature-flags");
+    getFeatureFlags: async (token: string) => {
+      return apiRequest("/admin/feature-flags", { token });
     },
 
-    createFeatureFlag: async (data: {
-      name: string;
-      description?: string;
-      isEnabled?: boolean;
-    }) => {
+    createFeatureFlag: async (
+      token: string,
+      data: {
+        name: string;
+        description?: string;
+        isEnabled?: boolean;
+      }
+    ) => {
       return apiRequest("/admin/feature-flags", {
         method: "POST",
+        token,
         contentType: "application/json",
         body: JSON.stringify(data),
       });
     },
 
     updateFeatureFlag: async (
+      token: string,
       id: string,
       data: { isEnabled?: boolean; description?: string }
     ) => {
       return apiRequest(`/admin/feature-flags/${id}`, {
         method: "PATCH",
+        token,
         contentType: "application/json",
         body: JSON.stringify(data),
       });
     },
 
-    getInviteCodes: async () => {
-      return apiRequest("/admin/invite-codes");
+    getInviteCodes: async (token: string) => {
+      return apiRequest("/admin/invite-codes", { token });
     },
 
-    createInviteCode: async (data: { maxUses?: number; expiresAt?: Date }) => {
+    createInviteCode: async (
+      token: string,
+      data: { maxUses?: number; expiresAt?: Date }
+    ) => {
       return apiRequest("/admin/invite-codes", {
         method: "POST",
+        token,
         contentType: "application/json",
         body: JSON.stringify(data),
       });
     },
 
-    updateInviteCode: async (id: string, data: { isActive: boolean }) => {
+    updateInviteCode: async (
+      token: string,
+      id: string,
+      data: { isActive: boolean }
+    ) => {
       return apiRequest(`/admin/invite-codes/${id}`, {
         method: "PATCH",
+        token,
         contentType: "application/json",
         body: JSON.stringify(data),
       });
