@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
-import { useQuery } from "@tanstack/react-query";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface RegisterData {
   email: string;
@@ -67,14 +67,10 @@ export function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const { data: earlyAccessData } = useQuery({
-    queryKey: ["earlyAccess"],
-    queryFn: () => api.auth.checkEarlyAccess(),
-  });
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isEarlyAccessRequired = isFeatureEnabled("EARLY_ACCESS_REQUIRED");
 
-  const earlyAccessRequired = earlyAccessData?.required ?? false;
-
-  const validationRules = getValidationRules(earlyAccessRequired);
+  const validationRules = getValidationRules(isEarlyAccessRequired);
 
   const {
     values,
@@ -139,7 +135,7 @@ export function Register() {
           error={errors.password}
         />
 
-        {earlyAccessRequired && (
+        {isEarlyAccessRequired && (
           <FormInput
             id="inviteCode"
             type="text"

@@ -46,15 +46,13 @@ export const api = {
       password: string,
       inviteCode?: string
     ) => {
-      return apiRequest("/auth/register", {
+      // TODO: Rename the route to /auth/register, as the page is also called Register.
+      // Will need a documentation update.
+      return apiRequest("/auth/signup", {
         method: "POST",
         contentType: "application/json",
         body: JSON.stringify({ email, username, password, inviteCode }),
       });
-    },
-
-    checkEarlyAccess: async () => {
-      return apiRequest("/auth/early-access");
     },
 
     me: async (token: string) => {
