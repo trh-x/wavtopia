@@ -144,7 +144,7 @@ pnpm dev
 Services will be available at:
 
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
+- Backend API: http://localhost:3002
 - Media Service: http://localhost:3001 (when running locally)
 - PostgreSQL: localhost:5432
 - MinIO: localhost:9000 (API) and localhost:9001 (Console)
@@ -253,7 +253,7 @@ MINIO_BUCKET="wavtopia"
 EXPORT_TO_WAV_PATH="/usr/local/bin/export-to-wav"
 
 # packages/frontend/.env
-VITE_API_URL="http://localhost:3000"
+VITE_API_URL="http://localhost:3002"
 ```
 
 ## License
