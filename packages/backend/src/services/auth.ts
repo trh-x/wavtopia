@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { AppError } from "../middleware/errorHandler";
+import { isEarlyAccessRequired } from "./featureFlags";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 const SALT_ROUNDS = 10;
@@ -11,6 +12,7 @@ interface UserSignupData {
   email: string;
   username: string;
   password: string;
+  inviteCode?: string;
 }
 
 interface UserLoginData {
@@ -36,16 +38,56 @@ export async function signup(
     throw new AppError(400, "Email or username already exists");
   }
 
+  // Check if early access is required
+  const earlyAccessRequired = await isEarlyAccessRequired();
+
+  if (earlyAccessRequired) {
+    if (!data.inviteCode) {
+      throw new AppError(400, "Invite code is required for registration");
+    }
+
+    const inviteCode = await prisma.inviteCode.findUnique({
+      where: { code: data.inviteCode },
+    });
+
+    if (!inviteCode || !inviteCode.isActive) {
+      throw new AppError(400, "Invalid invite code");
+    }
+
+    if (inviteCode.maxUses > 0 && inviteCode.usedCount >= inviteCode.maxUses) {
+      throw new AppError(400, "Invite code has reached maximum usage");
+    }
+
+    if (inviteCode.expiresAt && inviteCode.expiresAt < new Date()) {
+      throw new AppError(400, "Invite code has expired");
+    }
+  }
+
   const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
 
-  const user = await prisma.user.create({
-    data: {
-      email: data.email,
-      username: data.username,
-      password: hashedPassword,
-    },
-  });
+  const userData: any = {
+    email: data.email,
+    username: data.username,
+    password: hashedPassword,
+  };
 
+  // If invite code was provided and validated, link it to the user
+  if (data.inviteCode) {
+    const inviteCode = await prisma.inviteCode.findUnique({
+      where: { code: data.inviteCode },
+    });
+
+    if (inviteCode) {
+      userData.inviteCodeId = inviteCode.id;
+      // Update the usage count
+      await prisma.inviteCode.update({
+        where: { id: inviteCode.id },
+        data: { usedCount: { increment: 1 } },
+      });
+    }
+  }
+
+  const user = await prisma.user.create({ data: userData });
   const token = generateToken(user);
   return { user, token };
 }

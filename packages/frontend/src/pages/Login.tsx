@@ -84,8 +84,13 @@ export function Login() {
             to="/register"
             className="text-primary-600 hover:text-primary-700"
           >
-            Register here
+            Request early access
           </Link>
+          <br />
+          <span className="text-xs text-gray-500">
+            Wavtopia is currently in early access. You'll need an invite code to
+            register.
+          </span>
         </p>
       </form>
     </div>

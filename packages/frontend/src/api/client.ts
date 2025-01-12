@@ -40,16 +40,74 @@ export const api = {
       });
     },
 
-    register: async (email: string, username: string, password: string) => {
-      return apiRequest("/auth/signup", {
+    register: async (
+      email: string,
+      username: string,
+      password: string,
+      inviteCode?: string
+    ) => {
+      return apiRequest("/auth/register", {
         method: "POST",
         contentType: "application/json",
-        body: JSON.stringify({ email, username, password }),
+        body: JSON.stringify({ email, username, password, inviteCode }),
       });
+    },
+
+    checkEarlyAccess: async () => {
+      return apiRequest("/auth/early-access");
     },
 
     me: async (token: string) => {
       return apiRequest("/auth/me", { token });
+    },
+  },
+
+  admin: {
+    getFeatureFlags: async () => {
+      return apiRequest("/admin/feature-flags");
+    },
+
+    createFeatureFlag: async (data: {
+      name: string;
+      description?: string;
+      isEnabled?: boolean;
+    }) => {
+      return apiRequest("/admin/feature-flags", {
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    updateFeatureFlag: async (
+      id: string,
+      data: { isEnabled?: boolean; description?: string }
+    ) => {
+      return apiRequest(`/admin/feature-flags/${id}`, {
+        method: "PATCH",
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    getInviteCodes: async () => {
+      return apiRequest("/admin/invite-codes");
+    },
+
+    createInviteCode: async (data: { maxUses?: number; expiresAt?: Date }) => {
+      return apiRequest("/admin/invite-codes", {
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    updateInviteCode: async (id: string, data: { isActive: boolean }) => {
+      return apiRequest(`/admin/invite-codes/${id}`, {
+        method: "PATCH",
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
     },
   },
 

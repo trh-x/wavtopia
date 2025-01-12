@@ -3,11 +3,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
+import { useEffect, useState } from "react";
 
 interface RegisterData {
   email: string;
   username: string;
   password: string;
+  inviteCode?: string;
 }
 
 const validationRules: ValidationRules<RegisterData> = {
@@ -46,11 +48,35 @@ const validationRules: ValidationRules<RegisterData> = {
       message: "Password must contain at least one number",
     },
   ],
+  inviteCode: [
+    {
+      validate: (value, formData) => {
+        // Only validate if early access is required
+        if (!formData.earlyAccessRequired) return true;
+        return (value as string)?.length > 0;
+      },
+      message: "Invite code is required",
+    },
+  ],
 };
 
 export function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [earlyAccessRequired, setEarlyAccessRequired] = useState(false);
+
+  useEffect(() => {
+    checkEarlyAccess();
+  }, []);
+
+  const checkEarlyAccess = async () => {
+    try {
+      const response = await api.auth.checkEarlyAccess();
+      setEarlyAccessRequired(response.required);
+    } catch (error) {
+      console.error("Failed to check early access status:", error);
+    }
+  };
 
   const {
     values,
@@ -64,13 +90,16 @@ export function Register() {
       email: "",
       username: "",
       password: "",
+      inviteCode: "",
     },
     validationRules,
+    validationContext: { earlyAccessRequired },
     onSubmit: async (values) => {
       const data = await api.auth.register(
         values.email,
         values.username,
-        values.password
+        values.password,
+        values.inviteCode
       );
       login(data.token, data.user);
       navigate("/");
@@ -112,6 +141,18 @@ export function Register() {
           onChange={(e) => handleChange("password", e.target.value)}
           error={errors.password}
         />
+
+        {earlyAccessRequired && (
+          <FormInput
+            id="inviteCode"
+            type="text"
+            label="Invite Code"
+            required
+            value={values.inviteCode}
+            onChange={(e) => handleChange("inviteCode", e.target.value)}
+            error={errors.inviteCode}
+          />
+        )}
 
         <FormButton type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating account..." : "Create Account"}
