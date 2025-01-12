@@ -40,16 +40,101 @@ export const api = {
       });
     },
 
-    register: async (email: string, username: string, password: string) => {
+    register: async (
+      email: string,
+      username: string,
+      password: string,
+      inviteCode?: string
+    ) => {
+      // TODO: Rename the route to /auth/register, as the page is also called Register.
+      // Will need a documentation update.
       return apiRequest("/auth/signup", {
         method: "POST",
         contentType: "application/json",
-        body: JSON.stringify({ email, username, password }),
+        body: JSON.stringify({ email, username, password, inviteCode }),
       });
+    },
+
+    requestEarlyAccess: async (email: string) => {
+      return apiRequest("/auth/request-early-access", {
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({ email }),
+      }) as Promise<{ success: boolean }>;
     },
 
     me: async (token: string) => {
       return apiRequest("/auth/me", { token });
+    },
+
+    getEnabledFeatures: async (token: string | null) => {
+      return apiRequest("/auth/enabled-features", { token }) as Promise<{
+        flags: string[];
+      }>;
+    },
+  },
+
+  admin: {
+    getFeatureFlags: async (token: string) => {
+      return apiRequest("/admin/feature-flags", { token });
+    },
+
+    createFeatureFlag: async (
+      token: string,
+      data: {
+        name: string;
+        description?: string;
+        isEnabled?: boolean;
+      }
+    ) => {
+      return apiRequest("/admin/feature-flags", {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    updateFeatureFlag: async (
+      token: string,
+      id: string,
+      data: { isEnabled?: boolean; description?: string }
+    ) => {
+      return apiRequest(`/admin/feature-flags/${id}`, {
+        method: "PATCH",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    getInviteCodes: async (token: string) => {
+      return apiRequest("/admin/invite-codes", { token });
+    },
+
+    createInviteCode: async (
+      token: string,
+      data: { maxUses?: number; expiresAt?: Date }
+    ) => {
+      return apiRequest("/admin/invite-codes", {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    updateInviteCode: async (
+      token: string,
+      id: string,
+      data: { isActive: boolean }
+    ) => {
+      return apiRequest(`/admin/invite-codes/${id}`, {
+        method: "PATCH",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
     },
   },
 

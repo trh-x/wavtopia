@@ -14,6 +14,9 @@ model User {
   username     String      @unique
   password     String
   role         Role        @default(USER)
+  inviteCode   InviteCode? @relation("UsedInviteCode", fields: [inviteCodeId], references: [id])
+  inviteCodeId String?     @map("invite_code_id")
+  features     UserFeature[]
   tracks       Track[]
   sharedTracks TrackShare[] @relation("SharedWithUser")
   createdAt    DateTime    @default(now()) @map("created_at")
@@ -77,4 +80,64 @@ model Component {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("components")
+}
+
+model InviteCode {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  maxUses     Int       @default(1)
+  usedCount   Int       @default(0) @map("used_count")
+  expiresAt   DateTime? @map("expires_at")
+  createdBy   String?   @map("created_by")
+  users       User[]    @relation("UsedInviteCode")
+  request     EarlyAccessRequest?
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("invite_codes")
+}
+
+model FeatureFlag {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String?
+  isEnabled   Boolean       @default(false) @map("is_enabled")
+  userFeatures UserFeature[]
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+model UserFeature {
+  id            String      @id @default(uuid())
+  userId        String      @map("user_id")
+  user          User        @relation(fields: [userId], references: [id])
+  featureFlagId String      @map("feature_flag_id")
+  featureFlag   FeatureFlag @relation(fields: [featureFlagId], references: [id])
+  isEnabled     Boolean     @default(false) @map("is_enabled")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@unique([userId, featureFlagId])
+  @@map("user_features")
+}
+
+model EarlyAccessRequest {
+  id          String    @id @default(uuid())
+  email       String    @unique
+  status      RequestStatus @default(PENDING)
+  inviteCode  InviteCode?   @relation(fields: [inviteCodeId], references: [id])
+  inviteCodeId String?      @unique @map("invite_code_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("early_access_requests")
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 } 

@@ -12,6 +12,11 @@ import { Register } from "@/pages/Register";
 import { UploadTrack } from "@/pages/UploadTrack";
 import { MyTracks } from "./pages/MyTracks";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { FeatureFlagsProvider } from "./hooks/useFeatureFlags";
+import { AdminRoute } from "@/components/AdminRoute";
+import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
+import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
+import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -33,6 +38,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/request-early-access" element={<RequestEarlyAccess />} />
         <Route path="/" element={<Home />} />
         <Route path="/track/:id" element={<TrackDetails />} />
         <Route path="/my-tracks" element={<MyTracks />} />
@@ -44,6 +50,22 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/admin/feature-flags"
+          element={
+            <AdminRoute>
+              <FeatureFlagsAdmin />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/invite-codes"
+          element={
+            <AdminRoute>
+              <InviteCodesAdmin />
+            </AdminRoute>
+          }
+        />
       </Routes>
     </Layout>
   );
@@ -53,7 +75,9 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <FeatureFlagsProvider>
+          <AppRoutes />
+        </FeatureFlagsProvider>
       </AuthProvider>
     </Router>
   );

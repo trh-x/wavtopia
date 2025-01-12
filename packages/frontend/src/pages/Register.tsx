@@ -3,54 +3,74 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 interface RegisterData {
   email: string;
   username: string;
   password: string;
+  inviteCode?: string;
 }
 
-const validationRules: ValidationRules<RegisterData> = {
-  email: [
-    {
-      validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string),
-      message: "Please enter a valid email address",
-    },
-  ],
-  username: [
-    {
-      validate: (value) => (value as string).length >= 3,
-      message: "Username must be at least 3 characters long",
-    },
-    {
-      validate: (value) => /^[a-zA-Z0-9_-]+$/.test(value as string),
-      message:
-        "Username can only contain letters, numbers, underscores, and hyphens",
-    },
-  ],
-  password: [
-    {
-      validate: (value) => (value as string).length >= 8,
-      message: "Password must be at least 8 characters long",
-    },
-    {
-      validate: (value) => /[A-Z]/.test(value as string),
-      message: "Password must contain at least one uppercase letter",
-    },
-    {
-      validate: (value) => /[a-z]/.test(value as string),
-      message: "Password must contain at least one lowercase letter",
-    },
-    {
-      validate: (value) => /[0-9]/.test(value as string),
-      message: "Password must contain at least one number",
-    },
-  ],
-};
+function getValidationRules(
+  earlyAccessRequired: boolean
+): ValidationRules<RegisterData> {
+  return {
+    email: [
+      {
+        validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string),
+        message: "Please enter a valid email address",
+      },
+    ],
+    username: [
+      {
+        validate: (value) => (value as string).length >= 3,
+        message: "Username must be at least 3 characters long",
+      },
+      {
+        validate: (value) => /^[a-zA-Z0-9_-]+$/.test(value as string),
+        message:
+          "Username can only contain letters, numbers, underscores, and hyphens",
+      },
+    ],
+    password: [
+      {
+        validate: (value) => (value as string).length >= 8,
+        message: "Password must be at least 8 characters long",
+      },
+      {
+        validate: (value) => /[A-Z]/.test(value as string),
+        message: "Password must contain at least one uppercase letter",
+      },
+      {
+        validate: (value) => /[a-z]/.test(value as string),
+        message: "Password must contain at least one lowercase letter",
+      },
+      {
+        validate: (value) => /[0-9]/.test(value as string),
+        message: "Password must contain at least one number",
+      },
+    ],
+    inviteCode: [
+      {
+        validate: (value) => {
+          if (!earlyAccessRequired) return true;
+          return (value as string)?.length > 0;
+        },
+        message: "Invite code is required",
+      },
+    ],
+  };
+}
 
 export function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const { isFeatureEnabled } = useFeatureFlags();
+  const isEarlyAccessRequired = isFeatureEnabled("EARLY_ACCESS_REQUIRED");
+
+  const validationRules = getValidationRules(isEarlyAccessRequired);
 
   const {
     values,
@@ -64,13 +84,15 @@ export function Register() {
       email: "",
       username: "",
       password: "",
+      inviteCode: "",
     },
     validationRules,
     onSubmit: async (values) => {
       const data = await api.auth.register(
         values.email,
         values.username,
-        values.password
+        values.password,
+        values.inviteCode
       );
       login(data.token, data.user);
       navigate("/");
@@ -112,6 +134,18 @@ export function Register() {
           onChange={(e) => handleChange("password", e.target.value)}
           error={errors.password}
         />
+
+        {isEarlyAccessRequired && (
+          <FormInput
+            id="inviteCode"
+            type="text"
+            label="Invite Code"
+            required
+            value={values.inviteCode}
+            onChange={(e) => handleChange("inviteCode", e.target.value)}
+            error={errors.inviteCode}
+          />
+        )}
 
         <FormButton type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating account..." : "Create Account"}

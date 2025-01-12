@@ -8,6 +8,7 @@ import { trackRoutes } from "./routes/track";
 import { tracksRoutes } from "./routes/tracks";
 import { initializeStorage } from "./services/storage";
 import { config } from "./config";
+import adminRoutes from "./routes/admin";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.get("/health", (_, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/track", trackRoutes);
 app.use("/api/tracks", tracksRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Error handling
 app.use(errorHandler);

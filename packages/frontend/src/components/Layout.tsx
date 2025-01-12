@@ -9,15 +9,34 @@ export function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <div className="min-h-screen">
       <nav className="bg-primary-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="text-xl font-bold">
-              Wavtopia
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link to="/" className="text-xl font-bold">
+                Wavtopia
+              </Link>
+              {isAdmin && (
+                <div className="flex items-center gap-2 ml-8">
+                  <Link
+                    to="/admin/feature-flags"
+                    className="text-sm hover:text-primary-200"
+                  >
+                    Feature Flags
+                  </Link>
+                  <Link
+                    to="/admin/invite-codes"
+                    className="text-sm hover:text-primary-200"
+                  >
+                    Invite Codes
+                  </Link>
+                </div>
+              )}
+            </div>
             {user ? (
               <div className="flex items-center gap-4">
                 <Link
