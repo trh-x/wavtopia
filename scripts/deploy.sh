@@ -2,8 +2,7 @@
 set -e
 
 # Default values
-# TODO: Add this back in once the env files are all the same. Update the usage message as well.
-# ENV_FILE=".env.docker"
+REGISTRY_PORT="5000"
 COMMAND=""
 
 # Help message
@@ -25,7 +24,6 @@ Commands:
   deploy-prod      Deploy to production server
 
 Options:
-  --env FILE       Specify environment file (default: .env.docker) (not used yet)
   -h, --help       Show this help message
 EOT
 }
@@ -33,22 +31,12 @@ EOT
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --env) ENV_FILE="$2"; shift ;;
         -h|--help) show_help; exit 0 ;;
         build-*|up-*|down*|clean|setup-remote|deploy-prod) COMMAND="$1" ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
 done
-
-# Function to copy env files to services
-# TODO: Add this back in once the env files are all the same
-# copy_env_files() {
-#     echo "Copying environment files..."
-#     cp $ENV_FILE packages/backend/.env.docker
-#     cp $ENV_FILE packages/frontend/.env.docker
-#     cp $ENV_FILE packages/media/.env.docker
-# }
 
 # Function to setup remote context
 setup_remote() {
@@ -74,6 +62,27 @@ setup_remote() {
     echo "Testing connection..."
     if docker --context production info >/dev/null 2>&1; then
         echo "Connection successful!"
+        
+        # Check if registry is already running
+        if docker --context production container inspect registry >/dev/null 2>&1; then
+            echo "Registry already running on ${host}:${REGISTRY_PORT}"
+        else
+            # Check if port is already in use
+            if docker --context production container ls -q --filter publish="${REGISTRY_PORT}" | grep -q .; then
+                echo "Warning: Port ${REGISTRY_PORT} is already in use. Please ensure there isn't another registry running."
+                exit 1
+            fi
+            
+            # Set up private registry on remote host
+            echo "Setting up private registry on remote host..."
+            docker --context production run -d \
+                --restart=always \
+                --name registry \
+                -p "${REGISTRY_PORT}:5000" \
+                registry:2
+            
+            echo "Registry is running on ${host}:${REGISTRY_PORT}"
+        fi
     else
         echo "Connection failed. Please check your SSH configuration and try again."
         docker context rm production
@@ -88,9 +97,51 @@ deploy_prod() {
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
     fi
-    docker context use production || (echo "Please set up production context first" && exit 1)
-    docker compose --profile production up -d
+
+    # Get the remote host from the current context
+    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    REMOTE_USER=$(echo "$REMOTE_HOST" | cut -d'@' -f1)
+    REMOTE_HOSTNAME=$(echo "$REMOTE_HOST" | cut -d'@' -f2)
+    REGISTRY="localhost:${REGISTRY_PORT}"
+
+    # Set up SSH tunnel for registry access
+    echo "Setting up SSH tunnel for registry access..."
+    ssh -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$REMOTE_HOST"
+    TUNNEL_PID=$!
+    
+    # Ensure tunnel is closed on script exit
+    trap 'echo "Cleaning up SSH tunnel..."; kill $TUNNEL_PID 2>/dev/null || true' EXIT
+
+    # Wait a moment for tunnel to establish
+    sleep 2
+
+    # Build and tag images locally
+    echo "Building images locally..."
     docker context use default
+    
+    # Build and push workspace image
+    build_workspace
+    docker tag wavtopia-workspace "${REGISTRY}/wavtopia-workspace"
+    docker push "${REGISTRY}/wavtopia-workspace"
+    
+    # Build and push service images
+    docker compose build media backend
+    docker tag wavtopia-media "${REGISTRY}/wavtopia-media"
+    docker tag wavtopia-backend "${REGISTRY}/wavtopia-backend"
+    docker push "${REGISTRY}/wavtopia-media"
+    docker push "${REGISTRY}/wavtopia-backend"
+
+    # Update docker-compose to use the remote registry address
+    export REGISTRY_PREFIX="${REMOTE_HOSTNAME}:${REGISTRY_PORT}/"
+
+    # Switch to production context and deploy
+    echo "Deploying services..."
+    docker context use production
+    docker compose --profile production up -d
+
+    # Switch back to default context
+    docker context use default
+    echo "Deployment complete!"
 }
 
 # Function to build workspace (used by other build commands)

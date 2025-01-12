@@ -52,7 +52,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: wavtopia-workspace
+    image: ${REGISTRY_PREFIX:-}wavtopia-workspace
 
   media:
     profiles:
@@ -61,11 +61,11 @@ services:
       context: .
       dockerfile: packages/media/Dockerfile
       args:
-        - WORKSPACE_IMAGE=wavtopia-workspace
+        - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
+    image: ${REGISTRY_PREFIX:-}wavtopia-media
     ports:
       - "3001:3001"
     volumes:
-      # temp_files is shared with backend
       - temp_files:/tmp
     networks:
       - wavtopia-net
@@ -86,7 +86,8 @@ services:
       context: .
       dockerfile: packages/backend/Dockerfile
       args:
-        - WORKSPACE_IMAGE=wavtopia-workspace
+        - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
+    image: ${REGISTRY_PREFIX:-}wavtopia-backend
     ports:
       - "3000:3000"
     volumes:
@@ -111,7 +112,7 @@ services:
       context: .
       dockerfile: packages/frontend/Dockerfile
       args:
-        - WORKSPACE_IMAGE=wavtopia-workspace
+        - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
     ports:
       - "80:80"
     networks:
