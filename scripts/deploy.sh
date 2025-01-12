@@ -118,6 +118,18 @@ test_registry() {
     echo "Registry connection test complete"
 }
 
+# Function to get registry port from container
+get_registry_port() {
+    # Try to get the host port from container inspection
+    local port=$(docker --context production inspect registry 2>/dev/null | grep -o '"HostPort": "[^"]*"' | cut -d'"' -f4)
+    if [ -n "$port" ]; then
+        echo "$port"
+        return 0
+    fi
+    # Fallback to default port
+    echo "${REGISTRY_PORT}"
+}
+
 # Function to setup remote context
 setup_remote() {
     echo "Setting up remote Docker context..."
@@ -145,7 +157,16 @@ setup_remote() {
         
         # Check if registry is already running
         if docker --context production container inspect registry >/dev/null 2>&1; then
-            echo "Registry already running on ${host}:${REGISTRY_PORT}"
+            local detected_port=$(get_registry_port)
+            echo "Registry already running on ${host}:${detected_port}"
+            export REGISTRY_PORT="${detected_port}"
+            # Check if registry is actually responding
+            if docker --context production exec registry wget -q --spider http://localhost:${detected_port}/v2/ 2>/dev/null; then
+                echo "Registry is healthy and responding to requests"
+            else
+                echo "Warning: Registry container exists but may not be healthy"
+                echo "You may want to restart it with: docker --context production restart registry"
+            fi
         else
             # Check if port is already in use
             if docker --context production container ls -q --filter publish="${REGISTRY_PORT}" | grep -q .; then
@@ -160,11 +181,22 @@ setup_remote() {
                 docker --context production run -d \
                     --restart=always \
                     --name registry \
-                    -p "${REGISTRY_PORT}:5000" \
+                    --network host \
                     -v registry_data:/var/lib/registry \
+                    -e REGISTRY_HTTP_ADDR=localhost:${REGISTRY_PORT} \
                     registry:2
                 
-                echo "Registry is running on ${host}:${REGISTRY_PORT}"
+                echo "Waiting for registry to start..."
+                sleep 5
+                
+                # Verify registry is responding
+                if docker --context production exec registry wget -q --spider http://localhost:${REGISTRY_PORT}/v2/ 2>/dev/null; then
+                    echo "Registry is running and healthy on ${host}:${REGISTRY_PORT}"
+                else
+                    echo "Warning: Registry container started but is not responding"
+                    echo "Check logs with: docker --context production logs registry"
+                    exit 1
+                fi
             else
                 echo "Skipping registry creation. Please ensure a registry is available at ${host}:${REGISTRY_PORT}"
             fi
@@ -188,6 +220,9 @@ deploy_prod() {
     REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     REMOTE_USER=$(echo "$REMOTE_HOST" | cut -d'@' -f1)
     REMOTE_HOSTNAME=$(echo "$REMOTE_HOST" | cut -d'@' -f2)
+    
+    # Get actual registry port
+    REGISTRY_PORT=$(get_registry_port)
     REGISTRY="localhost:${REGISTRY_PORT}"
 
     # Set up SSH tunnel
