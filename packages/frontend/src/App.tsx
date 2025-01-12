@@ -16,6 +16,9 @@ import { FeatureFlagsProvider } from "./hooks/useFeatureFlags";
 import { AdminRoute } from "@/components/AdminRoute";
 import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
 import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -71,12 +74,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <FeatureFlagsProvider>
-          <AppRoutes />
-        </FeatureFlagsProvider>
-      </AuthProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <FeatureFlagsProvider>
+            <AppRoutes />
+          </FeatureFlagsProvider>
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 }
