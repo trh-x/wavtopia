@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
+    "arch-install": "./scripts/apply-arch-lockfile.sh && pnpm install",
     "dev": "pnpm -r dev",
     "dev:frontend": "pnpm --filter @wavtopia/frontend dev",
     "dev:backend": "pnpm --filter @wavtopia/backend dev",

@@ -36,12 +36,25 @@ services:
     networks:
       - wavtopia-net
 
+  workspace:
+    profiles:
+      - build
+      - production
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # args:
+      # TARGETARCH: ${TARGETARCH:-arm64}
+    image: wavtopia-workspace
+
   media:
     profiles:
       - production
     build:
       context: .
       dockerfile: packages/media/Dockerfile
+      args:
+        - WORKSPACE_IMAGE=wavtopia-workspace
     ports:
       - "3001:3001"
     volumes:
@@ -49,8 +62,12 @@ services:
     networks:
       - wavtopia-net
     depends_on:
-      - minio
-      - redis
+      workspace:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      redis:
+        condition: service_started
 
 volumes:
   postgres_data:

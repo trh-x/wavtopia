@@ -1,0 +1,41 @@
+FROM node:18-slim AS base
+
+SHELL ["/bin/sh", "-c"]
+
+# Install system dependencies - just openssl for now, to ensure it's aligned with the media service
+# where openssl is installed as a by-product of the build process. The prisma client needs it.
+RUN apt-get update && \
+    apt-get install -y \
+    openssl \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install pnpm
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Set pnpm home
+ENV PNPM_HOME="/pnpm" \
+    PATH="/pnpm:$PATH"
+
+# Detect architecture and set ARG
+# ARG TARGETARCH
+# ENV ARCH=${TARGETARCH:-arm64}
+
+# Copy workspace files first
+COPY pnpm-workspace.yaml package.json ./
+COPY pnpm-lock*.yaml ./
+# COPY pnpm-lock.${ARCH}.yaml pnpm-lock.yaml
+
+# Copy all packages
+COPY packages ./packages
+
+# Copy scripts
+COPY scripts ./scripts
+
+# Install all dependencies
+RUN pnpm arch-install --frozen-lockfile
+
+# Build all packages
+RUN pnpm -r build
