@@ -1,9 +1,9 @@
 # Get the workspace image name from build args
 ARG WORKSPACE_IMAGE
-FROM ${WORKSPACE_IMAGE} AS pruned
+FROM ${WORKSPACE_IMAGE} AS prod-build
 
-# Create pruned deployment for media service
-RUN pnpm --filter @wavtopia/media --prod deploy pruned
+# Create deployment for media service
+RUN pnpm --filter @wavtopia/media --prod deploy media-service
 
 # Create the final image
 FROM node:18-slim
@@ -32,8 +32,8 @@ RUN cd deps/milkytracker && \
 
 WORKDIR /app
 
-# Copy the pruned deployment
-COPY --from=pruned /app/pruned .
+# Copy the media-service deployment
+COPY --from=prod-build /app/media-service .
 
 # Create directories for file processing
 RUN mkdir -p /tmp/uploads /tmp/converted && \

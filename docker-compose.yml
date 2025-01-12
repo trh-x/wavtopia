@@ -65,7 +65,8 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - media_tmp:/tmp
+      # temp_files is shared with backend
+      - temp_files:/tmp
     networks:
       - wavtopia-net
     depends_on:
@@ -75,12 +76,38 @@ services:
         condition: service_started
       redis:
         condition: service_started
+      postgres:
+        condition: service_started
+
+  backend:
+    profiles:
+      - production
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+      args:
+        - WORKSPACE_IMAGE=wavtopia-workspace
+    ports:
+      - "3000:3000"
+    volumes:
+      - temp_files:/tmp
+    networks:
+      - wavtopia-net
+    depends_on:
+      workspace:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_started
 
 volumes:
   postgres_data:
   minio_data:
   redis_data:
-  media_tmp:
+  temp_files:
 
 networks:
   wavtopia-net:
