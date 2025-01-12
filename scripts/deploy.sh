@@ -272,7 +272,7 @@ deploy_prod() {
     
     # Run database migrations
     echo "Running database migrations..."
-    docker compose --profile production run --rm backend pnpm --filter @wavtopia/core-storage migrate:deploy
+    docker compose --profile production run --rm backend sh -c "cd /app/packages/core-storage && npm run migrate:deploy"
     
     # Deploy with pulled images
     docker compose --profile production pull
