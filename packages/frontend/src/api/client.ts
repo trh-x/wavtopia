@@ -59,7 +59,7 @@ export const api = {
       return apiRequest("/auth/me", { token });
     },
 
-    getEnabledFeatures: async (token: string) => {
+    getEnabledFeatures: async (token: string | null) => {
       return apiRequest("/auth/enabled-features", { token }) as Promise<{
         flags: string[];
       }>;

@@ -28,12 +28,6 @@ export function FeatureFlagsProvider({
   useEffect(() => {
     async function fetchFeatures() {
       const token = getToken();
-      if (!token) {
-        setEnabledFeatures(new Set());
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const { flags } = await api.auth.getEnabledFeatures(token);
         setEnabledFeatures(new Set(flags));

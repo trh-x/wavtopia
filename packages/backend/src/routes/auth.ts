@@ -84,6 +84,7 @@ router.get("/users", authenticate, async (req, res, next) => {
   }
 });
 
+// TODO: Move this out of auth, as the user is not required to be logged in
 router.get("/enabled-features", async (req, res, next) => {
   // Get the feature flags that are enabled for the user
   const flags = await getEnabledFeatureFlags(req.user?.id);
