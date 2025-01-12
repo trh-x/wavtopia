@@ -8,7 +8,7 @@ RUN pnpm --filter @wavtopia/media --prod deploy pruned
 # Create the final image
 FROM node:18-slim
 
-# Install system dependencies
+# Install FFmpeg and build dependencies
 RUN apt-get update && \
     apt-get install -y \
     ffmpeg \
