@@ -22,6 +22,7 @@ Commands:
   clean            Remove all containers, volumes, and unused images
   setup-remote     Configure remote deployment
   deploy-prod      Deploy to production server
+  test-registry    Test connection to registry through SSH tunnel
 
 Options:
   -h, --help       Show this help message
@@ -32,7 +33,7 @@ EOT
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help) show_help; exit 0 ;;
-        build-*|up-*|down*|clean|setup-remote|deploy-prod) COMMAND="$1" ;;
+        build-*|up-*|down*|clean|setup-remote|deploy-prod|test-registry) COMMAND="$1" ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
@@ -52,22 +53,31 @@ setup_tunnel() {
     echo "Setting up SSH tunnel for registry access..."
     
     # Check for existing process on the port
-    local existing_pid=$(lsof -ti:${REGISTRY_PORT})
-    if [ -n "$existing_pid" ]; then
-        echo "Error: Port ${REGISTRY_PORT} is already in use by process ${existing_pid}"
-        echo "Please stop the existing process and try again"
+    if ss -ln | grep -q ":${REGISTRY_PORT}\\b"; then
+        echo "Error: Port ${REGISTRY_PORT} is already in use"
+        echo "Please stop any existing process using this port and try again"
         exit 1
     fi
     
-    # Start new tunnel
+    # Start new tunnel with verbose output
+    echo "Creating SSH tunnel to ${remote_host}..."
     ssh -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$remote_host"
     if [ $? -ne 0 ]; then
         echo "Failed to establish SSH tunnel"
         exit 1
     fi
     
-    # Get tunnel PID
-    TUNNEL_PID=$(lsof -ti:${REGISTRY_PORT})
+    # Wait for tunnel to be established and get PID
+    echo "Waiting for tunnel to be established..."
+    for i in {1..5}; do
+        TUNNEL_PID=$(ss -lpn | grep ":${REGISTRY_PORT}" | grep -o 'pid=\([0-9]*\)' | cut -d= -f2)
+        if [ -n "$TUNNEL_PID" ]; then
+            echo "Tunnel established with PID ${TUNNEL_PID}"
+            break
+        fi
+        sleep 1
+    done
+
     if [ -z "$TUNNEL_PID" ]; then
         echo "Failed to get tunnel PID"
         exit 1
@@ -77,17 +87,58 @@ setup_tunnel() {
     trap cleanup_tunnel EXIT
     
     # Wait for tunnel to be ready
+    echo "Testing tunnel connection..."
     for i in {1..5}; do
         if nc -z localhost ${REGISTRY_PORT} 2>/dev/null; then
-            echo "Tunnel established successfully"
+            echo "Port ${REGISTRY_PORT} is now accessible"
             return 0
         fi
+        echo "Attempt $i: Waiting for port ${REGISTRY_PORT} to be ready..."
         sleep 1
     done
     
     echo "Timeout waiting for tunnel to be ready"
     cleanup_tunnel
     exit 1
+}
+
+# Function to test registry connection
+test_registry() {
+    echo "Testing registry connection..."
+    if ! docker --context production info >/dev/null 2>&1; then
+        echo "Cannot connect to production server. Please run setup-remote first."
+        exit 1
+    fi
+
+    # Get the remote host from the current context
+    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    
+    # Get actual registry port before setting up tunnel
+    REGISTRY_PORT=$(get_registry_port)
+    echo "Detected registry port: ${REGISTRY_PORT}"
+    
+    # Set up SSH tunnel
+    setup_tunnel "$REMOTE_HOST"
+    
+    echo "Testing registry API..."
+    curl -v http://localhost:${REGISTRY_PORT}/v2/ || {
+        echo "Failed to connect to registry API"
+        exit 1
+    }
+    
+    echo "Registry connection test complete"
+}
+
+# Function to get registry port from container
+get_registry_port() {
+    # Try to get the host port from container inspection using jq
+    local port=$(docker --context production inspect registry 2>/dev/null | jq -r '.[0].NetworkSettings.Ports."5000/tcp"[0].HostPort')
+    if [ "$port" != "null" ] && [ -n "$port" ]; then
+        echo -n "$port"
+        return 0
+    fi
+    # Fallback to default port
+    echo -n "${REGISTRY_PORT}"
 }
 
 # Function to setup remote context
@@ -117,7 +168,16 @@ setup_remote() {
         
         # Check if registry is already running
         if docker --context production container inspect registry >/dev/null 2>&1; then
-            echo "Registry already running on ${host}:${REGISTRY_PORT}"
+            local detected_port=$(get_registry_port)
+            echo "Registry already running on ${host}:${detected_port}"
+            export REGISTRY_PORT="${detected_port}"
+            # Check if registry is actually responding
+            if docker --context production exec registry wget -q --spider http://localhost:${detected_port}/v2/ 2>/dev/null; then
+                echo "Registry is healthy and responding to requests"
+            else
+                echo "Warning: Registry container exists but may not be healthy"
+                echo "You may want to restart it with: docker --context production restart registry"
+            fi
         else
             # Check if port is already in use
             if docker --context production container ls -q --filter publish="${REGISTRY_PORT}" | grep -q .; then
@@ -132,11 +192,22 @@ setup_remote() {
                 docker --context production run -d \
                     --restart=always \
                     --name registry \
-                    -p "${REGISTRY_PORT}:5000" \
+                    --network host \
                     -v registry_data:/var/lib/registry \
+                    -e REGISTRY_HTTP_ADDR=localhost:${REGISTRY_PORT} \
                     registry:2
                 
-                echo "Registry is running on ${host}:${REGISTRY_PORT}"
+                echo "Waiting for registry to start..."
+                sleep 5
+                
+                # Verify registry is responding
+                if docker --context production exec registry wget -q --spider http://localhost:${REGISTRY_PORT}/v2/ 2>/dev/null; then
+                    echo "Registry is running and healthy on ${host}:${REGISTRY_PORT}"
+                else
+                    echo "Warning: Registry container started but is not responding"
+                    echo "Check logs with: docker --context production logs registry"
+                    exit 1
+                fi
             else
                 echo "Skipping registry creation. Please ensure a registry is available at ${host}:${REGISTRY_PORT}"
             fi
@@ -160,6 +231,10 @@ deploy_prod() {
     REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     REMOTE_USER=$(echo "$REMOTE_HOST" | cut -d'@' -f1)
     REMOTE_HOSTNAME=$(echo "$REMOTE_HOST" | cut -d'@' -f2)
+    
+    # Get actual registry port before setting up tunnel
+    REGISTRY_PORT=$(get_registry_port)
+    echo "Detected registry port: ${REGISTRY_PORT}"
     REGISTRY="localhost:${REGISTRY_PORT}"
 
     # Set up SSH tunnel
@@ -181,12 +256,14 @@ deploy_prod() {
     docker push "${REGISTRY}/wavtopia-media"
     docker push "${REGISTRY}/wavtopia-backend"
 
-    # Update docker-compose to use the remote registry address
-    export REGISTRY_PREFIX="${REMOTE_HOSTNAME}:${REGISTRY_PORT}/"
-
     # Switch to production context and deploy
     echo "Deploying services..."
     docker context use production
+    
+    # Use localhost for registry when deploying since we're on the remote host
+    export REGISTRY_PREFIX="localhost:${REGISTRY_PORT}/"
+    echo "Using registry at ${REGISTRY_PREFIX}"
+    
     docker compose --profile production up -d
 
     # Switch back to default context
@@ -240,6 +317,9 @@ case $COMMAND in
         ;;
     "deploy-prod")
         deploy_prod
+        ;;
+    "test-registry")
+        test_registry
         ;;
     "")
         echo "No command specified"

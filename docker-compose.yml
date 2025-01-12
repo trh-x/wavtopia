@@ -89,7 +89,7 @@ services:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
     image: ${REGISTRY_PREFIX:-}wavtopia-backend
     ports:
-      - "3000:3000"
+      - "3002:3002"
     volumes:
       - temp_files:/tmp
     networks:
