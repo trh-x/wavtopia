@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext } from "react";
 import { api } from "../api/client";
 import { useAuthToken as useAuth } from "./useAuthToken";
+import { useQuery } from "@tanstack/react-query";
 
 interface FeatureFlagsContextType {
   enabledFeatures: Set<string>;
@@ -19,28 +20,20 @@ export function FeatureFlagsProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [enabledFeatures, setEnabledFeatures] = useState<Set<string>>(
-    new Set()
-  );
-  const [isLoading, setIsLoading] = useState(true);
   const { getToken } = useAuth();
+  const token = getToken();
 
-  useEffect(() => {
-    async function fetchFeatures() {
-      const token = getToken();
-      try {
-        const { flags } = await api.auth.getEnabledFeatures(token);
-        setEnabledFeatures(new Set(flags));
-      } catch (error) {
-        console.error("Failed to fetch feature flags:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  const { data: flags = [], isLoading } = useQuery({
+    queryKey: ["enabledFeatures", token],
+    queryFn: async () => {
+      const { flags } = await api.auth.getEnabledFeatures(token);
+      return flags;
+    },
+    // Don't refetch on window focus for feature flags
+    refetchOnWindowFocus: false,
+  });
 
-    fetchFeatures();
-  }, [getToken]);
-
+  const enabledFeatures = new Set(flags);
   const isFeatureEnabled = (feature: string) => enabledFeatures.has(feature);
 
   return (
