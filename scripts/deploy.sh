@@ -38,6 +38,53 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
+# Function to cleanup SSH tunnel
+cleanup_tunnel() {
+    if [ -n "$TUNNEL_PID" ] && ps -p $TUNNEL_PID > /dev/null; then
+        echo "Cleaning up SSH tunnel..."
+        kill $TUNNEL_PID
+    fi
+}
+
+# Function to setup SSH tunnel
+setup_tunnel() {
+    local remote_host="$1"
+    echo "Setting up SSH tunnel for registry access..."
+    
+    # Kill any existing tunnels on this port
+    lsof -ti:${REGISTRY_PORT} | xargs kill -9 2>/dev/null || true
+    
+    # Start new tunnel
+    ssh -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$remote_host"
+    if [ $? -ne 0 ]; then
+        echo "Failed to establish SSH tunnel"
+        exit 1
+    fi
+    
+    # Get tunnel PID
+    TUNNEL_PID=$(lsof -ti:${REGISTRY_PORT})
+    if [ -z "$TUNNEL_PID" ]; then
+        echo "Failed to get tunnel PID"
+        exit 1
+    fi
+    
+    # Set up cleanup trap
+    trap cleanup_tunnel EXIT
+    
+    # Wait for tunnel to be ready
+    for i in {1..5}; do
+        if nc -z localhost ${REGISTRY_PORT} 2>/dev/null; then
+            echo "Tunnel established successfully"
+            return 0
+        fi
+        sleep 1
+    done
+    
+    echo "Timeout waiting for tunnel to be ready"
+    cleanup_tunnel
+    exit 1
+}
+
 # Function to setup remote context
 setup_remote() {
     echo "Setting up remote Docker context..."
@@ -110,16 +157,8 @@ deploy_prod() {
     REMOTE_HOSTNAME=$(echo "$REMOTE_HOST" | cut -d'@' -f2)
     REGISTRY="localhost:${REGISTRY_PORT}"
 
-    # Set up SSH tunnel for registry access
-    echo "Setting up SSH tunnel for registry access..."
-    ssh -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$REMOTE_HOST"
-    TUNNEL_PID=$!
-    
-    # Ensure tunnel is closed on script exit
-    trap 'echo "Cleaning up SSH tunnel..."; kill $TUNNEL_PID 2>/dev/null || true' EXIT
-
-    # Wait a moment for tunnel to establish
-    sleep 2
+    # Set up SSH tunnel
+    setup_tunnel "$REMOTE_HOST"
 
     # Build and tag images locally
     echo "Building images locally..."
