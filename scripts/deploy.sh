@@ -22,6 +22,7 @@ Commands:
   clean            Remove all containers, volumes, and unused images
   setup-remote     Configure remote deployment
   deploy-prod      Deploy to production server
+  test-registry    Test connection to registry through SSH tunnel
 
 Options:
   -h, --help       Show this help message
@@ -32,7 +33,7 @@ EOT
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help) show_help; exit 0 ;;
-        build-*|up-*|down*|clean|setup-remote|deploy-prod) COMMAND="$1" ;;
+        build-*|up-*|down*|clean|setup-remote|deploy-prod|test-registry) COMMAND="$1" ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
@@ -59,8 +60,9 @@ setup_tunnel() {
         exit 1
     fi
     
-    # Start new tunnel
-    ssh -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$remote_host"
+    # Start new tunnel with verbose output
+    echo "Creating SSH tunnel to ${remote_host}..."
+    ssh -v -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$remote_host"
     if [ $? -ne 0 ]; then
         echo "Failed to establish SSH tunnel"
         exit 1
@@ -72,22 +74,48 @@ setup_tunnel() {
         echo "Failed to get tunnel PID"
         exit 1
     fi
+    echo "Tunnel established with PID ${TUNNEL_PID}"
     
     # Set up cleanup trap
     trap cleanup_tunnel EXIT
     
     # Wait for tunnel to be ready
+    echo "Testing tunnel connection..."
     for i in {1..5}; do
-        if nc -z localhost ${REGISTRY_PORT} 2>/dev/null; then
-            echo "Tunnel established successfully"
+        if nc -zv localhost ${REGISTRY_PORT} 2>/dev/null; then
+            echo "Port ${REGISTRY_PORT} is now accessible"
             return 0
         fi
+        echo "Attempt $i: Waiting for port ${REGISTRY_PORT} to be ready..."
         sleep 1
     done
     
     echo "Timeout waiting for tunnel to be ready"
     cleanup_tunnel
     exit 1
+}
+
+# Function to test registry connection
+test_registry() {
+    echo "Testing registry connection..."
+    if ! docker --context production info >/dev/null 2>&1; then
+        echo "Cannot connect to production server. Please run setup-remote first."
+        exit 1
+    fi
+
+    # Get the remote host from the current context
+    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    
+    # Set up SSH tunnel
+    setup_tunnel "$REMOTE_HOST"
+    
+    echo "Testing registry API..."
+    curl -v http://localhost:${REGISTRY_PORT}/v2/ || {
+        echo "Failed to connect to registry API"
+        exit 1
+    }
+    
+    echo "Registry connection test complete"
 }
 
 # Function to setup remote context
@@ -240,6 +268,9 @@ case $COMMAND in
         ;;
     "deploy-prod")
         deploy_prod
+        ;;
+    "test-registry")
+        test_registry
         ;;
     "")
         echo "No command specified"
