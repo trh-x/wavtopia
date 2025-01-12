@@ -1,5 +1,8 @@
 services:
   postgres:
+    profiles:
+      - production
+      - development
     image: postgres:14-alpine
     environment:
       POSTGRES_USER: wavtopia
@@ -13,6 +16,9 @@ services:
       - wavtopia-net
 
   minio:
+    profiles:
+      - production
+      - development
     image: minio/minio
     environment:
       MINIO_ROOT_USER: wavtopia
@@ -27,6 +33,9 @@ services:
       - wavtopia-net
 
   redis:
+    profiles:
+      - production
+      - development
     image: redis:7-alpine
     ports:
       - "6379:6379"
