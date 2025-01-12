@@ -246,15 +246,15 @@ deploy_prod() {
     
     # Build and push workspace image
     build_workspace
-    docker tag wavtopia-workspace "${REGISTRY}/wavtopia-workspace"
-    docker push "${REGISTRY}/wavtopia-workspace"
+    docker tag wavtopia-workspace "${REGISTRY}/wavtopia-workspace:latest"
+    docker push "${REGISTRY}/wavtopia-workspace:latest"
     
     # Build and push service images
     docker compose build media backend
-    docker tag wavtopia-media "${REGISTRY}/wavtopia-media"
-    docker tag wavtopia-backend "${REGISTRY}/wavtopia-backend"
-    docker push "${REGISTRY}/wavtopia-media"
-    docker push "${REGISTRY}/wavtopia-backend"
+    docker tag wavtopia-media "${REGISTRY}/wavtopia-media:latest"
+    docker tag wavtopia-backend "${REGISTRY}/wavtopia-backend:latest"
+    docker push "${REGISTRY}/wavtopia-media:latest"
+    docker push "${REGISTRY}/wavtopia-backend:latest"
 
     # Switch to production context and deploy
     echo "Deploying services..."
