@@ -106,11 +106,12 @@ test_registry() {
     # Get the remote host from the current context
     REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     
+    # Get actual registry port before setting up tunnel
+    REGISTRY_PORT=$(get_registry_port)
+    echo "Detected registry port: ${REGISTRY_PORT}"
+    
     # Set up SSH tunnel
     setup_tunnel "$REMOTE_HOST"
-
-    # Get actual registry port
-    REGISTRY_PORT=$(get_registry_port)
     
     echo "Testing registry API..."
     curl -v http://localhost:${REGISTRY_PORT}/v2/ || {
@@ -224,8 +225,9 @@ deploy_prod() {
     REMOTE_USER=$(echo "$REMOTE_HOST" | cut -d'@' -f1)
     REMOTE_HOSTNAME=$(echo "$REMOTE_HOST" | cut -d'@' -f2)
     
-    # Get actual registry port
+    # Get actual registry port before setting up tunnel
     REGISTRY_PORT=$(get_registry_port)
+    echo "Detected registry port: ${REGISTRY_PORT}"
     REGISTRY="localhost:${REGISTRY_PORT}"
 
     # Set up SSH tunnel
