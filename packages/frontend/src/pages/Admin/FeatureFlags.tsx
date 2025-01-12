@@ -23,9 +23,9 @@ export function FeatureFlagsAdmin() {
     }
   };
 
-  const handleToggleFlag = async (flagId: string, enabled: boolean) => {
+  const handleToggleFlag = async (flagId: string, isEnabled: boolean) => {
     try {
-      await api.admin.updateFeatureFlag(flagId, { enabled });
+      await api.admin.updateFeatureFlag(flagId, { isEnabled });
       await loadFlags();
     } catch (error) {
       console.error("Failed to update feature flag:", error);

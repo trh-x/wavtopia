@@ -13,17 +13,5 @@ export {
   type SharedConfig,
 } from "./config";
 
-// Re-export types from @prisma/client for convenience
-export * from ".prisma/client";
-
 // Re-export specific types we want to expose
-export type {
-  User,
-  Role,
-  Track,
-  Component,
-  TrackShare,
-  FeatureFlag,
-  UserFeature,
-  InviteCode,
-} from ".prisma/client";
+export { Prisma, User, Role, InviteCode, FeatureFlag } from ".prisma/client";

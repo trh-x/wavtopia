@@ -1,12 +1,12 @@
 import { Router } from "express";
+import { Role } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
-import { requireAuth, requireAdmin } from "../middleware/auth";
-import { AppError } from "../middleware/errorHandler";
+import { authenticate, requireRole } from "../middleware/auth";
 
 const router = Router();
 
 // Require admin access for all routes
-router.use(requireAuth, requireAdmin);
+router.use(authenticate, requireRole(Role.ADMIN));
 
 // Feature Flags
 router.get("/feature-flags", async (req, res) => {
@@ -47,6 +47,9 @@ router.get("/invite-codes", async (req, res) => {
 });
 
 router.post("/invite-codes", async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   const { maxUses, expiresAt } = req.body;
   const code = await prisma.inviteCode.create({
     data: {

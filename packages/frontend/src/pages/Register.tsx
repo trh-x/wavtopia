@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 interface RegisterData {
   email: string;
@@ -12,71 +12,69 @@ interface RegisterData {
   inviteCode?: string;
 }
 
-const validationRules: ValidationRules<RegisterData> = {
-  email: [
-    {
-      validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string),
-      message: "Please enter a valid email address",
-    },
-  ],
-  username: [
-    {
-      validate: (value) => (value as string).length >= 3,
-      message: "Username must be at least 3 characters long",
-    },
-    {
-      validate: (value) => /^[a-zA-Z0-9_-]+$/.test(value as string),
-      message:
-        "Username can only contain letters, numbers, underscores, and hyphens",
-    },
-  ],
-  password: [
-    {
-      validate: (value) => (value as string).length >= 8,
-      message: "Password must be at least 8 characters long",
-    },
-    {
-      validate: (value) => /[A-Z]/.test(value as string),
-      message: "Password must contain at least one uppercase letter",
-    },
-    {
-      validate: (value) => /[a-z]/.test(value as string),
-      message: "Password must contain at least one lowercase letter",
-    },
-    {
-      validate: (value) => /[0-9]/.test(value as string),
-      message: "Password must contain at least one number",
-    },
-  ],
-  inviteCode: [
-    {
-      validate: (value, formData) => {
-        // Only validate if early access is required
-        if (!formData.earlyAccessRequired) return true;
-        return (value as string)?.length > 0;
+function getValidationRules(
+  earlyAccessRequired: boolean
+): ValidationRules<RegisterData> {
+  return {
+    email: [
+      {
+        validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value as string),
+        message: "Please enter a valid email address",
       },
-      message: "Invite code is required",
-    },
-  ],
-};
+    ],
+    username: [
+      {
+        validate: (value) => (value as string).length >= 3,
+        message: "Username must be at least 3 characters long",
+      },
+      {
+        validate: (value) => /^[a-zA-Z0-9_-]+$/.test(value as string),
+        message:
+          "Username can only contain letters, numbers, underscores, and hyphens",
+      },
+    ],
+    password: [
+      {
+        validate: (value) => (value as string).length >= 8,
+        message: "Password must be at least 8 characters long",
+      },
+      {
+        validate: (value) => /[A-Z]/.test(value as string),
+        message: "Password must contain at least one uppercase letter",
+      },
+      {
+        validate: (value) => /[a-z]/.test(value as string),
+        message: "Password must contain at least one lowercase letter",
+      },
+      {
+        validate: (value) => /[0-9]/.test(value as string),
+        message: "Password must contain at least one number",
+      },
+    ],
+    inviteCode: [
+      {
+        validate: (value) => {
+          if (!earlyAccessRequired) return true;
+          return (value as string)?.length > 0;
+        },
+        message: "Invite code is required",
+      },
+    ],
+  };
+}
 
 export function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [earlyAccessRequired, setEarlyAccessRequired] = useState(false);
 
-  useEffect(() => {
-    checkEarlyAccess();
-  }, []);
+  const { data: earlyAccessData } = useQuery({
+    queryKey: ["earlyAccess"],
+    queryFn: () => api.auth.checkEarlyAccess(),
+  });
 
-  const checkEarlyAccess = async () => {
-    try {
-      const response = await api.auth.checkEarlyAccess();
-      setEarlyAccessRequired(response.required);
-    } catch (error) {
-      console.error("Failed to check early access status:", error);
-    }
-  };
+  const earlyAccessRequired = earlyAccessData?.required ?? false;
+
+  const validationRules = getValidationRules(earlyAccessRequired);
 
   const {
     values,
@@ -93,7 +91,6 @@ export function Register() {
       inviteCode: "",
     },
     validationRules,
-    validationContext: { earlyAccessRequired },
     onSubmit: async (values) => {
       const data = await api.auth.register(
         values.email,
