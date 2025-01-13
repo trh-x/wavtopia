@@ -66,6 +66,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
+      # TODO: Mount this somewhere else so regular tmp files don't get created in the volume
       - temp_files:/tmp
     networks:
       - wavtopia-net
@@ -91,6 +92,7 @@ services:
     ports:
       - "3002:3002"
     volumes:
+      # TODO: Mount this somewhere else so regular tmp files don't get created in the volume
       - temp_files:/tmp
     networks:
       - wavtopia-net
@@ -122,6 +124,7 @@ volumes:
   postgres_data:
   minio_data:
   redis_data:
+  # TODO: Rename to temp_data
   temp_files:
 
 networks:
