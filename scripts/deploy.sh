@@ -59,7 +59,7 @@ setup_tunnel() {
         exit 1
     fi
     
-    # Start new tunnel with verbose output
+    # Start new tunnel
     echo "Creating SSH tunnel to ${remote_host}..."
     ssh -f -N -L "${REGISTRY_PORT}:localhost:${REGISTRY_PORT}" "$remote_host"
     if [ $? -ne 0 ]; then
