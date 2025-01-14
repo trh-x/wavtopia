@@ -18,6 +18,7 @@ import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
 import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
 import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 import Notifications from "@/pages/Notifications";
+import { BulkUploadTrack } from "./pages/BulkUploadTrack";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -56,6 +57,14 @@ function AppRoutes() {
           element={
             <PrivateRoute>
               <UploadTrack />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/upload/bulk"
+          element={
+            <PrivateRoute>
+              <BulkUploadTrack />
             </PrivateRoute>
           }
         />

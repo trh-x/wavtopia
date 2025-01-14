@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
@@ -107,6 +107,16 @@ export function UploadTrack() {
         <FormButton type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Uploading..." : "Upload Track"}
         </FormButton>
+
+        <p className="text-center text-sm mt-4">
+          Need to upload multiple tracks?{" "}
+          <Link
+            to="/upload/bulk"
+            className="text-primary-600 hover:text-primary-700"
+          >
+            Try bulk upload
+          </Link>
+        </p>
       </form>
     </div>
   );
