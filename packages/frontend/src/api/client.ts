@@ -202,4 +202,40 @@ export const api = {
       return apiRequest("/auth/users", { token }) as Promise<User[]>;
     },
   },
+
+  notifications: {
+    getNotifications: async (
+      token: string,
+      {
+        limit,
+        offset,
+        includeRead,
+      }: { limit?: number; offset?: number; includeRead?: boolean } = {}
+    ) => {
+      const params = new URLSearchParams();
+      if (limit) params.append("limit", limit.toString());
+      if (offset) params.append("offset", offset.toString());
+      if (includeRead) params.append("includeRead", "true");
+
+      return apiRequest(`/notifications?${params.toString()}`, { token });
+    },
+
+    getUnreadCount: async (token: string) => {
+      return apiRequest("/notifications/unread-count", { token });
+    },
+
+    markAsRead: async (token: string, notificationId: string) => {
+      return apiRequest(`/notifications/${notificationId}/read`, {
+        method: "POST",
+        token,
+      });
+    },
+
+    markAllAsRead: async (token: string) => {
+      return apiRequest("/notifications/mark-all-read", {
+        method: "POST",
+        token,
+      });
+    },
+  },
 };

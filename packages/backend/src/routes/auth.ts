@@ -5,6 +5,7 @@ import { AppError } from "../middleware/errorHandler";
 import { prisma } from "../lib/prisma";
 import { signup, login, getUserById } from "../services/auth";
 import { getEnabledFeatureFlags } from "../services/featureFlags";
+import { createNotificationForAllAdmins } from "../services/notifications";
 
 const router = Router();
 
@@ -110,10 +111,21 @@ router.post("/request-early-access", async (req, res, next) => {
     }
 
     // Create new request
-    await prisma.earlyAccessRequest.create({
+    const request = await prisma.earlyAccessRequest.create({
       data: {
         email,
         status: "PENDING",
+      },
+    });
+
+    // Create notifications for all admin users
+    await createNotificationForAllAdmins({
+      type: "EARLY_ACCESS_REQUEST",
+      title: "New Early Access Request",
+      message: `A new early access request has been submitted by ${email}`,
+      metadata: {
+        requestId: request.id,
+        email: request.email,
       },
     });
 

@@ -9,6 +9,7 @@ import { tracksRoutes } from "./routes/tracks";
 import { initializeStorage } from "./services/storage";
 import { config } from "./config";
 import adminRoutes from "./routes/admin";
+import { notificationRoutes } from "./routes/notifications";
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/track", trackRoutes);
 app.use("/api/tracks", tracksRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Error handling
 app.use(errorHandler);

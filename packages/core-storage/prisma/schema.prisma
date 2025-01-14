@@ -19,6 +19,7 @@ model User {
   features     UserFeature[]
   tracks       Track[]
   sharedTracks TrackShare[] @relation("SharedWithUser")
+  notifications Notification[]
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
 
@@ -33,23 +34,23 @@ enum Role {
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
 // the exception of originalUrl, which is a file:// URL until the track is converted).
 model Track {
-  id             String      @id @default(uuid())
-  title          String
-  artist         String
-  originalFormat String      @map("original_format")
-  originalUrl    String      @map("original_url")
-  fullTrackUrl   String?     @map("full_track_url")
-  fullTrackMp3Url String?    @map("full_track_mp3_url")
-  waveformData   Float[]     @map("waveform_data")
-  coverArt       String?     @map("cover_art")
-  metadata       Json?
-  isPublic       Boolean     @default(false) @map("is_public")
-  components     Component[]
-  userId         String      @map("user_id")
-  user           User        @relation(fields: [userId], references: [id])
-  sharedWith     TrackShare[] @relation("SharedTracks")
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+  id              String       @id @default(uuid())
+  title           String
+  artist          String
+  originalFormat  String       @map("original_format")
+  originalUrl     String       @map("original_url")
+  fullTrackUrl    String?      @map("full_track_url")
+  fullTrackMp3Url String?      @map("full_track_mp3_url")
+  waveformData    Float[]      @map("waveform_data")
+  coverArt        String?      @map("cover_art")
+  metadata        Json?
+  isPublic        Boolean      @default(false) @map("is_public")
+  components      Component[]
+  userId          String       @map("user_id")
+  user            User         @relation(fields: [userId], references: [id])
+  sharedWith      TrackShare[] @relation("SharedTracks")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
 
   @@map("tracks")
 }
@@ -99,13 +100,13 @@ model InviteCode {
 }
 
 model FeatureFlag {
-  id          String        @id @default(uuid())
-  name        String        @unique
-  description String?
-  isEnabled   Boolean       @default(false) @map("is_enabled")
+  id           String        @id @default(uuid())
+  name         String        @unique
+  description  String?
+  isEnabled    Boolean       @default(false) @map("is_enabled")
   userFeatures UserFeature[]
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   @@map("feature_flags")
 }
@@ -125,13 +126,13 @@ model UserFeature {
 }
 
 model EarlyAccessRequest {
-  id          String    @id @default(uuid())
-  email       String    @unique
-  status      RequestStatus @default(PENDING)
-  inviteCode  InviteCode?   @relation(fields: [inviteCodeId], references: [id])
-  inviteCodeId String?      @unique @map("invite_code_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id           String        @id @default(uuid())
+  email        String        @unique
+  status       RequestStatus @default(PENDING)
+  inviteCode   InviteCode?   @relation(fields: [inviteCodeId], references: [id])
+  inviteCodeId String?       @unique @map("invite_code_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
 
   @@map("early_access_requests")
 }
@@ -140,4 +141,26 @@ enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
-} 
+}
+
+enum NotificationType {
+  EARLY_ACCESS_REQUEST
+  // Add more types as needed:
+  // TRACK_SHARED
+  // COMMENT_ADDED
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String          @map("user_id")
+  user      User            @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean         @default(false) @map("is_read")
+  metadata  Json?
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  @@map("notifications")
+}
