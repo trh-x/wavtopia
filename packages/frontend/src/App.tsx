@@ -17,6 +17,7 @@ import { AdminRoute } from "@/components/AdminRoute";
 import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
 import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
 import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
+import Notifications from "@/pages/Notifications";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -42,6 +43,14 @@ function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/track/:id" element={<TrackDetails />} />
         <Route path="/my-tracks" element={<MyTracks />} />
+        <Route
+          path="/notifications"
+          element={
+            <PrivateRoute>
+              <Notifications />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/upload"
           element={

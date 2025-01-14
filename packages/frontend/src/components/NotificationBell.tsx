@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAuthToken } from "../hooks/useAuthToken";
 import { api } from "../api/client";
-import { Notification } from "@wavtopia/core-storage";
+import { Prisma } from "@wavtopia/core-storage";
+import { useNavigate } from "react-router-dom";
+
+type Notification = Prisma.NotificationGetPayload<{}>;
 
 export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -10,6 +13,7 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const { getToken } = useAuthToken();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -76,6 +80,11 @@ export function NotificationBell() {
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
     }
+  };
+
+  const handleViewAll = () => {
+    navigate("/notifications");
+    setIsOpen(false);
   };
 
   if (!user) return null;
@@ -157,9 +166,7 @@ export function NotificationBell() {
           </div>
           <div className="p-4 border-t">
             <button
-              onClick={() => {
-                /* TODO: Navigate to notifications page */
-              }}
+              onClick={handleViewAll}
               className="text-sm text-primary-600 hover:text-primary-700 w-full text-center"
             >
               View all notifications
