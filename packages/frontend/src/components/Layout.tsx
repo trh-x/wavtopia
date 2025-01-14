@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { NotificationBell } from "./NotificationBell";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -45,6 +46,7 @@ export function Layout({ children }: LayoutProps) {
                 >
                   Upload Track
                 </Link>
+                <NotificationBell />
                 <span className="text-sm">{user.username}</span>
                 <button
                   onClick={logout}
