@@ -65,24 +65,38 @@ export function BulkUploadTrack() {
   };
 
   // Start the upload process
-  const startUpload = async () => {
-    setState((prev) => ({ ...prev, currentUploadIndex: 0 }));
-    await uploadNext();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Starting upload process");
+    setState((prev) => ({ ...prev, currentUploadIndex: 0, error: undefined }));
+    try {
+      await uploadNext(0); // Pass initial index explicitly
+    } catch (error) {
+      console.error("Upload process failed:", error);
+      setState((prev) => ({
+        ...prev,
+        error: `Upload process failed: ${error}`,
+      }));
+    }
   };
 
   // Upload the next track in the queue
-  const uploadNext = async () => {
-    const { matches, currentUploadIndex, defaultArtist } = state;
-    if (currentUploadIndex >= matches.length) return;
+  const uploadNext = async (index: number) => {
+    console.log(`Uploading track ${index + 1}/${state.matches.length}`);
+    if (index >= state.matches.length) {
+      console.log("Upload process complete");
+      return;
+    }
 
-    const match = matches[currentUploadIndex];
+    const match = state.matches[index];
+    console.log(`Preparing upload for ${match.title}`);
     const formData = new FormData();
 
     formData.append(
       "data",
       JSON.stringify({
         title: match.title,
-        artist: defaultArtist,
+        artist: state.defaultArtist.trim() || "Unknown Artist",
         originalFormat: "xm",
       })
     );
@@ -93,22 +107,27 @@ export function BulkUploadTrack() {
     }
 
     try {
+      console.log("Sending upload request");
       const data = await api.track.upload(formData, getToken()!);
+      console.log("Upload successful for", match.title);
+
       setState((prev) => ({
         ...prev,
         uploadedTracks: [...prev.uploadedTracks, data.id],
-        currentUploadIndex: prev.currentUploadIndex + 1,
+        currentUploadIndex: index + 1,
       }));
 
       // Continue with next file if there are more
-      if (currentUploadIndex + 1 < matches.length) {
-        await uploadNext();
+      if (index + 1 < state.matches.length) {
+        await uploadNext(index + 1);
       }
     } catch (error) {
+      console.error(`Failed to upload ${match.title}:`, error);
       setState((prev) => ({
         ...prev,
         error: `Failed to upload ${match.title}: ${error}`,
       }));
+      throw error; // Re-throw to stop the upload process
     }
   };
 
@@ -121,7 +140,7 @@ export function BulkUploadTrack() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Bulk Upload Tracks</h1>
 
-      <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <FormInput
           id="files"
           type="file"
@@ -185,7 +204,7 @@ export function BulkUploadTrack() {
         )}
 
         <FormButton
-          onClick={startUpload}
+          type="submit"
           disabled={state.matches.length === 0 || state.currentUploadIndex >= 0}
         >
           {state.currentUploadIndex >= 0
@@ -200,7 +219,7 @@ export function BulkUploadTrack() {
             All tracks uploaded successfully!
           </div>
         )}
-      </div>
+      </form>
     </div>
   );
 }
