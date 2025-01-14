@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAuthToken } from "../hooks/useAuthToken";
 import { api } from "../api/client";
@@ -93,7 +93,8 @@ export function NotificationBell() {
     <div className="relative">
       <button
         onClick={handleBellClick}
-        className="p-2 hover:bg-gray-100 rounded-full relative"
+        // className="p-2 hover:bg-primary-500 rounded-full relative transition-colors duration-150"
+        className="p-2 hover:text-primary-200 rounded-full relative"
       >
         <svg
           className="w-6 h-6"
@@ -117,19 +118,19 @@ export function NotificationBell() {
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg z-50">
-          <div className="p-4 border-b">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Notifications</h3>
-              {unreadCount > 0 && (
+          {unreadCount > 0 && (
+            <div className="p-4 border-b">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Notifications</h3>
                 <button
                   onClick={handleMarkAllAsRead}
                   className="text-sm text-primary-600 hover:text-primary-700"
                 >
                   Mark all as read
                 </button>
-              )}
+              </div>
             </div>
-          </div>
+          )}
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
               <div className="p-4 text-center text-gray-500">

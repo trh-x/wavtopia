@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useAuthToken } from "../hooks/useAuthToken";
 import { api } from "../api/client";
