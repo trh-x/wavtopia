@@ -14,4 +14,12 @@ export {
 } from "./config";
 
 // Re-export specific types we want to expose
-export { Prisma, User, Role, InviteCode, FeatureFlag } from ".prisma/client";
+export {
+  Prisma,
+  User,
+  Role,
+  InviteCode,
+  FeatureFlag,
+  Notification,
+  NotificationType,
+} from ".prisma/client";
