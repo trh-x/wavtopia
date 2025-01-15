@@ -1,3 +1,4 @@
+import React from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,11 +7,11 @@ import {
 } from "../ui/DropdownMenu";
 import { Button } from "../ui/Button";
 
-interface TrackActionsMenuProps {
+interface TrackCardMenuProps {
   onDelete: () => void;
 }
 
-export function TrackActionsMenu({ onDelete }: TrackActionsMenuProps) {
+export function TrackCardMenu({ onDelete }: TrackCardMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

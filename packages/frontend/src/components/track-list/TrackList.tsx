@@ -7,7 +7,7 @@ import { TrackListWaveform } from "../waveform/TrackListWaveform";
 import { TrackListPlaybackProvider } from "@/contexts/TrackListPlaybackContext";
 import { cn } from "@/utils/cn";
 import { Checkbox } from "../ui/Checkbox";
-import { TrackActionsMenu } from "./TrackActionsMenu";
+import { TrackCardMenu } from "./TrackCardMenu";
 
 function ImagePlaceholderIcon({
   className = "w-8 h-8 text-gray-400",
@@ -133,11 +133,21 @@ export function TrackList({
               }
             }}
           >
-            {onDeleteTrack && (
-              <div className="absolute top-2 right-2 z-10">
-                <TrackActionsMenu onDelete={() => onDeleteTrack(track.id)} />
-              </div>
-            )}
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+              {selectable && onTrackSelect && (
+                <Checkbox
+                  checked={selectedTracks?.has(track.id)}
+                  onCheckedChange={() => onTrackSelect(track.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // e.preventDefault();
+                  }}
+                />
+              )}
+              {onDeleteTrack && (
+                <TrackCardMenu onDelete={() => onDeleteTrack(track.id)} />
+              )}
+            </div>
             <Link
               to={`/track/${track.id}`}
               className="block"
@@ -162,15 +172,6 @@ export function TrackList({
                       by {track.user.username}
                     </p>
                   </div>
-                  {selectable && onTrackSelect && (
-                    <div className="flex items-center">
-                      <Checkbox
-                        checked={selectedTracks?.has(track.id)}
-                        onCheckedChange={() => onTrackSelect(track.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             </Link>
