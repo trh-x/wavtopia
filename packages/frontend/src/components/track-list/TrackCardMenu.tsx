@@ -18,7 +18,7 @@ export function TrackCardMenu({ onDelete }: TrackCardMenuProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0"
+          className="h-4 w-4 p-0"
           onClick={(e) => e.stopPropagation()}
         >
           <svg
