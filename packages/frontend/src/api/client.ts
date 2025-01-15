@@ -177,6 +177,13 @@ export const api = {
         body: formData,
       }) as Promise<Track>;
     },
+
+    delete: async (id: string, token: string) => {
+      return apiRequest(`/track/${id}`, {
+        method: "DELETE",
+        token,
+      });
+    },
   },
 
   tracks: {
@@ -194,6 +201,15 @@ export const api = {
 
     listAvailable: async (token: string) => {
       return apiRequest("/tracks/available", { token }) as Promise<Track[]>;
+    },
+
+    batchDelete: async (ids: string[], token: string) => {
+      return apiRequest("/tracks/batch", {
+        method: "DELETE",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ ids }),
+      });
     },
   },
 

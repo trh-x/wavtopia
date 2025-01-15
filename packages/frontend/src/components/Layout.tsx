@@ -41,6 +41,12 @@ export function Layout({ children }: LayoutProps) {
             {user ? (
               <div className="flex items-center gap-4">
                 <Link
+                  to="/my-tracks"
+                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                >
+                  My Tracks
+                </Link>
+                <Link
                   to="/upload"
                   className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
                 >

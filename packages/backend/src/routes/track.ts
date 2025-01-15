@@ -477,6 +477,12 @@ router.delete("/:id", async (req, res, next) => {
       await deleteFile(component.mp3Url);
     }
 
+    // Delete components first
+    await prisma.component.deleteMany({
+      where: { trackId: track.id },
+    });
+
+    // Then delete the track
     await prisma.track.delete({
       where: { id: req.params.id },
     });
