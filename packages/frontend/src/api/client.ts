@@ -184,6 +184,16 @@ export const api = {
         token,
       });
     },
+
+    // TODO: Move batchDelete to tracks?
+    batchDelete: async (ids: string[], token: string) => {
+      return apiRequest("/track/batch", {
+        method: "DELETE",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ trackIds: ids }),
+      });
+    },
   },
 
   tracks: {
@@ -201,15 +211,6 @@ export const api = {
 
     listAvailable: async (token: string) => {
       return apiRequest("/tracks/available", { token }) as Promise<Track[]>;
-    },
-
-    batchDelete: async (ids: string[], token: string) => {
-      return apiRequest("/tracks/batch", {
-        method: "DELETE",
-        token,
-        contentType: "application/json",
-        body: JSON.stringify({ ids }),
-      });
     },
   },
 
