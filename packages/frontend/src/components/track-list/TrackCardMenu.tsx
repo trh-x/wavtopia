@@ -1,3 +1,4 @@
+import React from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -5,6 +6,17 @@ import {
   DropdownMenuTrigger,
 } from "../ui/DropdownMenu";
 import { Button } from "../ui/Button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../ui/AlertDialog";
 
 interface TrackCardMenuProps {
   onDelete: () => void;
@@ -37,13 +49,29 @@ export function TrackCardMenu({ onDelete }: TrackCardMenuProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          className="text-red-600 focus:text-red-600"
-          onClick={onDelete}
-        >
-          Delete
-        </DropdownMenuItem>
-        {/* Future actions can be added here */}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <DropdownMenuItem
+              className="text-red-600 focus:text-red-600"
+              onSelect={(e) => e.preventDefault()}
+            >
+              Delete
+            </DropdownMenuItem>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Track</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this track? This action cannot
+                be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );
