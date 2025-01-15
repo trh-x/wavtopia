@@ -133,15 +133,6 @@ export function TrackList({
               }
             }}
           >
-            {selectable && (
-              <div className="absolute top-2 left-2 z-10">
-                <Checkbox
-                  checked={selectedTracks?.has(track.id)}
-                  onCheckedChange={() => onTrackSelect?.(track.id)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            )}
             {onDeleteTrack && (
               <div className="absolute top-2 right-2 z-10">
                 <TrackActionsMenu onDelete={() => onDeleteTrack(track.id)} />
@@ -164,13 +155,22 @@ export function TrackList({
                     title={track.title}
                     size="sm"
                   />
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-medium">{track.title}</h3>
                     <p className="text-sm text-gray-600">{track.artist}</p>
                     <p className="text-xs text-gray-500">
                       by {track.user.username}
                     </p>
                   </div>
+                  {selectable && onTrackSelect && (
+                    <div className="flex items-center">
+                      <Checkbox
+                        checked={selectedTracks?.has(track.id)}
+                        onCheckedChange={() => onTrackSelect(track.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </Link>
