@@ -121,26 +121,21 @@ export function TrackList({
             className={cn(
               "relative flex flex-col space-y-2 p-4 rounded-lg border transition-colors",
               {
-                "border-primary-500": selectedTracks?.has(track.id),
+                "border-primary-500 bg-primary-50/50": selectedTracks?.has(
+                  track.id
+                ),
                 "border-gray-200": !selectedTracks?.has(track.id),
                 "hover:bg-gray-50": !selectable,
-                "cursor-pointer": selectable,
               }
             )}
-            onClick={() => {
-              if (selectable && onTrackSelect) {
-                onTrackSelect(track.id);
-              }
-            }}
           >
-            <div className="absolute top-2 right-2 z-10 flex items-center gap-2">
+            <div className="flex justify-between items-center">
               {selectable && onTrackSelect && (
                 <Checkbox
                   checked={selectedTracks?.has(track.id)}
                   onCheckedChange={() => onTrackSelect(track.id)}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // e.preventDefault();
                   }}
                 />
               )}
@@ -148,15 +143,7 @@ export function TrackList({
                 <TrackCardMenu onDelete={() => onDeleteTrack(track.id)} />
               )}
             </div>
-            <Link
-              to={`/track/${track.id}`}
-              className="block"
-              onClick={(e) => {
-                if (selectable) {
-                  e.preventDefault();
-                }
-              }}
-            >
+            <Link to={`/track/${track.id}`} className="block">
               <div className="flex flex-col space-y-4">
                 <div className="flex items-center space-x-4">
                   <TrackCoverArt
