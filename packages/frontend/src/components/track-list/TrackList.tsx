@@ -1,10 +1,13 @@
 import { Link } from "react-router-dom";
-import { Track } from "../../types";
+import { Track } from "@/types";
 import { LoadingState } from "../ui/LoadingState";
 import { ErrorState } from "../ui/ErrorState";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { TrackListWaveform } from "../waveform/TrackListWaveform";
 import { TrackListPlaybackProvider } from "@/contexts/TrackListPlaybackContext";
+import { cn } from "@/utils/cn";
+import { Checkbox } from "../ui/Checkbox";
+import { TrackActionsMenu } from "./TrackActionsMenu";
 
 function ImagePlaceholderIcon({
   className = "w-8 h-8 text-gray-400",
@@ -89,7 +92,21 @@ export function TrackWaveformPlaceholder({
   );
 }
 
-export function TrackList({ tracks }: { tracks: Track[] }) {
+interface TrackListProps {
+  tracks: Track[];
+  selectable?: boolean;
+  selectedTracks?: Set<string>;
+  onTrackSelect?: (trackId: string) => void;
+  onDeleteTrack?: (trackId: string) => void;
+}
+
+export function TrackList({
+  tracks,
+  selectable = false,
+  selectedTracks,
+  onTrackSelect,
+  onDeleteTrack,
+}: TrackListProps) {
   const { appendTokenToUrl } = useAuthToken();
 
   if (!tracks?.length)
@@ -101,9 +118,44 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
         {tracks.map((track) => (
           <div
             key={track.id}
-            className="flex flex-col space-y-2 p-4 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            className={cn(
+              "relative flex flex-col space-y-2 p-4 rounded-lg border transition-colors",
+              {
+                "border-primary-500": selectedTracks?.has(track.id),
+                "border-gray-200": !selectedTracks?.has(track.id),
+                "hover:bg-gray-50": !selectable,
+                "cursor-pointer": selectable,
+              }
+            )}
+            onClick={() => {
+              if (selectable && onTrackSelect) {
+                onTrackSelect(track.id);
+              }
+            }}
           >
-            <Link to={`/track/${track.id}`} className="block">
+            {selectable && (
+              <div className="absolute top-2 left-2 z-10">
+                <Checkbox
+                  checked={selectedTracks?.has(track.id)}
+                  onCheckedChange={() => onTrackSelect?.(track.id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
+            {onDeleteTrack && (
+              <div className="absolute top-2 right-2 z-10">
+                <TrackActionsMenu onDelete={() => onDeleteTrack(track.id)} />
+              </div>
+            )}
+            <Link
+              to={`/track/${track.id}`}
+              className="block"
+              onClick={(e) => {
+                if (selectable) {
+                  e.preventDefault();
+                }
+              }}
+            >
               <div className="flex flex-col space-y-4">
                 <div className="flex items-center space-x-4">
                   <TrackCoverArt
@@ -140,24 +192,40 @@ export function TrackList({ tracks }: { tracks: Track[] }) {
   );
 }
 
+interface TrackSectionProps {
+  title: string;
+  tracks: Track[] | undefined;
+  isLoading: boolean;
+  error: unknown;
+  selectable?: boolean;
+  selectedTracks?: Set<string>;
+  onTrackSelect?: (trackId: string) => void;
+  onDeleteTrack?: (trackId: string) => void;
+}
+
 export function TrackSection({
   title,
   tracks,
   isLoading,
   error,
-}: {
-  title: string;
-  tracks: Track[] | undefined;
-  isLoading: boolean;
-  error: unknown;
-}) {
+  selectable,
+  selectedTracks,
+  onTrackSelect,
+  onDeleteTrack,
+}: TrackSectionProps) {
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message={(error as Error).message} />;
 
   return (
     <div className="mb-12">
       <h2 className="text-2xl font-bold mb-6">{title}</h2>
-      <TrackList tracks={tracks || []} />
+      <TrackList
+        tracks={tracks || []}
+        selectable={selectable}
+        selectedTracks={selectedTracks}
+        onTrackSelect={onTrackSelect}
+        onDeleteTrack={onDeleteTrack}
+      />
     </div>
   );
 }

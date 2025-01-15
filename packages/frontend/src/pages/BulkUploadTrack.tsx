@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
@@ -19,7 +18,6 @@ interface BulkUploadState {
 }
 
 export function BulkUploadTrack() {
-  const navigate = useNavigate();
   const { getToken } = useAuthToken();
   const [state, setState] = useState<BulkUploadState>({
     defaultArtist: "",
