@@ -19,6 +19,7 @@ import { z } from "zod";
 import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import { config } from "../config";
+import { deleteTrack, deleteMultipleTracks } from "../services/track";
 
 // Extend Request type to include user property
 const router = Router();
@@ -442,51 +443,26 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
   }
 });
 
+// Delete multiple tracks and associated files
+router.delete("/batch", async (req, res, next) => {
+  try {
+    const { trackIds } = req.body;
+
+    if (!Array.isArray(trackIds) || trackIds.length === 0) {
+      throw new AppError(400, "trackIds must be a non-empty array");
+    }
+
+    await deleteMultipleTracks(trackIds, req.user!.id);
+    res.status(204).end();
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Delete track and associated files
 router.delete("/:id", async (req, res, next) => {
   try {
-    const track = await prisma.track.findUnique({
-      where: {
-        id: req.params.id,
-        userId: req.user!.id, // Only delete user's own track
-      },
-      include: { components: true },
-    });
-
-    if (!track) {
-      throw new AppError(404, "Track not found");
-    }
-
-    // Delete all associated files
-    await deleteFile(track.originalUrl);
-
-    if (track.fullTrackUrl) {
-      await deleteFile(track.fullTrackUrl);
-    }
-
-    if (track.fullTrackMp3Url) {
-      await deleteFile(track.fullTrackMp3Url);
-    }
-
-    if (track.coverArt) {
-      await deleteFile(track.coverArt);
-    }
-
-    for (const component of track.components) {
-      await deleteFile(component.wavUrl);
-      await deleteFile(component.mp3Url);
-    }
-
-    // Delete components first
-    await prisma.component.deleteMany({
-      where: { trackId: track.id },
-    });
-
-    // Then delete the track
-    await prisma.track.delete({
-      where: { id: req.params.id },
-    });
-
+    await deleteTrack(req.params.id, req.user!.id);
     res.status(204).end();
   } catch (error) {
     next(error);

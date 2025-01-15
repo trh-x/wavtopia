@@ -32,8 +32,10 @@ export function MyTracks() {
   });
 
   const deleteTrackMutation = useMutation({
-    mutationFn: async (trackId: string) => {
-      if (!token) throw new Error("No token available");
+    mutationFn: (trackId: string) => {
+      if (!token) {
+        throw new Error("No token available");
+      }
       return api.track.delete(trackId, token);
     },
     onSuccess: () => {
@@ -42,9 +44,11 @@ export function MyTracks() {
   });
 
   const deleteTracksMutation = useMutation({
-    mutationFn: async (trackIds: string[]) => {
-      if (!token) throw new Error("No token available");
-      return api.tracks.batchDelete(trackIds, token);
+    mutationFn: (trackIds: string[]) => {
+      if (!token) {
+        throw new Error("No token available");
+      }
+      return api.track.batchDelete(trackIds, token);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tracks"] });
@@ -64,12 +68,10 @@ export function MyTracks() {
     });
   };
 
-  const handleDeleteTrack = (trackId: string) => {
-    deleteTrackMutation.mutate(trackId);
-  };
-
-  const handleDeleteSelectedTracks = () => {
-    deleteTracksMutation.mutate(Array.from(selectedTracks));
+  const handleDeleteTracks = () => {
+    if (selectedTracks.size > 0) {
+      deleteTracksMutation.mutate(Array.from(selectedTracks));
+    }
   };
 
   const handleCancelSelection = () => {
@@ -88,7 +90,7 @@ export function MyTracks() {
         selectable={true}
         selectedTracks={selectedTracks}
         onTrackSelect={handleTrackSelect}
-        onDeleteTrack={handleDeleteTrack}
+        onDeleteTrack={deleteTrackMutation.mutate}
       />
 
       <TrackSection
@@ -101,7 +103,7 @@ export function MyTracks() {
       {selectedTracks.size > 0 && (
         <BatchActionsBar
           selectedCount={selectedTracks.size}
-          onDelete={handleDeleteSelectedTracks}
+          onDelete={handleDeleteTracks}
           onCancelSelection={handleCancelSelection}
         />
       )}
