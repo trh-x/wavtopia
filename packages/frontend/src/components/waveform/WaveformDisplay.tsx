@@ -387,13 +387,14 @@ export function WaveformDisplay({
       </div>
       <div
         ref={containerRef}
+        // TODO: Use classNames utility
         className={`flex-grow ${
           isPlaying
             ? isMuted(wavesurferRef.current!)
               ? "opacity-60" // Muted state
               : "" // Playing state
             : "opacity-70" // Stopped state
-        }`}
+        } ${!isLoading && isReady ? "cursor-pointer" : ""}`}
         style={{ minHeight: `${height}px` }}
       />
     </div>
