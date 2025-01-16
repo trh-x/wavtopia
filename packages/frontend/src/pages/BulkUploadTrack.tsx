@@ -52,7 +52,7 @@ export function BulkUploadTrack() {
   });
   const [isDragging, setIsDragging] = useState(false);
   const [draggedCoverArt, setDraggedCoverArt] = useState<{
-    id: string;
+    sourceId: string;
     file: File;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -198,7 +198,7 @@ export function BulkUploadTrack() {
   };
 
   const handleCoverArtDragStart = (path: string, file: File) => {
-    setDraggedCoverArt({ id: path, file });
+    setDraggedCoverArt({ sourceId: path, file });
   };
 
   const handleCoverArtDragEnd = () => {
@@ -210,7 +210,7 @@ export function BulkUploadTrack() {
 
     setState((prev) => {
       // If the cover art was from the unmatched list, remove it
-      const isFromUnmatched = draggedCoverArt.id.startsWith("unmatched-");
+      const isFromUnmatched = draggedCoverArt.sourceId.startsWith("unmatched-");
       const newUnmatchedCoverArt = isFromUnmatched
         ? prev.unmatchedCoverArt.filter((f) => f !== draggedCoverArt.file)
         : prev.unmatchedCoverArt;
@@ -224,7 +224,7 @@ export function BulkUploadTrack() {
               coverArt: draggedCoverArt.file,
             };
           }
-          if (!isFromUnmatched && match.path === draggedCoverArt.id) {
+          if (!isFromUnmatched && match.path === draggedCoverArt.sourceId) {
             return {
               ...match,
               coverArt: undefined,
@@ -233,6 +233,31 @@ export function BulkUploadTrack() {
           return match;
         }),
         unmatchedCoverArt: newUnmatchedCoverArt,
+      };
+    });
+    setDraggedCoverArt(null);
+  };
+
+  const handleUnmatchedDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!draggedCoverArt || draggedCoverArt.sourceId.startsWith("unmatched-"))
+      return;
+
+    setState((prev) => {
+      return {
+        ...prev,
+        matches: prev.matches.map((match) => {
+          if (match.path === draggedCoverArt.sourceId) {
+            return {
+              ...match,
+              coverArt: undefined,
+            };
+          }
+          return match;
+        }),
+        unmatchedCoverArt: [...prev.unmatchedCoverArt, draggedCoverArt.file],
       };
     });
     setDraggedCoverArt(null);
@@ -397,7 +422,8 @@ export function BulkUploadTrack() {
                       ? "border-green-200 bg-green-50"
                       : i === state.currentUploadIndex
                       ? "border-blue-200 bg-blue-50"
-                      : draggedCoverArt && match.path !== draggedCoverArt.id
+                      : draggedCoverArt &&
+                        match.path !== draggedCoverArt.sourceId
                       ? "border-primary-200 bg-primary-50"
                       : "border-gray-200"
                   )}
@@ -468,7 +494,8 @@ export function BulkUploadTrack() {
                       </div>
                     ) : (
                       <span className="text-sm text-gray-500">
-                        {draggedCoverArt && match.path !== draggedCoverArt.id
+                        {draggedCoverArt &&
+                        match.path !== draggedCoverArt.sourceId
                           ? "Drop cover art here"
                           : "No cover art"}
                       </span>
@@ -481,8 +508,26 @@ export function BulkUploadTrack() {
         )}
 
         {state.unmatchedCoverArt.length > 0 && (
-          <div className="border rounded-lg p-4">
-            <h2 className="text-lg font-semibold mb-4">Unmatched Cover Art:</h2>
+          <div
+            className={cn(
+              "border rounded-lg p-4",
+              draggedCoverArt &&
+                !draggedCoverArt.sourceId.startsWith("unmatched-")
+                ? "border-primary-200 bg-primary-50"
+                : ""
+            )}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onDrop={handleUnmatchedDrop}
+          >
+            <h2 className="text-lg font-semibold mb-4">
+              {draggedCoverArt &&
+              !draggedCoverArt.sourceId.startsWith("unmatched-")
+                ? "Drop here to add to unmatched cover art"
+                : "Unmatched Cover Art:"}
+            </h2>
             <ul className="space-y-2">
               {state.unmatchedCoverArt.map((file, index) => (
                 <li
@@ -490,7 +535,10 @@ export function BulkUploadTrack() {
                   className="flex items-center justify-between p-2 border rounded"
                   draggable
                   onDragStart={(e) => {
-                    setDraggedCoverArt({ id: `unmatched-${index}`, file });
+                    setDraggedCoverArt({
+                      sourceId: `unmatched-${index}`,
+                      file,
+                    });
                   }}
                   onDragEnd={handleCoverArtDragEnd}
                 >
