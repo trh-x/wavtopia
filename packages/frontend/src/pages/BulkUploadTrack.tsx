@@ -8,8 +8,7 @@ interface FileMatch {
   track: File;
   coverArt?: File;
   title: string; // Derived from filename
-  id: string; // Unique identifier for drag/drop
-  path: string; // Full path for deduplication
+  path: string; // Full path for deduplication and unique identifier
 }
 
 interface BulkUploadState {
@@ -137,7 +136,6 @@ export function BulkUploadTrack() {
         track: trackFile,
         coverArt: bestMatch?.file,
         title: trackBaseName,
-        id: Math.random().toString(36).substring(7),
         path: trackFile.name,
       });
 
@@ -164,12 +162,12 @@ export function BulkUploadTrack() {
     processFiles(files);
   };
 
-  const handleRemoveTrack = (matchId: string) => {
+  const handleRemoveTrack = (path: string) => {
     setState((prev) => {
-      const match = prev.matches.find((m) => m.id === matchId);
+      const match = prev.matches.find((m) => m.path === path);
       return {
         ...prev,
-        matches: prev.matches.filter((m) => m.id !== matchId),
+        matches: prev.matches.filter((m) => m.path !== path),
         // If the track had cover art, add it to unmatched
         unmatchedCoverArt: match?.coverArt
           ? [...prev.unmatchedCoverArt, match.coverArt]
@@ -178,15 +176,15 @@ export function BulkUploadTrack() {
     });
   };
 
-  const handleUnmatchCoverArt = (matchId: string) => {
+  const handleUnmatchCoverArt = (path: string) => {
     setState((prev) => {
-      const match = prev.matches.find((m) => m.id === matchId);
+      const match = prev.matches.find((m) => m.path === path);
       if (!match?.coverArt) return prev;
 
       return {
         ...prev,
         matches: prev.matches.map((m) => {
-          if (m.id === matchId) {
+          if (m.path === path) {
             return {
               ...m,
               coverArt: undefined,
@@ -199,35 +197,44 @@ export function BulkUploadTrack() {
     });
   };
 
-  const handleCoverArtDragStart = (matchId: string, file: File) => {
-    setDraggedCoverArt({ id: matchId, file });
+  const handleCoverArtDragStart = (path: string, file: File) => {
+    setDraggedCoverArt({ id: path, file });
   };
 
   const handleCoverArtDragEnd = () => {
     setDraggedCoverArt(null);
   };
 
-  const handleCoverArtDrop = (targetMatchId: string) => {
+  const handleCoverArtDrop = (targetPath: string) => {
     if (!draggedCoverArt) return;
 
-    setState((prev) => ({
-      ...prev,
-      matches: prev.matches.map((match) => {
-        if (match.id === targetMatchId) {
-          return {
-            ...match,
-            coverArt: draggedCoverArt.file,
-          };
-        }
-        if (match.id === draggedCoverArt.id) {
-          return {
-            ...match,
-            coverArt: undefined,
-          };
-        }
-        return match;
-      }),
-    }));
+    setState((prev) => {
+      // If the cover art was from the unmatched list, remove it
+      const isFromUnmatched = draggedCoverArt.id.startsWith("unmatched-");
+      const newUnmatchedCoverArt = isFromUnmatched
+        ? prev.unmatchedCoverArt.filter((f) => f !== draggedCoverArt.file)
+        : prev.unmatchedCoverArt;
+
+      return {
+        ...prev,
+        matches: prev.matches.map((match) => {
+          if (match.path === targetPath) {
+            return {
+              ...match,
+              coverArt: draggedCoverArt.file,
+            };
+          }
+          if (!isFromUnmatched && match.path === draggedCoverArt.id) {
+            return {
+              ...match,
+              coverArt: undefined,
+            };
+          }
+          return match;
+        }),
+        unmatchedCoverArt: newUnmatchedCoverArt,
+      };
+    });
     setDraggedCoverArt(null);
   };
 
@@ -383,14 +390,14 @@ export function BulkUploadTrack() {
             <ul className="space-y-4">
               {state.matches.map((match, i) => (
                 <li
-                  key={match.id}
+                  key={match.path}
                   className={cn(
                     "flex items-center space-x-4 p-3 rounded-lg border",
                     i < state.currentUploadIndex
                       ? "border-green-200 bg-green-50"
                       : i === state.currentUploadIndex
                       ? "border-blue-200 bg-blue-50"
-                      : draggedCoverArt && match.id !== draggedCoverArt.id
+                      : draggedCoverArt && match.path !== draggedCoverArt.id
                       ? "border-primary-200 bg-primary-50"
                       : "border-gray-200"
                   )}
@@ -401,14 +408,14 @@ export function BulkUploadTrack() {
                   onDrop={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleCoverArtDrop(match.id);
+                    handleCoverArtDrop(match.path);
                   }}
                 >
                   <div className="flex-grow flex items-center space-x-2">
                     <span className="font-medium">{match.title}</span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveTrack(match.id)}
+                      onClick={() => handleRemoveTrack(match.path)}
                       className="text-red-500 hover:text-red-700"
                     >
                       <svg
@@ -432,7 +439,7 @@ export function BulkUploadTrack() {
                         className="flex items-center space-x-2 cursor-move"
                         draggable
                         onDragStart={() =>
-                          handleCoverArtDragStart(match.id, match.coverArt!)
+                          handleCoverArtDragStart(match.path, match.coverArt!)
                         }
                         onDragEnd={handleCoverArtDragEnd}
                       >
@@ -441,7 +448,7 @@ export function BulkUploadTrack() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleUnmatchCoverArt(match.id)}
+                          onClick={() => handleUnmatchCoverArt(match.path)}
                           className="text-red-500 hover:text-red-700"
                         >
                           <svg
@@ -461,7 +468,7 @@ export function BulkUploadTrack() {
                       </div>
                     ) : (
                       <span className="text-sm text-gray-500">
-                        {draggedCoverArt && match.id !== draggedCoverArt.id
+                        {draggedCoverArt && match.path !== draggedCoverArt.id
                           ? "Drop cover art here"
                           : "No cover art"}
                       </span>
