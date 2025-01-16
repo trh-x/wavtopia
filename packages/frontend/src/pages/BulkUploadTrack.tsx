@@ -7,17 +7,18 @@ import { cn } from "@/utils/cn";
 interface FileMatch {
   track: File;
   coverArt?: File;
-  title: string; // Derived from filename
-  path: string; // Full path for deduplication and unique identifier
+  title: string;
+  path: string;
+  uploaded?: boolean;
 }
 
 interface BulkUploadState {
   defaultArtist: string;
   matches: FileMatch[];
   currentUploadIndex: number;
-  uploadedTracks: string[]; // Track IDs
+  uploadedTracks: string[];
   error?: string;
-  unmatchedCoverArt: File[]; // Cover art files that haven't been matched
+  unmatchedCoverArt: File[];
 }
 
 function fuzzyMatch(str1: string, str2: string): number {
@@ -273,10 +274,13 @@ export function BulkUploadTrack() {
   // Upload tracks sequentially
   const uploadTracks = async () => {
     const { matches, defaultArtist } = state;
+    const pendingUploads = matches.filter((m) => !m.uploaded);
 
-    for (let i = 0; i < matches.length; i++) {
-      const match = matches[i];
-      console.log(`Uploading track ${i + 1}/${matches.length}: ${match.title}`);
+    for (let i = 0; i < pendingUploads.length; i++) {
+      const match = pendingUploads[i];
+      console.log(
+        `Uploading track ${i + 1}/${pendingUploads.length}: ${match.title}`
+      );
 
       try {
         const formData = new FormData();
@@ -301,6 +305,9 @@ export function BulkUploadTrack() {
           ...prev,
           uploadedTracks: [...prev.uploadedTracks, data.id],
           currentUploadIndex: i + 1,
+          matches: prev.matches.map((m) =>
+            m.path === match.path ? { ...m, uploaded: true } : m
+          ),
         }));
       } catch (error) {
         console.error(`Failed to upload ${match.title}:`, error);
@@ -313,16 +320,28 @@ export function BulkUploadTrack() {
     }
   };
 
+  const handleClearAll = () => {
+    setState({
+      defaultArtist: "",
+      matches: [],
+      currentUploadIndex: -1,
+      uploadedTracks: [],
+      unmatchedCoverArt: [],
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (state.matches.length === 0) return;
+
+    const pendingUploads = state.matches.filter((m) => !m.uploaded);
+    if (pendingUploads.length === 0) return;
 
     console.log("Starting upload process");
     setState((prev) => ({
       ...prev,
       currentUploadIndex: 0,
       error: undefined,
-      uploadedTracks: [],
     }));
 
     try {
@@ -425,7 +444,9 @@ export function BulkUploadTrack() {
                   key={match.path}
                   className={cn(
                     "flex items-center space-x-4 p-3 rounded-lg border",
-                    i < state.currentUploadIndex
+                    match.uploaded
+                      ? "border-green-200 bg-green-50"
+                      : i < state.currentUploadIndex
                       ? "border-green-200 bg-green-50"
                       : i === state.currentUploadIndex
                       ? "border-blue-200 bg-blue-50"
@@ -446,6 +467,9 @@ export function BulkUploadTrack() {
                 >
                   <div className="flex-grow flex items-center space-x-2">
                     <span className="font-medium">{match.title}</span>
+                    {match.uploaded && (
+                      <span className="text-sm text-green-600">(Uploaded)</span>
+                    )}
                     <button
                       type="button"
                       onClick={() => handleRemoveTrack(match.path)}
@@ -593,22 +617,50 @@ export function BulkUploadTrack() {
           </div>
         )}
 
-        <FormButton
-          type="submit"
-          disabled={state.matches.length === 0 || isUploadInProgress}
-        >
-          {isUploadInProgress
-            ? `Uploading (${state.currentUploadIndex + 1}/${
-                state.matches.length
-              })`
-            : "Start Upload"}
-        </FormButton>
-
-        {isUploadComplete && (
-          <div className="text-center text-green-600">
-            All tracks uploaded successfully!
-          </div>
-        )}
+        <div className="flex flex-col space-y-2">
+          {isUploadComplete ? (
+            <>
+              <div className="text-center text-green-600 mb-4">
+                All tracks uploaded successfully!
+              </div>
+              <div className="flex justify-center space-x-4">
+                <FormButton
+                  type="button"
+                  onClick={handleClearAll}
+                  className="bg-gray-500 hover:bg-gray-600"
+                >
+                  Clear All & Start New
+                </FormButton>
+                <FormButton
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-primary-500 hover:bg-primary-600"
+                >
+                  Add More Files
+                </FormButton>
+              </div>
+            </>
+          ) : (
+            <FormButton
+              type="submit"
+              disabled={
+                state.matches.length === 0 ||
+                isUploadInProgress ||
+                state.matches.every((m) => m.uploaded)
+              }
+            >
+              {isUploadInProgress
+                ? `Uploading (${state.currentUploadIndex + 1}/${
+                    state.matches.filter((m) => !m.uploaded).length
+                  })`
+                : state.matches.some((m) => m.uploaded)
+                ? `Upload ${
+                    state.matches.filter((m) => !m.uploaded).length
+                  } Remaining Tracks`
+                : "Start Upload"}
+            </FormButton>
+          )}
+        </div>
       </form>
     </div>
   );
