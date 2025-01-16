@@ -215,6 +215,10 @@ export function BulkUploadTrack() {
         ? prev.unmatchedCoverArt.filter((f) => f !== draggedCoverArt.file)
         : prev.unmatchedCoverArt;
 
+      // Find the target track's current cover art if it exists
+      const targetTrack = prev.matches.find((m) => m.path === targetPath);
+      const existingCoverArt = targetTrack?.coverArt;
+
       return {
         ...prev,
         matches: prev.matches.map((match) => {
@@ -232,7 +236,10 @@ export function BulkUploadTrack() {
           }
           return match;
         }),
-        unmatchedCoverArt: newUnmatchedCoverArt,
+        // Add the existing cover art to unmatched if it exists
+        unmatchedCoverArt: existingCoverArt
+          ? [...newUnmatchedCoverArt, existingCoverArt]
+          : newUnmatchedCoverArt,
       };
     });
     setDraggedCoverArt(null);
