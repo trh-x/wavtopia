@@ -1,3 +1,8 @@
+# Main PNPM lockfile
+# This ignored, because architecture-specific lockfiles are tracked in Git, with the
+# relevant arch version copied to pnpm-lock.yaml for local builds.
+pnpm-lock.yaml
+
 # Dependencies
 node_modules
 .pnpm-store
