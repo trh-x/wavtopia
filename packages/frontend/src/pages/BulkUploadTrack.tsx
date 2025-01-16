@@ -164,6 +164,11 @@ export function BulkUploadTrack() {
   };
 
   const handleRemoveTrack = (path: string) => {
+    // Reset the file input so the same file can be re-added
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
     setState((prev) => {
       const match = prev.matches.find((m) => m.path === path);
       return {
