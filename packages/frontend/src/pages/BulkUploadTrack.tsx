@@ -9,6 +9,7 @@ interface FileMatch {
   coverArt?: File;
   title: string; // Derived from filename
   id: string; // Unique identifier for drag/drop
+  path: string; // Full path for deduplication
 }
 
 interface BulkUploadState {
@@ -17,7 +18,7 @@ interface BulkUploadState {
   currentUploadIndex: number;
   uploadedTracks: string[]; // Track IDs
   error?: string;
-  availableCoverArt: File[];
+  unmatchedCoverArt: File[]; // Cover art files that haven't been matched
 }
 
 function fuzzyMatch(str1: string, str2: string): number {
@@ -48,7 +49,7 @@ export function BulkUploadTrack() {
     matches: [],
     currentUploadIndex: -1,
     uploadedTracks: [],
-    availableCoverArt: [],
+    unmatchedCoverArt: [],
   });
   const [isDragging, setIsDragging] = useState(false);
   const [draggedCoverArt, setDraggedCoverArt] = useState<{
@@ -94,24 +95,32 @@ export function BulkUploadTrack() {
   const processFiles = (files: File[]) => {
     const trackFiles = new Map<string, File>();
     const artFiles: File[] = [];
+    const existingPaths = new Set(state.matches.map((m) => m.path));
+    const existingArtPaths = new Set(
+      state.unmatchedCoverArt.map((f) => f.name)
+    );
 
     // Sort files into tracks and art
     files.forEach((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase();
       const baseName = file.name.substring(0, file.name.lastIndexOf("."));
 
-      if (ext === "xm") {
+      if (ext === "xm" && !existingPaths.has(file.name)) {
         trackFiles.set(baseName, file);
-      } else if (file.type.startsWith("image/")) {
+      } else if (
+        file.type.startsWith("image/") &&
+        !existingArtPaths.has(file.name)
+      ) {
         artFiles.push(file);
       }
     });
 
     // Try to match tracks with art using fuzzy matching
-    const matches: FileMatch[] = [];
+    const newMatches: FileMatch[] = [];
     trackFiles.forEach((trackFile, trackBaseName) => {
       let bestMatch: { file: File; score: number } | null = null;
 
+      // Try to match with new art files first
       for (const artFile of artFiles) {
         const artBaseName = artFile.name.substring(
           0,
@@ -124,18 +133,27 @@ export function BulkUploadTrack() {
         }
       }
 
-      matches.push({
+      newMatches.push({
         track: trackFile,
         coverArt: bestMatch?.file,
         title: trackBaseName,
         id: Math.random().toString(36).substring(7),
+        path: trackFile.name,
       });
+
+      // Remove matched art file from artFiles
+      if (bestMatch) {
+        const index = artFiles.indexOf(bestMatch.file);
+        if (index > -1) {
+          artFiles.splice(index, 1);
+        }
+      }
     });
 
     setState((prev) => ({
       ...prev,
-      matches,
-      availableCoverArt: artFiles,
+      matches: [...prev.matches, ...newMatches],
+      unmatchedCoverArt: [...prev.unmatchedCoverArt, ...artFiles],
       currentUploadIndex: -1,
       uploadedTracks: [],
     }));
@@ -146,19 +164,39 @@ export function BulkUploadTrack() {
     processFiles(files);
   };
 
+  const handleRemoveTrack = (matchId: string) => {
+    setState((prev) => {
+      const match = prev.matches.find((m) => m.id === matchId);
+      return {
+        ...prev,
+        matches: prev.matches.filter((m) => m.id !== matchId),
+        // If the track had cover art, add it to unmatched
+        unmatchedCoverArt: match?.coverArt
+          ? [...prev.unmatchedCoverArt, match.coverArt]
+          : prev.unmatchedCoverArt,
+      };
+    });
+  };
+
   const handleUnmatchCoverArt = (matchId: string) => {
-    setState((prev) => ({
-      ...prev,
-      matches: prev.matches.map((match) => {
-        if (match.id === matchId && match.coverArt) {
-          return {
-            ...match,
-            coverArt: undefined,
-          };
-        }
-        return match;
-      }),
-    }));
+    setState((prev) => {
+      const match = prev.matches.find((m) => m.id === matchId);
+      if (!match?.coverArt) return prev;
+
+      return {
+        ...prev,
+        matches: prev.matches.map((m) => {
+          if (m.id === matchId) {
+            return {
+              ...m,
+              coverArt: undefined,
+            };
+          }
+          return m;
+        }),
+        unmatchedCoverArt: [...prev.unmatchedCoverArt, match.coverArt],
+      };
+    });
   };
 
   const handleCoverArtDragStart = (matchId: string, file: File) => {
@@ -366,8 +404,27 @@ export function BulkUploadTrack() {
                     handleCoverArtDrop(match.id);
                   }}
                 >
-                  <div className="flex-grow">
+                  <div className="flex-grow flex items-center space-x-2">
                     <span className="font-medium">{match.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveTrack(match.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
                   </div>
                   <div className="flex items-center space-x-2">
                     {match.coverArt ? (
@@ -410,6 +467,53 @@ export function BulkUploadTrack() {
                       </span>
                     )}
                   </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {state.unmatchedCoverArt.length > 0 && (
+          <div className="border rounded-lg p-4">
+            <h2 className="text-lg font-semibold mb-4">Unmatched Cover Art:</h2>
+            <ul className="space-y-2">
+              {state.unmatchedCoverArt.map((file, index) => (
+                <li
+                  key={index}
+                  className="flex items-center justify-between p-2 border rounded"
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedCoverArt({ id: `unmatched-${index}`, file });
+                  }}
+                  onDragEnd={handleCoverArtDragEnd}
+                >
+                  <span className="text-sm text-gray-600">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setState((prev) => ({
+                        ...prev,
+                        unmatchedCoverArt: prev.unmatchedCoverArt.filter(
+                          (_, i) => i !== index
+                        ),
+                      }));
+                    }}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </li>
               ))}
             </ul>
