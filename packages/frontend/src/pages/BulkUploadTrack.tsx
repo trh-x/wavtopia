@@ -355,18 +355,18 @@ export function BulkUploadTrack() {
     }
   };
 
+  const pendingUploads = state.matches.filter((m) => !m.uploaded);
   const isUploadInProgress =
     state.currentUploadIndex >= 0 &&
-    state.currentUploadIndex < state.matches.length;
+    state.currentUploadIndex < pendingUploads.length;
 
   const isUploadComplete =
-    state.matches.length > 0 &&
-    state.currentUploadIndex === state.matches.length;
+    pendingUploads.length === 0 && state.matches.length > 0;
 
   const progress =
-    state.matches.length === 0
-      ? 0
-      : (state.currentUploadIndex / state.matches.length) * 100;
+    pendingUploads.length === 0
+      ? 100
+      : (state.currentUploadIndex / pendingUploads.length) * 100;
 
   // Set up drag and drop event listeners
   React.useEffect(() => {
@@ -646,17 +646,17 @@ export function BulkUploadTrack() {
               disabled={
                 state.matches.length === 0 ||
                 isUploadInProgress ||
-                state.matches.every((m) => m.uploaded)
+                pendingUploads.length === 0
               }
             >
               {isUploadInProgress
                 ? `Uploading (${state.currentUploadIndex + 1}/${
-                    state.matches.filter((m) => !m.uploaded).length
+                    pendingUploads.length
                   })`
-                : state.matches.some((m) => m.uploaded)
-                ? `Upload ${
-                    state.matches.filter((m) => !m.uploaded).length
-                  } Remaining Tracks`
+                : pendingUploads.length > 0
+                ? state.matches.some((m) => m.uploaded)
+                  ? `Upload ${pendingUploads.length} Remaining Tracks`
+                  : `Upload ${pendingUploads.length} Tracks`
                 : "Start Upload"}
             </FormButton>
           )}
