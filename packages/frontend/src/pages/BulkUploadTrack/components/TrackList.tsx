@@ -41,18 +41,24 @@ export function TrackList({
                 ? "border-green-200 bg-green-50"
                 : i === currentUploadIndex
                 ? "border-blue-200 bg-blue-50"
-                : draggedCoverArt && match.path !== draggedCoverArt.sourceId
+                : draggedCoverArt &&
+                  match.path !== draggedCoverArt.sourceId &&
+                  !match.uploaded
                 ? "border-primary-200 bg-primary-50"
                 : "border-gray-200"
             )}
             onDragOver={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
+              if (!match.uploaded) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
             }}
             onDrop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onCoverArtDrop(match.path);
+              if (!match.uploaded) {
+                e.preventDefault();
+                e.stopPropagation();
+                onCoverArtDrop(match.path);
+              }
             }}
           >
             <div className="flex-grow flex items-center space-x-2">
@@ -141,7 +147,9 @@ export function TrackList({
                 </div>
               ) : (
                 <span className="text-sm text-gray-500">
-                  {draggedCoverArt && match.path !== draggedCoverArt.sourceId
+                  {draggedCoverArt &&
+                  match.path !== draggedCoverArt.sourceId &&
+                  !match.uploaded
                     ? "Drop cover art here"
                     : "No cover art"}
                 </span>
