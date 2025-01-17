@@ -32,7 +32,7 @@ export function DropZone({
     <div
       id="drop-zone"
       className={cn(
-        "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
+        "cursor-pointer border-2 border-dashed rounded-lg p-8 text-center transition-colors",
         effectiveDragging
           ? "border-primary-500 bg-primary-50"
           : "border-gray-300 hover:border-primary-500",
