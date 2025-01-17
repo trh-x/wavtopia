@@ -29,7 +29,7 @@ export default function MyTracks() {
     enabled: !!token,
     getNextPageParam: (lastPage: PaginatedResponse<Track>) =>
       lastPage.metadata.nextCursor,
-    initialPageParam: null as string | null,
+    initialPageParam: undefined as string | undefined,
   });
 
   const {
@@ -46,7 +46,7 @@ export default function MyTracks() {
     enabled: !!token,
     getNextPageParam: (lastPage: PaginatedResponse<Track>) =>
       lastPage.metadata.nextCursor,
-    initialPageParam: null as string | null,
+    initialPageParam: undefined as string | undefined,
   });
 
   const deleteTrackMutation = useMutation({
