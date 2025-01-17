@@ -23,6 +23,7 @@ Commands:
   setup-remote     Configure remote deployment
   deploy-prod      Deploy to production server
   test-registry    Test connection to registry through SSH tunnel
+  bootstrap-prod   Bootstrap the production database with an admin user
 
 Options:
   -h, --help       Show this help message
@@ -33,7 +34,7 @@ EOT
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -h|--help) show_help; exit 0 ;;
-        build-*|up-*|down*|clean|setup-remote|deploy-prod|test-registry) COMMAND="$1" ;;
+        build-*|up-*|down*|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod) COMMAND="$1" ;;
         *) echo "Unknown parameter: $1"; exit 1 ;;
     esac
     shift
@@ -290,6 +291,24 @@ build_workspace() {
     docker compose --profile build build workspace
 }
 
+# Function to bootstrap production database
+bootstrap_prod() {
+    echo "Bootstrapping production database..."
+    if ! docker --context production info >/dev/null 2>&1; then
+        echo "Cannot connect to production server. Please run setup-remote first."
+        exit 1
+    }
+
+    # Run bootstrap command in production context
+    docker context use production
+    docker compose --profile production run --rm \
+      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap"
+    
+    # Switch back to default context
+    docker context use default
+    echo "Production database bootstrapped successfully!"
+}
+
 # Main command execution
 case $COMMAND in
     "build-workspace")
@@ -334,6 +353,9 @@ case $COMMAND in
         ;;
     "test-registry")
         test_registry
+        ;;
+    "bootstrap-prod")
+        bootstrap_prod
         ;;
     "")
         echo "No command specified"
