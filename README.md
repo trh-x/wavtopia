@@ -100,8 +100,11 @@ minio server ~/minio --console-address :9001
 5. Initialize the database:
 
 ```bash
-cd packages/backend
-pnpm prisma migrate dev
+# Set up the database schema and run migrations
+pnpm db:setup
+
+# Create an admin user and enable required feature flags
+pnpm db:bootstrap
 ```
 
 6. Start development servers:
@@ -119,8 +122,23 @@ cd packages/backend && pnpm dev
 
 The `scripts/` directory contains several utility scripts:
 
+- `deploy.sh`: Main deployment script with several commands:
+  - `setup-remote`: Configure remote Docker context and registry for deployment
+  - `deploy-prod`: Deploy all services to production
+  - `bootstrap-prod`: Bootstrap the production database with an admin user
+  - Run `./scripts/deploy.sh --help` for all available commands
 - `apply-arch-lockfile.sh`: Applies architecture-specific lockfile for better dependency management
 - `update-arch-lockfile.sh`: Updates the architecture-specific lockfile
+
+### Database Management
+
+The project includes several database-related commands:
+
+- `pnpm db:setup`: Initialize the database schema and run migrations
+- `pnpm db:bootstrap`: Create an admin user and set up required feature flags
+  - Can be run with arguments: `-u <username> -e <email> -p <password>`
+  - Will prompt for missing values if not provided
+- `./scripts/deploy.sh bootstrap-prod`: Bootstrap the production database (must run `setup-remote` first)
 
 ### Docker Services
 
