@@ -3,7 +3,7 @@ import { FormInput } from "@/components/ui/FormInput";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { useFileProcessing } from "./hooks/useFileProcessing";
 import { DropZone } from "./components/DropZone";
-import { TrackList } from "./components/TrackList";
+import { UploadList } from "./components/UploadList";
 import { UnmatchedArt } from "./components/UnmatchedArt";
 import { UploadProgress } from "./components/UploadProgress";
 
@@ -67,7 +67,7 @@ export function BulkUploadTrack() {
           disabled={isUploadInProgress}
         />
 
-        <TrackList
+        <UploadList
           matches={state.matches}
           currentUploadIndex={state.currentUploadIndex}
           draggedCoverArt={draggedCoverArt}
