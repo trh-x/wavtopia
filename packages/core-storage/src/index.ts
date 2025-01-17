@@ -23,3 +23,5 @@ export {
   Notification,
   NotificationType,
 } from ".prisma/client";
+
+export * from "./auth";

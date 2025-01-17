@@ -1,7 +1,7 @@
 import { User, Role } from "@wavtopia/core-storage";
+import { hashPassword, comparePassword } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import { AppError } from "../middleware/errorHandler";
 import { isEarlyAccessRequired } from "./featureFlags";
 
@@ -63,7 +63,7 @@ export async function signup(
     }
   }
 
-  const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);
+  const hashedPassword = await hashPassword(data.password);
 
   const userData: any = {
     email: data.email,
@@ -103,7 +103,7 @@ export async function login(
     throw new AppError(401, "Invalid credentials");
   }
 
-  const isValidPassword = await bcrypt.compare(data.password, user.password);
+  const isValidPassword = await comparePassword(data.password, user.password);
   if (!isValidPassword) {
     throw new AppError(401, "Invalid credentials");
   }

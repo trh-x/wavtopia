@@ -3,3 +3,4 @@ export { PrismaService } from "./services/prisma";
 export { deleteLocalFile, ensureDirectoryExists, normalizeFilePath, } from "./services/local-storage";
 export { config, type StorageConfig, type DatabaseConfig, type RedisConfig, type SharedConfig, } from "./config";
 export { Prisma, User, Role, InviteCode, FeatureFlag, Notification, NotificationType, } from ".prisma/client";
+export * from "./auth";
