@@ -25,7 +25,7 @@ const apiRequest = async (endpoint: string, options: FetchOptions = {}) => {
     headers.set("Content-Type", contentType);
   }
 
-  const url = new URL(`${API_URL}${endpoint}`);
+  const url = new URL(`${API_URL}${endpoint}`, window.location.origin);
   if (searchParams) {
     url.search = searchParams.toString();
   }
