@@ -8,6 +8,7 @@ import { TrackListPlaybackProvider } from "@/contexts/TrackListPlaybackContext";
 import { cn } from "@/utils/cn";
 import { Checkbox } from "../ui/Checkbox";
 import { TrackCardMenu } from "./TrackCardMenu";
+import { useEffect, useRef, useCallback } from "react";
 
 function ImagePlaceholderIcon({
   className = "w-8 h-8 text-gray-400",
@@ -98,6 +99,8 @@ interface TrackListProps {
   selectedTracks?: Set<string>;
   onTrackSelect?: (trackId: string) => void;
   onDeleteTrack?: (trackId: string) => void;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
 export function TrackList({
@@ -106,8 +109,40 @@ export function TrackList({
   selectedTracks,
   onTrackSelect,
   onDeleteTrack,
+  onLoadMore,
+  isLoadingMore,
 }: TrackListProps) {
   const { appendTokenToUrl } = useAuthToken();
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && onLoadMore && !isLoadingMore) {
+        onLoadMore();
+      }
+    },
+    [onLoadMore, isLoadingMore]
+  );
+
+  useEffect(() => {
+    const element = observerTarget.current;
+    if (!element || !onLoadMore) return;
+
+    const observer = new IntersectionObserver(handleObserver, {
+      root: null,
+      rootMargin: "20px",
+      threshold: 1.0,
+    });
+
+    observer.observe(element);
+
+    return () => {
+      if (element) {
+        observer.unobserve(element);
+      }
+    };
+  }, [handleObserver, onLoadMore]);
 
   if (!tracks?.length)
     return <div className="text-gray-500">No tracks found</div>;
@@ -176,19 +211,28 @@ export function TrackList({
           </div>
         ))}
       </div>
+      {onLoadMore && (
+        <div ref={observerTarget} className="h-4 mt-4">
+          {isLoadingMore && (
+            <div className="text-center text-gray-500">Loading more...</div>
+          )}
+        </div>
+      )}
     </TrackListPlaybackProvider>
   );
 }
 
 interface TrackSectionProps {
   title: string;
-  tracks: Track[] | undefined;
+  tracks: Track[];
   isLoading: boolean;
   error: unknown;
   selectable?: boolean;
   selectedTracks?: Set<string>;
   onTrackSelect?: (trackId: string) => void;
   onDeleteTrack?: (trackId: string) => void;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
 export function TrackSection({
@@ -200,6 +244,8 @@ export function TrackSection({
   selectedTracks,
   onTrackSelect,
   onDeleteTrack,
+  onLoadMore,
+  isLoadingMore,
 }: TrackSectionProps) {
   if (isLoading) return <LoadingState />;
   if (error) return <ErrorState message={(error as Error).message} />;
@@ -213,6 +259,8 @@ export function TrackSection({
         selectedTracks={selectedTracks}
         onTrackSelect={onTrackSelect}
         onDeleteTrack={onDeleteTrack}
+        onLoadMore={onLoadMore}
+        isLoadingMore={isLoadingMore}
       />
     </div>
   );

@@ -6,7 +6,9 @@ const appendTokenToUrlImpl = (url: string): string => {
 };
 
 export function useAuthToken() {
+  const token = getStoredToken();
   return {
+    token,
     getToken: getStoredToken,
     appendTokenToUrl: appendTokenToUrlImpl,
   };
