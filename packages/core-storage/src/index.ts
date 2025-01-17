@@ -31,5 +31,4 @@ export {
   encodeCursor,
   decodeCursor,
 } from "./types";
-
 export * from "./auth";
