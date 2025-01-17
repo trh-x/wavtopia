@@ -4,20 +4,20 @@ import { prisma } from "../lib/prisma";
 import {
   PaginatedResponse,
   PaginationParams,
-  Track,
   encodeCursor,
   decodeCursor,
+  Prisma,
 } from "@wavtopia/core-storage";
 
 const router = Router();
 const DEFAULT_PAGE_SIZE = 20;
 
 // Helper function to handle cursor-based pagination
-async function getPaginatedTracks(
-  where: any,
-  include: any,
+async function getPaginatedTracks<I extends Prisma.TrackInclude>(
+  where: Prisma.TrackWhereInput,
+  include: I,
   params: PaginationParams
-): Promise<PaginatedResponse<Track>> {
+): Promise<PaginatedResponse<Prisma.TrackGetPayload<{ include: I }>>> {
   const limit = params.limit || DEFAULT_PAGE_SIZE;
   const cursor = params.cursor ? decodeCursor(params.cursor) : null;
 

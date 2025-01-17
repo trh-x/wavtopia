@@ -1,62 +1,210 @@
-import { Track, PaginatedResponse, PaginationParams } from "../types";
+import { PaginationParams, Track, User, PaginatedResponse } from "../types";
 
-const API_BASE_URL = "/api";
+const API_URL = "/api";
 
-async function handleResponse<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || response.statusText);
-  }
-  return response.json();
+interface FetchOptions extends RequestInit {
+  token?: string | null;
+  searchParams?: URLSearchParams;
+  contentType?: string;
 }
+
+const apiRequest = async (endpoint: string, options: FetchOptions = {}) => {
+  const {
+    token,
+    searchParams,
+    contentType,
+    headers: customHeaders = {},
+    ...rest
+  } = options;
+
+  const headers = new Headers(customHeaders);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  if (contentType) {
+    headers.set("Content-Type", contentType);
+  }
+
+  const url = new URL(`${API_URL}${endpoint}`);
+  if (searchParams) {
+    url.search = searchParams.toString();
+  }
+
+  const response = await fetch(url.toString(), {
+    headers,
+    ...rest,
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 export const api = {
   auth: {
     login: async (email: string, password: string) => {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      return apiRequest("/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        contentType: "application/json",
         body: JSON.stringify({ email, password }),
       });
-      return handleResponse<{ token: string; user: any }>(response);
     },
 
-    register: async (data: {
-      email: string;
-      username: string;
-      password: string;
-      inviteCode?: string;
-    }) => {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    register: async (
+      email: string,
+      username: string,
+      password: string,
+      inviteCode?: string
+    ) => {
+      // TODO: Rename the route to /auth/register, as the page is also called Register.
+      // Will need a documentation update.
+      return apiRequest("/auth/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        contentType: "application/json",
+        body: JSON.stringify({ email, username, password, inviteCode }),
       });
-      return handleResponse<{ token: string; user: any }>(response);
+    },
+
+    requestEarlyAccess: async (email: string) => {
+      return apiRequest("/auth/request-early-access", {
+        method: "POST",
+        contentType: "application/json",
+        body: JSON.stringify({ email }),
+      }) as Promise<{ success: boolean }>;
     },
 
     me: async (token: string) => {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return handleResponse<{ user: any }>(response);
+      return apiRequest("/auth/me", { token });
     },
 
     getEnabledFeatures: async (token: string | null) => {
-      const response = await fetch(`${API_BASE_URL}/auth/features`, {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {},
+      return apiRequest("/auth/enabled-features", { token }) as Promise<{
+        flags: string[];
+      }>;
+    },
+  },
+
+  admin: {
+    getFeatureFlags: async (token: string) => {
+      return apiRequest("/admin/feature-flags", { token });
+    },
+
+    createFeatureFlag: async (
+      token: string,
+      data: {
+        name: string;
+        description?: string;
+        isEnabled?: boolean;
+      }
+    ) => {
+      return apiRequest("/admin/feature-flags", {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
       });
-      return handleResponse<{ flags: string[] }>(response);
+    },
+
+    updateFeatureFlag: async (
+      token: string,
+      id: string,
+      data: { isEnabled?: boolean; description?: string }
+    ) => {
+      return apiRequest(`/admin/feature-flags/${id}`, {
+        method: "PATCH",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    getInviteCodes: async (token: string) => {
+      return apiRequest("/admin/invite-codes", { token });
+    },
+
+    createInviteCode: async (
+      token: string,
+      data: { maxUses?: number; expiresAt?: Date }
+    ) => {
+      return apiRequest("/admin/invite-codes", {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+
+    updateInviteCode: async (
+      token: string,
+      id: string,
+      data: { isActive: boolean }
+    ) => {
+      return apiRequest(`/admin/invite-codes/${id}`, {
+        method: "PATCH",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
+    },
+  },
+
+  track: {
+    get: async (id: string, token: string | null) => {
+      return apiRequest(`/track/${id}`, { token }) as Promise<Track>;
+    },
+
+    share: async (id: string, userIds: string[], token: string) => {
+      return apiRequest(`/track/${id}/share`, {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ userIds }),
+      });
+    },
+
+    unshare: async (id: string, userIds: string[], token: string) => {
+      return apiRequest(`/track/${id}/share`, {
+        method: "DELETE",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ userIds }),
+      });
+    },
+
+    updateVisibility: async (id: string, isPublic: boolean, token: string) => {
+      return apiRequest(`/track/${id}/visibility`, {
+        method: "PATCH",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ isPublic }),
+      }) as Promise<Track>;
+    },
+
+    upload: async (formData: FormData, token: string) => {
+      return apiRequest("/track", {
+        method: "POST",
+        token,
+        body: formData,
+      }) as Promise<Track>;
+    },
+
+    delete: async (id: string, token: string) => {
+      return apiRequest(`/track/${id}`, {
+        method: "DELETE",
+        token,
+      });
+    },
+
+    // TODO: Move batchDelete to tracks?
+    batchDelete: async (ids: string[], token: string) => {
+      return apiRequest("/track/batch", {
+        method: "DELETE",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ trackIds: ids }),
+      });
     },
   },
 
@@ -66,15 +214,9 @@ export const api = {
       if (params?.cursor) searchParams.set("cursor", params.cursor);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
 
-      const response = await fetch(
-        `${API_BASE_URL}/tracks?${searchParams.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      return handleResponse<PaginatedResponse<Track>>(response);
+      return apiRequest("/tracks", { token, searchParams }) as Promise<
+        PaginatedResponse<Track>
+      >;
     },
 
     listPublic: async (params?: PaginationParams) => {
@@ -82,10 +224,9 @@ export const api = {
       if (params?.cursor) searchParams.set("cursor", params.cursor);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
 
-      const response = await fetch(
-        `${API_BASE_URL}/tracks/public?${searchParams.toString()}`
-      );
-      return handleResponse<PaginatedResponse<Track>>(response);
+      return apiRequest("/tracks/public", { searchParams }) as Promise<
+        PaginatedResponse<Track>
+      >;
     },
 
     listShared: async (token: string, params?: PaginationParams) => {
@@ -93,15 +234,9 @@ export const api = {
       if (params?.cursor) searchParams.set("cursor", params.cursor);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
 
-      const response = await fetch(
-        `${API_BASE_URL}/tracks/shared?${searchParams.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      return handleResponse<PaginatedResponse<Track>>(response);
+      return apiRequest("/tracks/shared", { token, searchParams }) as Promise<
+        PaginatedResponse<Track>
+      >;
     },
 
     listAvailable: async (token: string, params?: PaginationParams) => {
@@ -109,102 +244,52 @@ export const api = {
       if (params?.cursor) searchParams.set("cursor", params.cursor);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
 
-      const response = await fetch(
-        `${API_BASE_URL}/tracks/available?${searchParams.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      return handleResponse<PaginatedResponse<Track>>(response);
+      return apiRequest("/tracks/available", {
+        token,
+        searchParams,
+      }) as Promise<PaginatedResponse<Track>>;
     },
   },
 
-  track: {
-    get: async (token: string, id: string) => {
-      const response = await fetch(`${API_BASE_URL}/track/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return handleResponse<Track>(response);
+  users: {
+    list: async (token: string) => {
+      return apiRequest("/auth/users", { token }) as Promise<User[]>;
     },
+  },
 
-    upload: async (formData: FormData, token: string) => {
-      const response = await fetch(`${API_BASE_URL}/track`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-      return handleResponse<Track>(response);
-    },
-
-    delete: async (token: string, trackId: string) => {
-      const response = await fetch(`${API_BASE_URL}/track/${trackId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return handleResponse<void>(response);
-    },
-
-    batchDelete: async (token: string, trackIds: string[]) => {
-      const response = await fetch(`${API_BASE_URL}/track/batch`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ trackIds }),
-      });
-      return handleResponse<void>(response);
-    },
-
-    share: async (token: string, trackId: string, userIds: string[]) => {
-      const response = await fetch(`${API_BASE_URL}/track/${trackId}/share`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userIds }),
-      });
-      return handleResponse<void>(response);
-    },
-
-    unshare: async (token: string, trackId: string, userIds: string[]) => {
-      const response = await fetch(`${API_BASE_URL}/track/${trackId}/share`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userIds }),
-      });
-      return handleResponse<void>(response);
-    },
-
-    updateVisibility: async (
+  notifications: {
+    getNotifications: async (
       token: string,
-      trackId: string,
-      isPublic: boolean
+      {
+        limit,
+        offset,
+        includeRead,
+      }: { limit?: number; offset?: number; includeRead?: boolean } = {}
     ) => {
-      const response = await fetch(
-        `${API_BASE_URL}/track/${trackId}/visibility`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ isPublic }),
-        }
-      );
-      return handleResponse<Track>(response);
+      const params = new URLSearchParams();
+      if (limit) params.append("limit", limit.toString());
+      if (offset) params.append("offset", offset.toString());
+      if (includeRead) params.append("includeRead", "true");
+
+      return apiRequest(`/notifications?${params.toString()}`, { token });
+    },
+
+    getUnreadCount: async (token: string) => {
+      return apiRequest("/notifications/unread-count", { token });
+    },
+
+    markAsRead: async (token: string, notificationId: string) => {
+      return apiRequest(`/notifications/${notificationId}/read`, {
+        method: "POST",
+        token,
+      });
+    },
+
+    markAllAsRead: async (token: string) => {
+      return apiRequest("/notifications/mark-all-read", {
+        method: "POST",
+        token,
+      });
     },
   },
 };

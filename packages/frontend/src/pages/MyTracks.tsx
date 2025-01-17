@@ -11,7 +11,7 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Track, PaginatedResponse } from "@/types";
 
-export default function MyTracks() {
+export function MyTracks() {
   const { token } = useAuthToken();
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
