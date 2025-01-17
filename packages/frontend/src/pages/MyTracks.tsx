@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { Track, PaginatedResponse } from "@/types";
+import { BatchActionsBar } from "@/components/BatchActionsBar";
 
 export function MyTracks() {
   const { token } = useAuthToken();
@@ -59,6 +60,17 @@ export function MyTracks() {
     },
   });
 
+  const deleteTracksMutation = useMutation({
+    mutationFn: async (trackIds: string[]) => {
+      if (!token) return;
+      await api.track.batchDelete(trackIds, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tracks"] });
+      setSelectedTracks(new Set());
+    },
+  });
+
   const handleTrackSelect = (trackId: string) => {
     setSelectedTracks((prev) => {
       const next = new Set(prev);
@@ -69,6 +81,16 @@ export function MyTracks() {
       }
       return next;
     });
+  };
+
+  const handleDeleteTracks = () => {
+    if (selectedTracks.size > 0) {
+      deleteTracksMutation.mutate(Array.from(selectedTracks));
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedTracks(new Set());
   };
 
   if (!token) {
@@ -119,6 +141,14 @@ export function MyTracks() {
           />
         </TabsContent>
       </Tabs>
+
+      {selectedTracks.size > 0 && (
+        <BatchActionsBar
+          selectedCount={selectedTracks.size}
+          onDelete={handleDeleteTracks}
+          onCancelSelection={handleCancelSelection}
+        />
+      )}
     </div>
   );
 }
