@@ -20,7 +20,6 @@ function PublicTracks() {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Public Tracks</h1>
       <TrackSection
-        title=""
         tracks={publicTracks}
         isLoading={isLoadingPublicTracks}
         error={publicTracksError}
@@ -47,7 +46,6 @@ function AvailableTracks({ token }: { token: string }) {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Available Tracks</h1>
       <TrackSection
-        title=""
         tracks={availableTracks}
         isLoading={isLoadingAvailableTracks}
         error={availableTracksError}

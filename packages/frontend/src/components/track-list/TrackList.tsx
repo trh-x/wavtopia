@@ -224,7 +224,6 @@ export function TrackList({
 }
 
 interface TrackSectionProps {
-  title: string;
   tracks: Track[];
   isLoading: boolean;
   error: unknown;
@@ -237,7 +236,6 @@ interface TrackSectionProps {
 }
 
 export function TrackSection({
-  title,
   tracks,
   isLoading,
   error,
@@ -252,17 +250,14 @@ export function TrackSection({
   if (error) return <ErrorState message={(error as Error).message} />;
 
   return (
-    <div className="mb-12">
-      <h2 className="text-2xl font-bold mb-6">{title}</h2>
-      <TrackList
-        tracks={tracks || []}
-        selectable={selectable}
-        selectedTracks={selectedTracks}
-        onTrackSelect={onTrackSelect}
-        onDeleteTrack={onDeleteTrack}
-        onLoadMore={onLoadMore}
-        isLoadingMore={isLoadingMore}
-      />
-    </div>
+    <TrackList
+      tracks={tracks || []}
+      selectable={selectable}
+      selectedTracks={selectedTracks}
+      onTrackSelect={onTrackSelect}
+      onDeleteTrack={onDeleteTrack}
+      onLoadMore={onLoadMore}
+      isLoadingMore={isLoadingMore}
+    />
   );
 }
