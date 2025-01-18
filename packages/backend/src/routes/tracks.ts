@@ -38,7 +38,7 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
         }
       : where,
     include,
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }], // TODO: This is a temporarily change to FIFO sort, to be reverted
     take: limit + 1,
   });
 
