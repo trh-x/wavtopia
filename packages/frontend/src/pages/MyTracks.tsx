@@ -1,7 +1,7 @@
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import { TrackSection } from "@/components/track-list/TrackList";
+import { TrackList } from "@/components/track-list/TrackList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
@@ -89,7 +89,7 @@ export function MyTracks() {
         </TabsList>
 
         <TabsContent value="my-tracks">
-          <TrackSection
+          <TrackList
             tracks={userTracks}
             isLoading={isLoadingUserTracks}
             error={userTracksError}
@@ -103,7 +103,7 @@ export function MyTracks() {
         </TabsContent>
 
         <TabsContent value="shared">
-          <TrackSection
+          <TrackList
             tracks={sharedTracks}
             isLoading={isLoadingSharedTracks}
             error={sharedTracksError}

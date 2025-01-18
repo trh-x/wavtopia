@@ -1,6 +1,5 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Track, PaginatedResponse } from "@/types";
-import { api } from "@/api/client";
 
 type UseInfiniteTracksOptions = {
   queryKey: string[];

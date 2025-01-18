@@ -1,7 +1,6 @@
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
-import { TrackSection } from "@/components/track-list/TrackList";
-import { ErrorState } from "@/components/ui/ErrorState";
+import { TrackList } from "@/components/track-list/TrackList";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 
 function PublicTracks() {
@@ -19,7 +18,7 @@ function PublicTracks() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Public Tracks</h1>
-      <TrackSection
+      <TrackList
         tracks={publicTracks}
         isLoading={isLoadingPublicTracks}
         error={publicTracksError}
@@ -45,7 +44,7 @@ function AvailableTracks({ token }: { token: string }) {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Available Tracks</h1>
-      <TrackSection
+      <TrackList
         tracks={availableTracks}
         isLoading={isLoadingAvailableTracks}
         error={availableTracksError}

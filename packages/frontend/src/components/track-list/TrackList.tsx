@@ -95,6 +95,8 @@ export function TrackWaveformPlaceholder({
 
 interface TrackListProps {
   tracks: Track[];
+  isLoading?: boolean;
+  error?: Error | null;
   selectable?: boolean;
   selectedTracks?: Set<string>;
   onTrackSelect?: (trackId: string) => void;
@@ -105,6 +107,8 @@ interface TrackListProps {
 
 export function TrackList({
   tracks,
+  isLoading,
+  error,
   selectable = false,
   selectedTracks,
   onTrackSelect,
@@ -144,6 +148,8 @@ export function TrackList({
     };
   }, [handleObserver, onLoadMore]);
 
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message={(error as Error).message} />;
   if (!tracks?.length)
     return <div className="text-gray-500">No tracks found</div>;
 
@@ -220,44 +226,5 @@ export function TrackList({
         </div>
       )}
     </TrackListPlaybackProvider>
-  );
-}
-
-interface TrackSectionProps {
-  tracks: Track[];
-  isLoading: boolean;
-  error: unknown;
-  selectable?: boolean;
-  selectedTracks?: Set<string>;
-  onTrackSelect?: (trackId: string) => void;
-  onDeleteTrack?: (trackId: string) => void;
-  onLoadMore?: () => void;
-  isLoadingMore?: boolean;
-}
-
-export function TrackSection({
-  tracks,
-  isLoading,
-  error,
-  selectable,
-  selectedTracks,
-  onTrackSelect,
-  onDeleteTrack,
-  onLoadMore,
-  isLoadingMore,
-}: TrackSectionProps) {
-  if (isLoading) return <LoadingState />;
-  if (error) return <ErrorState message={(error as Error).message} />;
-
-  return (
-    <TrackList
-      tracks={tracks || []}
-      selectable={selectable}
-      selectedTracks={selectedTracks}
-      onTrackSelect={onTrackSelect}
-      onDeleteTrack={onDeleteTrack}
-      onLoadMore={onLoadMore}
-      isLoadingMore={isLoadingMore}
-    />
   );
 }
