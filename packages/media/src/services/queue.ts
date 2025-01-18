@@ -148,6 +148,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           wavUrl,
           mp3Url,
           waveformData: waveformResult.peaks,
+          duration: waveformResult.duration,
         };
       })
     );
