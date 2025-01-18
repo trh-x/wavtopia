@@ -10,7 +10,7 @@ import {
 } from "@wavtopia/core-storage";
 
 const router = Router();
-const DEFAULT_PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 6;
 
 // Helper function to handle cursor-based pagination
 async function getPaginatedTracks<I extends Prisma.TrackInclude>(

@@ -12,9 +12,14 @@ interface WavFormat {
   signed: boolean;
 }
 
+export interface WaveformGenerationResult {
+  peaks: number[];
+  duration: number;
+}
+
 export async function generateWaveformData(
   audioBuffer: Buffer
-): Promise<number[]> {
+): Promise<WaveformGenerationResult> {
   return new Promise((resolve, reject) => {
     try {
       // Create a readable stream from the buffer
@@ -29,13 +34,17 @@ export async function generateWaveformData(
       let currentMax = 0;
       let currentMin = 0;
       let sampleCount = 0;
+      let totalSamples = 0;
+      let format: WavFormat;
 
       // Process the audio data
-      reader.on("format", function (format: WavFormat) {
+      reader.on("format", function (fmt: WavFormat) {
+        format = fmt;
         reader.on("data", function (chunk: Buffer) {
           // Convert buffer to 16-bit samples
           for (let i = 0; i < chunk.length; i += 2) {
             const sample = chunk.readInt16LE(i) / 32768.0; // Normalize to [-1, 1]
+            totalSamples++;
 
             currentMax = Math.max(currentMax, sample);
             currentMin = Math.min(currentMin, sample);
@@ -57,7 +66,14 @@ export async function generateWaveformData(
             peaks.push(currentMax);
             peaks.push(currentMin);
           }
-          resolve(peaks);
+
+          // Calculate duration in seconds
+          const duration = totalSamples / format.sampleRate;
+
+          resolve({
+            peaks,
+            duration,
+          });
         });
       });
 

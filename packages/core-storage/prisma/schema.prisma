@@ -42,6 +42,7 @@ model Track {
   fullTrackUrl    String?      @map("full_track_url")
   fullTrackMp3Url String?      @map("full_track_mp3_url")
   waveformData    Float[]      @map("waveform_data")
+  duration        Float?       @map("duration")
   coverArt        String?      @map("cover_art")
   metadata        Json?
   isPublic        Boolean      @default(false) @map("is_public")

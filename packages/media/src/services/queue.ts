@@ -74,7 +74,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
 
     // Generate waveform data for full track
     console.log("Generating waveform data for full track...");
-    const fullTrackWaveform = await generateWaveformData(fullTrackBuffer);
+    const waveformResult = await generateWaveformData(fullTrackBuffer);
     console.log("Full track waveform data generated");
 
     // Convert full track to MP3
@@ -119,7 +119,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           "_"
         )}`;
 
-        const waveformData = await generateWaveformData(component.buffer);
+        const waveformResult = await generateWaveformData(component.buffer);
         console.log(`Generated waveform data for component: ${component.name}`);
 
         const [wavUrl, mp3Url] = await Promise.all([
@@ -147,20 +147,22 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           type: component.type,
           wavUrl,
           mp3Url,
-          waveformData,
+          waveformData: waveformResult.peaks,
         };
       })
     );
 
+    // Update database record
     console.log("Updating database record...");
     try {
       const track = await prisma.track.update({
         where: { id: trackId },
         data: {
-          originalUrl: originalUrl,
-          fullTrackUrl: fullTrackUrl,
-          fullTrackMp3Url: fullTrackMp3Url,
-          waveformData: fullTrackWaveform,
+          originalUrl,
+          fullTrackUrl,
+          fullTrackMp3Url,
+          waveformData: waveformResult.peaks,
+          duration: waveformResult.duration,
           coverArt: coverArtUrl,
           components: {
             create: componentUploads,
