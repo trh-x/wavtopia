@@ -1,51 +1,57 @@
-import { useQuery } from "@tanstack/react-query";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
-import { TrackList } from "@/components/track-list/TrackList";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { TrackSection } from "@/components/track-list/TrackList";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 
 function PublicTracks() {
   const {
-    data: publicTracks,
+    tracks: publicTracks,
     isLoading: isLoadingPublicTracks,
     error: publicTracksError,
-  } = useQuery({
+    fetchNextPage: fetchNextPublicTracks,
+    isLoadingMore: isLoadingMorePublicTracks,
+  } = useInfiniteTracks({
     queryKey: ["public-tracks"],
-    queryFn: () => api.tracks.listPublic(),
+    fetchFn: (cursor) => api.tracks.listPublic({ cursor }),
   });
-
-  if (isLoadingPublicTracks) return <LoadingState />;
-  if (publicTracksError)
-    return <ErrorState message={(publicTracksError as Error).message} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Public Tracks</h1>
-      <TrackList tracks={publicTracks?.items || []} />
+      <TrackSection
+        tracks={publicTracks}
+        isLoading={isLoadingPublicTracks}
+        error={publicTracksError}
+        onLoadMore={fetchNextPublicTracks}
+        isLoadingMore={isLoadingMorePublicTracks}
+      />
     </div>
   );
 }
 
 function AvailableTracks({ token }: { token: string }) {
   const {
-    data: availableTracks,
+    tracks: availableTracks,
     isLoading: isLoadingAvailableTracks,
     error: availableTracksError,
-  } = useQuery({
+    fetchNextPage: fetchNextAvailableTracks,
+    isLoadingMore: isLoadingMoreAvailableTracks,
+  } = useInfiniteTracks({
     queryKey: ["available-tracks", token],
-    queryFn: () => api.tracks.listAvailable(token),
-    // enabled: !!token,
+    fetchFn: (cursor) => api.tracks.listAvailable(token, { cursor }),
   });
-
-  if (isLoadingAvailableTracks) return <LoadingState />;
-  if (availableTracksError)
-    return <ErrorState message={(availableTracksError as Error).message} />;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Available Tracks</h1>
-      <TrackList tracks={availableTracks?.items || []} />
+      <TrackSection
+        tracks={availableTracks}
+        isLoading={isLoadingAvailableTracks}
+        error={availableTracksError}
+        onLoadMore={fetchNextAvailableTracks}
+        isLoadingMore={isLoadingMoreAvailableTracks}
+      />
     </div>
   );
 }

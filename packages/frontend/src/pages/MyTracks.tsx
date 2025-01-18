@@ -1,58 +1,46 @@
 import { useAuthToken } from "@/hooks/useAuthToken";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { TrackSection } from "@/components/track-list/TrackList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
-import { Track, PaginatedResponse } from "@/types";
 import { BatchActionsBar } from "@/components/BatchActionsBar";
+import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 
 export function MyTracks() {
   const { token } = useAuthToken();
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
+  if (!token) {
+    return <ErrorState message="Please log in to view your tracks" />;
+  }
+
   const {
-    data: userTracksData,
+    tracks: userTracks,
     isLoading: isLoadingUserTracks,
     error: userTracksError,
     fetchNextPage: fetchNextUserTracks,
-    hasNextPage: hasNextUserTracksPage,
-    isFetchingNextPage: isFetchingNextUserTracksPage,
-  } = useInfiniteQuery({
+    isLoadingMore: isLoadingMoreUserTracks,
+  } = useInfiniteTracks({
     queryKey: ["tracks", token],
-    queryFn: ({ pageParam }) => api.tracks.list(token!, { cursor: pageParam }),
-    enabled: !!token,
-    getNextPageParam: (lastPage: PaginatedResponse<Track>) =>
-      lastPage.metadata.nextCursor,
-    initialPageParam: undefined as string | undefined,
+    fetchFn: (cursor) => api.tracks.list(token, { cursor }),
   });
 
   const {
-    data: sharedTracksData,
+    tracks: sharedTracks,
     isLoading: isLoadingSharedTracks,
     error: sharedTracksError,
     fetchNextPage: fetchNextSharedTracks,
-    hasNextPage: hasNextSharedTracksPage,
-    isFetchingNextPage: isFetchingNextSharedTracksPage,
-  } = useInfiniteQuery({
+    isLoadingMore: isLoadingMoreSharedTracks,
+  } = useInfiniteTracks({
     queryKey: ["shared-tracks", token],
-    queryFn: ({ pageParam }) =>
-      api.tracks.listShared(token!, { cursor: pageParam }),
-    enabled: !!token,
-    getNextPageParam: (lastPage: PaginatedResponse<Track>) =>
-      lastPage.metadata.nextCursor,
-    initialPageParam: undefined as string | undefined,
+    fetchFn: (cursor) => api.tracks.listShared(token, { cursor }),
   });
 
   const deleteTrackMutation = useMutation({
     mutationFn: async (trackId: string) => {
-      if (!token) return;
       await api.track.delete(token, trackId);
     },
     onSuccess: () => {
@@ -62,7 +50,6 @@ export function MyTracks() {
 
   const deleteTracksMutation = useMutation({
     mutationFn: async (trackIds: string[]) => {
-      if (!token) return;
       await api.track.batchDelete(trackIds, token);
     },
     onSuccess: () => {
@@ -93,14 +80,6 @@ export function MyTracks() {
     setSelectedTracks(new Set());
   };
 
-  if (!token) {
-    return <ErrorState message="Please log in to view your tracks" />;
-  }
-
-  const userTracks = userTracksData?.pages.flatMap((page) => page.items) || [];
-  const sharedTracks =
-    sharedTracksData?.pages.flatMap((page) => page.items) || [];
-
   return (
     <div className="container mx-auto px-4 py-8">
       <Tabs defaultValue="my-tracks">
@@ -111,7 +90,6 @@ export function MyTracks() {
 
         <TabsContent value="my-tracks">
           <TrackSection
-            title=""
             tracks={userTracks}
             isLoading={isLoadingUserTracks}
             error={userTracksError}
@@ -119,25 +97,18 @@ export function MyTracks() {
             selectedTracks={selectedTracks}
             onTrackSelect={handleTrackSelect}
             onDeleteTrack={deleteTrackMutation.mutate}
-            onLoadMore={
-              hasNextUserTracksPage ? () => fetchNextUserTracks() : undefined
-            }
-            isLoadingMore={isFetchingNextUserTracksPage}
+            onLoadMore={fetchNextUserTracks}
+            isLoadingMore={isLoadingMoreUserTracks}
           />
         </TabsContent>
 
         <TabsContent value="shared">
           <TrackSection
-            title=""
             tracks={sharedTracks}
             isLoading={isLoadingSharedTracks}
             error={sharedTracksError}
-            onLoadMore={
-              hasNextSharedTracksPage
-                ? () => fetchNextSharedTracks()
-                : undefined
-            }
-            isLoadingMore={isFetchingNextSharedTracksPage}
+            onLoadMore={fetchNextSharedTracks}
+            isLoadingMore={isLoadingMoreSharedTracks}
           />
         </TabsContent>
       </Tabs>
