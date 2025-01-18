@@ -1,14 +1,21 @@
-import { Track, User } from "../types";
+import { PaginationParams, Track, User, PaginatedResponse } from "../types";
 
 const API_URL = "/api";
 
 interface FetchOptions extends RequestInit {
   token?: string | null;
+  searchParams?: URLSearchParams;
   contentType?: string;
 }
 
 const apiRequest = async (endpoint: string, options: FetchOptions = {}) => {
-  const { token, contentType, headers: customHeaders = {}, ...rest } = options;
+  const {
+    token,
+    searchParams,
+    contentType,
+    headers: customHeaders = {},
+    ...rest
+  } = options;
 
   const headers = new Headers(customHeaders);
   if (token) {
@@ -18,7 +25,12 @@ const apiRequest = async (endpoint: string, options: FetchOptions = {}) => {
     headers.set("Content-Type", contentType);
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const url = new URL(`${API_URL}${endpoint}`, window.location.origin);
+  if (searchParams) {
+    url.search = searchParams.toString();
+  }
+
+  const response = await fetch(url.toString(), {
     headers,
     ...rest,
   });
@@ -197,20 +209,45 @@ export const api = {
   },
 
   tracks: {
-    list: async (token: string) => {
-      return apiRequest("/tracks", { token }) as Promise<Track[]>;
+    list: async (token: string, params?: PaginationParams) => {
+      const searchParams = new URLSearchParams();
+      if (params?.cursor) searchParams.set("cursor", params.cursor);
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+      return apiRequest("/tracks", { token, searchParams }) as Promise<
+        PaginatedResponse<Track>
+      >;
     },
 
-    listPublic: async () => {
-      return apiRequest("/tracks/public") as Promise<Track[]>;
+    listPublic: async (params?: PaginationParams) => {
+      const searchParams = new URLSearchParams();
+      if (params?.cursor) searchParams.set("cursor", params.cursor);
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+      return apiRequest("/tracks/public", { searchParams }) as Promise<
+        PaginatedResponse<Track>
+      >;
     },
 
-    listShared: async (token: string) => {
-      return apiRequest("/tracks/shared", { token }) as Promise<Track[]>;
+    listShared: async (token: string, params?: PaginationParams) => {
+      const searchParams = new URLSearchParams();
+      if (params?.cursor) searchParams.set("cursor", params.cursor);
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+      return apiRequest("/tracks/shared", { token, searchParams }) as Promise<
+        PaginatedResponse<Track>
+      >;
     },
 
-    listAvailable: async (token: string) => {
-      return apiRequest("/tracks/available", { token }) as Promise<Track[]>;
+    listAvailable: async (token: string, params?: PaginationParams) => {
+      const searchParams = new URLSearchParams();
+      if (params?.cursor) searchParams.set("cursor", params.cursor);
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+
+      return apiRequest("/tracks/available", {
+        token,
+        searchParams,
+      }) as Promise<PaginatedResponse<Track>>;
     },
   },
 

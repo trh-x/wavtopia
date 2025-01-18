@@ -42,7 +42,7 @@ interface TrackListItemProps {
   onCoverArtDrop: (targetPath: string) => void;
 }
 
-function TrackListItem({
+function UploadListItem({
   match,
   index,
   currentUploadIndex,
@@ -177,7 +177,7 @@ function TrackListItem({
   );
 }
 
-interface TrackListProps {
+interface UploadListProps {
   matches: FileMatch[];
   currentUploadIndex: number;
   draggedCoverArt: DraggedCoverArt | null;
@@ -188,7 +188,7 @@ interface TrackListProps {
   onCoverArtDrop: (targetPath: string) => void;
 }
 
-export function TrackList({
+export function UploadList({
   matches,
   currentUploadIndex,
   draggedCoverArt,
@@ -197,7 +197,7 @@ export function TrackList({
   onCoverArtDragStart,
   onCoverArtDragEnd,
   onCoverArtDrop,
-}: TrackListProps) {
+}: UploadListProps) {
   if (matches.length === 0) return null;
 
   return (
@@ -207,7 +207,7 @@ export function TrackList({
       </h2>
       <ul className="space-y-4">
         {matches.map((match, i) => (
-          <TrackListItem
+          <UploadListItem
             key={match.path}
             match={match}
             index={i}

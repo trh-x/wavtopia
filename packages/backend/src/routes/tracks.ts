@@ -1,16 +1,74 @@
 import { Router, Request, Response } from "express";
 import { authenticate } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
+import {
+  PaginatedResponse,
+  PaginationParams,
+  encodeCursor,
+  decodeCursor,
+  Prisma,
+} from "@wavtopia/core-storage";
 
 const router = Router();
+const DEFAULT_PAGE_SIZE = 20;
+
+// Helper function to handle cursor-based pagination
+async function getPaginatedTracks<I extends Prisma.TrackInclude>(
+  where: Prisma.TrackWhereInput,
+  include: I,
+  params: PaginationParams
+): Promise<PaginatedResponse<Prisma.TrackGetPayload<{ include: I }>>> {
+  const limit = params.limit || DEFAULT_PAGE_SIZE;
+  const cursor = params.cursor ? decodeCursor(params.cursor) : null;
+
+  // Get one extra item to determine if there's a next page
+  const items = await prisma.track.findMany({
+    where: cursor
+      ? {
+          ...where,
+          OR: [
+            {
+              createdAt: { lt: cursor.date },
+            },
+            {
+              createdAt: cursor.date,
+              id: { lt: cursor.id },
+            },
+          ],
+        }
+      : where,
+    include,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: limit + 1,
+  });
+
+  const hasNextPage = items.length > limit;
+  const paginatedItems = hasNextPage ? items.slice(0, -1) : items;
+
+  return {
+    items: paginatedItems,
+    metadata: {
+      hasNextPage,
+      nextCursor: hasNextPage
+        ? encodeCursor(
+            paginatedItems[paginatedItems.length - 1].createdAt,
+            paginatedItems[paginatedItems.length - 1].id
+          )
+        : undefined,
+    },
+  };
+}
 
 // Get public tracks
 router.get("/public", async (req: Request, res: Response) => {
-  const publicTracks = await prisma.track.findMany({
-    where: {
-      isPublic: true,
-    },
-    include: {
+  const cursor = req.query.cursor as string | undefined;
+  const limit = req.query.limit
+    ? parseInt(req.query.limit as string)
+    : undefined;
+
+  const result = await getPaginatedTracks(
+    { isPublic: true },
+    {
       user: {
         select: {
           id: true,
@@ -18,11 +76,10 @@ router.get("/public", async (req: Request, res: Response) => {
         },
       },
     },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-  res.json(publicTracks);
+    { cursor, limit }
+  );
+
+  res.json(result);
 });
 
 // Apply authentication middleware for all other routes
@@ -31,11 +88,14 @@ router.use(authenticate);
 // Get all tracks owned by the current user
 router.get("/", async (req, res, next) => {
   try {
-    const tracks = await prisma.track.findMany({
-      where: {
-        userId: req.user!.id, // Only get user's own tracks
-      },
-      include: {
+    const cursor = req.query.cursor as string | undefined;
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string)
+      : undefined;
+
+    const result = await getPaginatedTracks(
+      { userId: req.user!.id },
+      {
         components: true,
         user: {
           select: {
@@ -45,8 +105,10 @@ router.get("/", async (req, res, next) => {
           },
         },
       },
-    });
-    res.json(tracks);
+      { cursor, limit }
+    );
+
+    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -55,15 +117,20 @@ router.get("/", async (req, res, next) => {
 // Get tracks shared with the current user
 router.get("/shared", async (req: Request, res: Response, next) => {
   try {
-    const sharedTracks = await prisma.track.findMany({
-      where: {
+    const cursor = req.query.cursor as string | undefined;
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string)
+      : undefined;
+
+    const result = await getPaginatedTracks(
+      {
         sharedWith: {
           some: {
             userId: req.user!.id,
           },
         },
       },
-      include: {
+      {
         user: {
           select: {
             id: true,
@@ -84,8 +151,10 @@ router.get("/shared", async (req: Request, res: Response, next) => {
           },
         },
       },
-    });
-    res.json(sharedTracks);
+      { cursor, limit }
+    );
+
+    res.json(result);
   } catch (error) {
     next(error);
   }
@@ -94,15 +163,20 @@ router.get("/shared", async (req: Request, res: Response, next) => {
 // Get all tracks accessible to the current user
 router.get("/available", async (req: Request, res: Response, next) => {
   try {
-    const allTracks = await prisma.track.findMany({
-      where: {
+    const cursor = req.query.cursor as string | undefined;
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string)
+      : undefined;
+
+    const result = await getPaginatedTracks(
+      {
         OR: [
           { userId: req.user!.id },
           { isPublic: true },
           { sharedWith: { some: { userId: req.user!.id } } },
         ],
       },
-      include: {
+      {
         user: {
           select: {
             id: true,
@@ -111,8 +185,10 @@ router.get("/available", async (req: Request, res: Response, next) => {
           },
         },
       },
-    });
-    res.json(allTracks);
+      { cursor, limit }
+    );
+
+    res.json(result);
   } catch (error) {
     next(error);
   }
