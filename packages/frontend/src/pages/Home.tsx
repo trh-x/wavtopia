@@ -1,7 +1,7 @@
 import { useAuthToken } from "@/hooks/useAuthToken";
-import { api } from "@/api/client";
 import { TrackList } from "@/components/track-list/TrackList";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
+import { useState } from "react";
 
 function PublicTracks() {
   const {
@@ -9,11 +9,8 @@ function PublicTracks() {
     isLoading: isLoadingPublicTracks,
     error: publicTracksError,
     fetchNextPage: fetchNextPublicTracks,
-    isLoadingMore: isLoadingMorePublicTracks,
-  } = useInfiniteTracks({
-    queryKey: ["public-tracks"],
-    fetchFn: (cursor) => api.tracks.listPublic({ cursor }),
-  });
+    isFetchingNextPage: isLoadingMorePublicTracks,
+  } = useInfiniteTracks("/tracks/public");
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -29,17 +26,30 @@ function PublicTracks() {
   );
 }
 
-function AvailableTracks({ token }: { token: string }) {
+function AvailableTracks() {
+  const [sortField, setSortField] = useState<
+    "createdAt" | "title" | "duration" | "artist"
+  >("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+
   const {
     tracks: availableTracks,
     isLoading: isLoadingAvailableTracks,
     error: availableTracksError,
     fetchNextPage: fetchNextAvailableTracks,
-    isLoadingMore: isLoadingMoreAvailableTracks,
-  } = useInfiniteTracks({
-    queryKey: ["available-tracks", token],
-    fetchFn: (cursor) => api.tracks.listAvailable(token, { cursor }),
+    isFetchingNextPage: isLoadingMoreAvailableTracks,
+  } = useInfiniteTracks("/tracks/available", {
+    sortField,
+    sortDirection,
   });
+
+  const handleSort = (
+    field: typeof sortField,
+    direction: typeof sortDirection
+  ) => {
+    setSortField(field);
+    setSortDirection(direction);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -50,6 +60,8 @@ function AvailableTracks({ token }: { token: string }) {
         error={availableTracksError}
         onLoadMore={fetchNextAvailableTracks}
         isLoadingMore={isLoadingMoreAvailableTracks}
+        onSort={handleSort}
+        currentSort={`${sortField} ${sortDirection}`}
       />
     </div>
   );
@@ -63,5 +75,5 @@ export function Home() {
     return <PublicTracks />;
   }
 
-  return <AvailableTracks token={token} />;
+  return <AvailableTracks />;
 }

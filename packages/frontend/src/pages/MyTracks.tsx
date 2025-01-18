@@ -11,6 +11,10 @@ import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 export function MyTracks() {
   const { token } = useAuthToken();
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<
+    "createdAt" | "title" | "duration" | "artist"
+  >("createdAt");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const queryClient = useQueryClient();
 
   if (!token) {
@@ -22,10 +26,10 @@ export function MyTracks() {
     isLoading: isLoadingUserTracks,
     error: userTracksError,
     fetchNextPage: fetchNextUserTracks,
-    isLoadingMore: isLoadingMoreUserTracks,
-  } = useInfiniteTracks({
-    queryKey: ["tracks", token],
-    fetchFn: (cursor) => api.tracks.list(token, { cursor }),
+    isFetchingNextPage: isLoadingMoreUserTracks,
+  } = useInfiniteTracks("/tracks", {
+    sortField,
+    sortDirection,
   });
 
   const {
@@ -33,10 +37,10 @@ export function MyTracks() {
     isLoading: isLoadingSharedTracks,
     error: sharedTracksError,
     fetchNextPage: fetchNextSharedTracks,
-    isLoadingMore: isLoadingMoreSharedTracks,
-  } = useInfiniteTracks({
-    queryKey: ["shared-tracks", token],
-    fetchFn: (cursor) => api.tracks.listShared(token, { cursor }),
+    isFetchingNextPage: isLoadingMoreSharedTracks,
+  } = useInfiniteTracks("/tracks/shared", {
+    sortField,
+    sortDirection,
   });
 
   const deleteTrackMutation = useMutation({
@@ -80,6 +84,14 @@ export function MyTracks() {
     setSelectedTracks(new Set());
   };
 
+  const handleSort = (
+    field: typeof sortField,
+    direction: typeof sortDirection
+  ) => {
+    setSortField(field);
+    setSortDirection(direction);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Tabs defaultValue="my-tracks">
@@ -99,6 +111,10 @@ export function MyTracks() {
             onDeleteTrack={deleteTrackMutation.mutate}
             onLoadMore={fetchNextUserTracks}
             isLoadingMore={isLoadingMoreUserTracks}
+            onSort={handleSort}
+            currentSort={`${sortField}${
+              sortDirection === "desc" ? "Desc" : "Asc"
+            }`}
           />
         </TabsContent>
 
@@ -109,6 +125,10 @@ export function MyTracks() {
             error={sharedTracksError}
             onLoadMore={fetchNextSharedTracks}
             isLoadingMore={isLoadingMoreSharedTracks}
+            onSort={handleSort}
+            currentSort={`${sortField}${
+              sortDirection === "desc" ? "Desc" : "Asc"
+            }`}
           />
         </TabsContent>
       </Tabs>

@@ -37,14 +37,22 @@ export interface PaginationParams {
   limit?: number;
 }
 
-export function encodeCursor(date: Date, id: string): string {
-  return Buffer.from(`${date.toISOString()}_${id}`).toString("base64");
+export interface SortedCursor {
+  primary: string | number | Date;
+  id: string;
 }
 
-export function decodeCursor(cursor: string): { date: Date; id: string } {
-  const [dateStr, id] = Buffer.from(cursor, "base64").toString().split("_");
+export function encodeCursor(
+  primary: Date | string | number,
+  id: string
+): string {
+  return Buffer.from(`${primary.toString()}_${id}`).toString("base64");
+}
+
+export function decodeCursor(cursor: string): SortedCursor {
+  const [primary, id] = Buffer.from(cursor, "base64").toString().split("_");
   return {
-    date: new Date(dateStr),
+    primary: isNaN(Date.parse(primary)) ? primary : new Date(primary),
     id,
   };
 }

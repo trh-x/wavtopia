@@ -8,7 +8,10 @@ interface FetchOptions extends RequestInit {
   contentType?: string;
 }
 
-const apiRequest = async (endpoint: string, options: FetchOptions = {}) => {
+export const apiRequest = async <T = any>(
+  endpoint: string,
+  options: FetchOptions = {}
+): Promise<T> => {
   const {
     token,
     searchParams,

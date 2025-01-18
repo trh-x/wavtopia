@@ -33,8 +33,9 @@ export interface PaginationParams {
     cursor?: string;
     limit?: number;
 }
-export declare function encodeCursor(date: Date, id: string): string;
-export declare function decodeCursor(cursor: string): {
-    date: Date;
+export interface SortedCursor {
+    primary: string | number | Date;
     id: string;
-};
+}
+export declare function encodeCursor(primary: Date | string | number, id: string): string;
+export declare function decodeCursor(cursor: string): SortedCursor;

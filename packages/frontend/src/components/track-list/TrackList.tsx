@@ -9,6 +9,61 @@ import { cn } from "@/utils/cn";
 import { Checkbox } from "../ui/Checkbox";
 import { TrackCardMenu } from "./TrackCardMenu";
 import { useEffect, useRef, useCallback } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/Select";
+
+interface SortOption {
+  label: string;
+  value: string;
+  field: "createdAt" | "title" | "duration" | "artist";
+  direction: "asc" | "desc";
+}
+
+const sortOptions: SortOption[] = [
+  {
+    label: "Newest First",
+    value: "newest",
+    field: "createdAt",
+    direction: "desc",
+  },
+  {
+    label: "Oldest First",
+    value: "oldest",
+    field: "createdAt",
+    direction: "asc",
+  },
+  { label: "Title A-Z", value: "titleAsc", field: "title", direction: "asc" },
+  { label: "Title Z-A", value: "titleDesc", field: "title", direction: "desc" },
+  {
+    label: "Duration (Shortest)",
+    value: "durationAsc",
+    field: "duration",
+    direction: "asc",
+  },
+  {
+    label: "Duration (Longest)",
+    value: "durationDesc",
+    field: "duration",
+    direction: "desc",
+  },
+  {
+    label: "Artist A-Z",
+    value: "artistAsc",
+    field: "artist",
+    direction: "asc",
+  },
+  {
+    label: "Artist Z-A",
+    value: "artistDesc",
+    field: "artist",
+    direction: "desc",
+  },
+];
 
 function ImagePlaceholderIcon({
   className = "w-8 h-8 text-gray-400",
@@ -103,6 +158,11 @@ interface TrackListProps {
   onDeleteTrack?: (trackId: string) => void;
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  onSort?: (
+    field: SortOption["field"],
+    direction: SortOption["direction"]
+  ) => void;
+  currentSort?: string;
 }
 
 export function TrackList({
@@ -115,9 +175,18 @@ export function TrackList({
   onDeleteTrack,
   onLoadMore,
   isLoadingMore,
+  onSort,
+  currentSort = "newest",
 }: TrackListProps) {
   const { appendTokenToUrl } = useAuthToken();
   const observerTarget = useRef<HTMLDivElement>(null);
+
+  const handleSort = (value: string) => {
+    const option = sortOptions.find((opt) => opt.value === value);
+    if (option && onSort) {
+      onSort(option.field, option.direction);
+    }
+  };
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -155,6 +224,22 @@ export function TrackList({
 
   return (
     <TrackListPlaybackProvider>
+      {onSort && (
+        <div className="mb-4">
+          <Select value={currentSort} onValueChange={handleSort}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Sort by..." />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tracks.map((track) => (
           <div
