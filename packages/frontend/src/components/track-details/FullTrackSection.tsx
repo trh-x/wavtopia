@@ -18,6 +18,7 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         ) : (
           <SyncedWaveform
             waveformData={track.waveformData}
+            duration={track.duration ?? undefined}
             height={96}
             audioUrl={getAudioUrl(`/api/track/${track.id}/full.mp3`)}
             isFullTrack={true}

@@ -37,6 +37,7 @@ export function TrackComponent({
       </div>
       <SyncedWaveform
         waveformData={component.waveformData}
+        duration={component.duration ?? undefined}
         height={isGridView ? 48 : 64}
         color="#4b5563"
         progressColor="#6366f1"

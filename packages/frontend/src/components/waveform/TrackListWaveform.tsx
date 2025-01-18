@@ -4,6 +4,7 @@ import { WaveformDisplay } from "./WaveformDisplay";
 interface TrackListWaveformProps {
   waveformData: number[];
   audioUrl: string;
+  duration?: number;
   height?: number;
   color?: string;
   progressColor?: string;
@@ -12,6 +13,7 @@ interface TrackListWaveformProps {
 export function TrackListWaveform({
   waveformData,
   audioUrl,
+  duration,
   height = 48,
   color = "#4b5563",
   progressColor = "#6366f1",
@@ -23,6 +25,7 @@ export function TrackListWaveform({
       context={trackListContext}
       waveformData={waveformData}
       audioUrl={audioUrl}
+      duration={duration}
       height={height}
       color={color}
       progressColor={progressColor}

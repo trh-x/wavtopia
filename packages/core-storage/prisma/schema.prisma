@@ -77,6 +77,7 @@ model Component {
   wavUrl       String   @map("wav_url")
   mp3Url       String   @map("mp3_url")
   waveformData Float[]  @map("waveform_data")
+  duration     Float?   @map("duration")
   trackId      String   @map("track_id")
   track        Track    @relation(fields: [trackId], references: [id])
   createdAt    DateTime @default(now()) @map("created_at")

@@ -7,6 +7,7 @@ interface WaveformDisplayProps {
   context: TrackListPlaybackContextType | SyncedPlaybackContextType;
   waveformData: number[];
   audioUrl: string;
+  duration?: number;
   height?: number;
   color?: string;
   progressColor?: string;
@@ -17,6 +18,7 @@ export function WaveformDisplay({
   context,
   waveformData,
   audioUrl,
+  duration,
   height = 128,
   color = "#1f2937",
   progressColor = "#4f46e5",
@@ -114,11 +116,12 @@ export function WaveformDisplay({
       minPxPerSec: 0,
       backend: "WebAudio" as const,
       peaks: [new Float32Array(waveformData)],
+      duration,
       url: audioUrl,
       autoplay: false,
     }),
     // Only include dependencies that should cause a full recreation
-    [audioUrl]
+    [audioUrl, duration, waveformData]
   );
 
   // Initialize WaveSurfer instance
