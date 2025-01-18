@@ -106,7 +106,6 @@ export function BulkUploadTrack() {
               input.click();
             }
           }}
-          onUpload={() => handleSubmit()}
         />
       </form>
     </div>

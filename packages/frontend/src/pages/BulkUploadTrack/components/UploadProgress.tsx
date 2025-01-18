@@ -8,7 +8,6 @@ interface UploadProgressProps {
   error?: string;
   onClearAll: () => void;
   onAddMoreFiles: () => void;
-  onUpload: () => void;
 }
 
 export function UploadProgress({
@@ -19,7 +18,6 @@ export function UploadProgress({
   error,
   onClearAll,
   onAddMoreFiles,
-  onUpload,
 }: UploadProgressProps) {
   const pendingUploads = matches.filter((m) => !m.uploaded);
   const progress =
@@ -74,7 +72,6 @@ export function UploadProgress({
             isUploadInProgress ||
             pendingUploads.length === 0
           }
-          onClick={onUpload}
         >
           {isUploadInProgress
             ? `Uploading (${currentUploadIndex + 1}/${pendingUploads.length})`
