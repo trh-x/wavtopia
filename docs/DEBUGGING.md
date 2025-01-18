@@ -253,3 +253,67 @@ When adding new features or fixing bugs:
 2. Document error cases
 3. Update this debugging guide
 4. Add relevant tests
+
+## MinIO Debugging
+
+To list all files in the MinIO bucket when using Docker, use this command pattern:
+
+```bash
+docker run --rm --network wavtopia_wavtopia-net -it --entrypoint=/bin/sh minio/mc -c "mc alias set myminio http://minio:9000 USER PASS && mc ls --recursive myminio/wavtopia"
+```
+
+Note: Replace USER and PASS with your MinIO credentials.
+
+This command:
+
+1. Uses the MinIO client (mc) Docker image
+2. Sets up a temporary alias for the MinIO server
+3. Lists all files recursively in the specified bucket
+4. Works within the Docker network context
+
+### Additional MinIO Debugging Commands
+
+1. **Check Bucket Size**
+
+   ```bash
+   docker run --rm --network wavtopia_wavtopia-net -it --entrypoint=/bin/sh minio/mc -c "mc alias set myminio http://minio:9000 USER PASS && mc du myminio/wavtopia"
+   ```
+
+2. **Verify File Existence**
+
+   ```bash
+   docker run --rm --network wavtopia_wavtopia-net -it --entrypoint=/bin/sh minio/mc -c "mc alias set myminio http://minio:9000 USER PASS && mc stat myminio/wavtopia/path/to/file"
+   ```
+
+3. **List Bucket Policies**
+
+   ```bash
+   docker run --rm --network wavtopia_wavtopia-net -it --entrypoint=/bin/sh minio/mc -c "mc alias set myminio http://minio:9000 USER PASS && mc policy get myminio/wavtopia"
+   ```
+
+4. **Monitor MinIO Events**
+   ```bash
+   docker run --rm --network wavtopia_wavtopia-net -it --entrypoint=/bin/sh minio/mc -c "mc alias set myminio http://minio:9000 USER PASS && mc watch myminio/wavtopia"
+   ```
+
+### Common MinIO Issues
+
+1. **File Not Found Issues**
+
+   - Check if the file path includes the bucket name
+   - Verify the correct bucket is being accessed
+   - Ensure file paths use forward slashes (/)
+   - Check file permissions
+
+2. **Connection Issues**
+
+   - Verify MinIO service is running: `docker compose ps`
+   - Check network connectivity within Docker
+   - Verify correct port mapping
+   - Ensure credentials are correct
+
+3. **Performance Issues**
+   - Monitor disk usage: `docker system df`
+   - Check MinIO logs: `docker compose logs minio`
+   - Verify network bandwidth between services
+   - Consider using MinIO's built-in monitoring
