@@ -1,10 +1,12 @@
 import { TrackCoverArt } from "../track-list/TrackList";
+import { formatDuration } from "@/utils/formatDuration";
 
 interface TrackHeaderProps {
   title: string;
   artist: string;
   coverArt?: string | null;
   trackId: string;
+  duration?: number | null;
 }
 
 export function TrackHeader({
@@ -12,6 +14,7 @@ export function TrackHeader({
   artist,
   coverArt,
   trackId,
+  duration,
 }: TrackHeaderProps) {
   return (
     <div className="flex items-center space-x-4 p-4">
@@ -21,8 +24,13 @@ export function TrackHeader({
         title={title}
         size="lg"
       />
-      <div>
-        <h1 className="text-2xl font-bold">{title}</h1>
+      <div className="flex-1">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">{title}</h1>
+          <span className="text-lg text-gray-500 ml-3">
+            {formatDuration(duration)}
+          </span>
+        </div>
         <p className="text-gray-600">{artist}</p>
       </div>
     </div>

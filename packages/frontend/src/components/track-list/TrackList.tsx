@@ -148,6 +148,13 @@ export function TrackWaveformPlaceholder({
   );
 }
 
+function formatDuration(seconds: number | null | undefined): string {
+  if (!seconds) return "--:--";
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
 interface TrackListProps {
   tracks: Track[];
   isLoading?: boolean;
@@ -279,7 +286,12 @@ export function TrackList({
                     size="sm"
                   />
                   <div className="flex-1">
-                    <h3 className="font-medium">{track.title}</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium">{track.title}</h3>
+                      <span className="text-sm text-gray-500 ml-2">
+                        {formatDuration(track.duration)}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600">{track.artist}</p>
                     <p className="text-xs text-gray-500">
                       by {track.user.username}
