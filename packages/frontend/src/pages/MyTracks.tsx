@@ -7,14 +7,12 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { BatchActionsBar } from "@/components/BatchActionsBar";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
+import { useTrackSort } from "@/hooks/useTrackSort";
 
 export function MyTracks() {
   const { token } = useAuthToken();
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
-  const [sortField, setSortField] = useState<
-    "createdAt" | "title" | "duration" | "artist"
-  >("createdAt");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const { sortField, sortDirection, handleSort } = useTrackSort();
   const queryClient = useQueryClient();
 
   if (!token) {
@@ -84,14 +82,6 @@ export function MyTracks() {
     setSelectedTracks(new Set());
   };
 
-  const handleSort = (
-    field: typeof sortField,
-    direction: typeof sortDirection
-  ) => {
-    setSortField(field);
-    setSortDirection(direction);
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       <Tabs defaultValue="my-tracks">
@@ -112,9 +102,7 @@ export function MyTracks() {
             onLoadMore={fetchNextUserTracks}
             isLoadingMore={isLoadingMoreUserTracks}
             onSort={handleSort}
-            currentSort={`${sortField}${
-              sortDirection === "desc" ? "Desc" : "Asc"
-            }`}
+            currentSort={`${sortField} ${sortDirection}`}
           />
         </TabsContent>
 
@@ -126,9 +114,7 @@ export function MyTracks() {
             onLoadMore={fetchNextSharedTracks}
             isLoadingMore={isLoadingMoreSharedTracks}
             onSort={handleSort}
-            currentSort={`${sortField}${
-              sortDirection === "desc" ? "Desc" : "Asc"
-            }`}
+            currentSort={`${sortField} ${sortDirection}`}
           />
         </TabsContent>
       </Tabs>

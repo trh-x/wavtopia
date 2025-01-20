@@ -1,7 +1,7 @@
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { TrackList } from "@/components/track-list/TrackList";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
-import { useState } from "react";
+import { useTrackSort } from "@/hooks/useTrackSort";
 
 function PublicTracks() {
   const {
@@ -27,10 +27,7 @@ function PublicTracks() {
 }
 
 function AvailableTracks() {
-  const [sortField, setSortField] = useState<
-    "createdAt" | "title" | "duration" | "artist"
-  >("createdAt");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const { sortField, sortDirection, handleSort } = useTrackSort();
 
   const {
     tracks: availableTracks,
@@ -42,14 +39,6 @@ function AvailableTracks() {
     sortField,
     sortDirection,
   });
-
-  const handleSort = (
-    field: typeof sortField,
-    direction: typeof sortDirection
-  ) => {
-    setSortField(field);
-    setSortDirection(direction);
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">

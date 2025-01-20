@@ -229,6 +229,7 @@ export function TrackList({
   if (!tracks?.length)
     return <div className="text-gray-500">No tracks found</div>;
 
+  console.log({ currentSort, sortOptions });
   return (
     <TrackListPlaybackProvider>
       {onSort && (
