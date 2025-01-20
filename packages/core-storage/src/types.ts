@@ -39,12 +39,16 @@ export interface PaginationParams {
 
 export interface SortedCursor {
   sortValue: string | number | Date;
-  id: string;
+  createdAt: Date;
+  // Note: id is not part of the sort key but is included in the encoded cursor
+  // for record identification and cursor validation
 }
 
+// TODO: Move these functions out of types.ts
 export function encodeCursor(
   sortValue: Date | string | number,
-  id: string
+  id: string,
+  createdAt: Date
 ): string {
   let type = "s"; // string
   let value = sortValue.toString();
@@ -54,22 +58,31 @@ export function encodeCursor(
     value = sortValue.getTime().toString();
   } else if (typeof sortValue === "number") {
     type = "n"; // number
-    value = sortValue.toString();
   }
 
-  return Buffer.from(`${type}:${value}_${id}`).toString("base64");
+  // We include the id in the cursor string (after the _) for three reasons:
+  // 1. Record identification - helps identify exactly which record was last in the previous page
+  // 2. Cursor validation - allows verifying the cursor points to a record that existed
+  // 3. Future proofing - maintains flexibility to change cursor behavior without changing format
+  return Buffer.from(`${type}:${value}:${createdAt.getTime()}_${id}`).toString(
+    "base64"
+  );
 }
 
-export function decodeCursor(cursor: string): SortedCursor {
+// decodeCursor returns both the sort-related fields (in SortedCursor) and the id
+// The id isn't used for ordering but is available for record identification
+export function decodeCursor(cursor: string): SortedCursor & { id: string } {
   const [encoded, id] = Buffer.from(cursor, "base64").toString().split("_");
-  const [type, value] = encoded.split(":");
+  const [type, value, createdAtMs] = encoded.split(":");
+
+  const createdAt = new Date(Number(createdAtMs));
 
   switch (type) {
     case "d":
-      return { sortValue: new Date(Number(value)), id };
+      return { sortValue: new Date(Number(value)), id, createdAt };
     case "n":
-      return { sortValue: Number(value), id };
+      return { sortValue: Number(value), id, createdAt };
     default:
-      return { sortValue: value, id };
+      return { sortValue: value, id, createdAt };
   }
 }

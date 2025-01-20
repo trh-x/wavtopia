@@ -35,7 +35,9 @@ export interface PaginationParams {
 }
 export interface SortedCursor {
     sortValue: string | number | Date;
-    id: string;
+    createdAt: Date;
 }
-export declare function encodeCursor(sortValue: Date | string | number, id: string): string;
-export declare function decodeCursor(cursor: string): SortedCursor;
+export declare function encodeCursor(sortValue: Date | string | number, id: string, createdAt: Date): string;
+export declare function decodeCursor(cursor: string): SortedCursor & {
+    id: string;
+};
