@@ -12,6 +12,23 @@ import {
 const router = Router();
 const DEFAULT_PAGE_SIZE = 6;
 
+// Helper function to extract pagination and sorting parameters
+function extractPaginationParams(req: Request) {
+  const cursor = req.query.cursor as string | undefined;
+  const limit = req.query.limit
+    ? parseInt(req.query.limit as string)
+    : undefined;
+  const sortField = req.query.sortField as
+    | "createdAt"
+    | "title"
+    | "duration"
+    | "artist"
+    | undefined;
+  const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
+
+  return { cursor, limit, sortField, sortDirection };
+}
+
 // Helper function to handle cursor-based pagination
 async function getPaginatedTracks<I extends Prisma.TrackInclude>(
   where: Prisma.TrackWhereInput,
@@ -82,18 +99,7 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
 
 // Get public tracks
 router.get("/public", async (req: Request, res: Response) => {
-  const cursor = req.query.cursor as string | undefined;
-  const limit = req.query.limit
-    ? parseInt(req.query.limit as string)
-    : undefined;
-  const sortField = req.query.sortField as
-    | "createdAt"
-    | "title"
-    | "duration"
-    | "artist"
-    | undefined;
-  const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
-
+  const params = extractPaginationParams(req);
   const result = await getPaginatedTracks(
     { isPublic: true },
     {
@@ -104,7 +110,7 @@ router.get("/public", async (req: Request, res: Response) => {
         },
       },
     },
-    { cursor, limit, sortField, sortDirection }
+    params
   );
 
   res.json(result);
@@ -116,22 +122,10 @@ router.use(authenticate);
 // Get all tracks owned by the current user
 router.get("/", async (req, res, next) => {
   try {
-    const cursor = req.query.cursor as string | undefined;
-    const limit = req.query.limit
-      ? parseInt(req.query.limit as string)
-      : undefined;
-    const sortField = req.query.sortField as
-      | "createdAt"
-      | "title"
-      | "duration"
-      | "artist"
-      | undefined;
-    const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
-
+    const params = extractPaginationParams(req);
     const result = await getPaginatedTracks(
       { userId: req.user!.id },
       {
-        components: true,
         user: {
           select: {
             id: true,
@@ -140,7 +134,7 @@ router.get("/", async (req, res, next) => {
           },
         },
       },
-      { cursor, limit, sortField, sortDirection }
+      params
     );
 
     res.json(result);
@@ -152,18 +146,7 @@ router.get("/", async (req, res, next) => {
 // Get tracks shared with the current user
 router.get("/shared", async (req: Request, res: Response, next) => {
   try {
-    const cursor = req.query.cursor as string | undefined;
-    const limit = req.query.limit
-      ? parseInt(req.query.limit as string)
-      : undefined;
-    const sortField = req.query.sortField as
-      | "createdAt"
-      | "title"
-      | "duration"
-      | "artist"
-      | undefined;
-    const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
-
+    const params = extractPaginationParams(req);
     const result = await getPaginatedTracks(
       {
         sharedWith: {
@@ -193,7 +176,7 @@ router.get("/shared", async (req: Request, res: Response, next) => {
           },
         },
       },
-      { cursor, limit, sortField, sortDirection }
+      params
     );
 
     res.json(result);
@@ -205,11 +188,7 @@ router.get("/shared", async (req: Request, res: Response, next) => {
 // Get all tracks accessible to the current user
 router.get("/available", async (req: Request, res: Response, next) => {
   try {
-    const cursor = req.query.cursor as string | undefined;
-    const limit = req.query.limit
-      ? parseInt(req.query.limit as string)
-      : undefined;
-
+    const params = extractPaginationParams(req);
     const result = await getPaginatedTracks(
       {
         OR: [
@@ -227,7 +206,7 @@ router.get("/available", async (req: Request, res: Response, next) => {
           },
         },
       },
-      { cursor, limit }
+      params
     );
 
     res.json(result);
