@@ -46,13 +46,30 @@ export function encodeCursor(
   sortValue: Date | string | number,
   id: string
 ): string {
-  return Buffer.from(`${sortValue.toString()}_${id}`).toString("base64");
+  let type = "s"; // string
+  let value = sortValue.toString();
+
+  if (sortValue instanceof Date) {
+    type = "d"; // date
+    value = sortValue.getTime().toString();
+  } else if (typeof sortValue === "number") {
+    type = "n"; // number
+    value = sortValue.toString();
+  }
+
+  return Buffer.from(`${type}:${value}_${id}`).toString("base64");
 }
 
 export function decodeCursor(cursor: string): SortedCursor {
-  const [sortValue, id] = Buffer.from(cursor, "base64").toString().split("_");
-  return {
-    sortValue: isNaN(Date.parse(sortValue)) ? sortValue : new Date(sortValue),
-    id,
-  };
+  const [encoded, id] = Buffer.from(cursor, "base64").toString().split("_");
+  const [type, value] = encoded.split(":");
+
+  switch (type) {
+    case "d":
+      return { sortValue: new Date(Number(value)), id };
+    case "n":
+      return { sortValue: Number(value), id };
+    default:
+      return { sortValue: value, id };
+  }
 }
