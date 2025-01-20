@@ -12,7 +12,8 @@ import { useTrackSort } from "@/hooks/useTrackSort";
 export function MyTracks() {
   const { token } = useAuthToken();
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
-  const { sortField, sortDirection, handleSort } = useTrackSort();
+  const { sortField, sortDirection, handleSort, currentSortValue } =
+    useTrackSort();
   const queryClient = useQueryClient();
 
   if (!token) {
@@ -102,7 +103,7 @@ export function MyTracks() {
             onLoadMore={fetchNextUserTracks}
             isLoadingMore={isLoadingMoreUserTracks}
             onSort={handleSort}
-            currentSort={`${sortField} ${sortDirection}`}
+            currentSort={currentSortValue}
           />
         </TabsContent>
 
@@ -114,7 +115,7 @@ export function MyTracks() {
             onLoadMore={fetchNextSharedTracks}
             isLoadingMore={isLoadingMoreSharedTracks}
             onSort={handleSort}
-            currentSort={`${sortField} ${sortDirection}`}
+            currentSort={currentSortValue}
           />
         </TabsContent>
       </Tabs>

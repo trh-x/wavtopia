@@ -4,13 +4,19 @@ import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 import { useTrackSort } from "@/hooks/useTrackSort";
 
 function PublicTracks() {
+  const { sortField, sortDirection, handleSort, currentSortValue } =
+    useTrackSort();
+
   const {
     tracks: publicTracks,
     isLoading: isLoadingPublicTracks,
     error: publicTracksError,
     fetchNextPage: fetchNextPublicTracks,
     isFetchingNextPage: isLoadingMorePublicTracks,
-  } = useInfiniteTracks("/tracks/public");
+  } = useInfiniteTracks("/tracks/public", {
+    sortField,
+    sortDirection,
+  });
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -21,13 +27,16 @@ function PublicTracks() {
         error={publicTracksError}
         onLoadMore={fetchNextPublicTracks}
         isLoadingMore={isLoadingMorePublicTracks}
+        onSort={handleSort}
+        currentSort={currentSortValue}
       />
     </div>
   );
 }
 
 function AvailableTracks() {
-  const { sortField, sortDirection, handleSort } = useTrackSort();
+  const { sortField, sortDirection, handleSort, currentSortValue } =
+    useTrackSort();
 
   const {
     tracks: availableTracks,
@@ -50,7 +59,7 @@ function AvailableTracks() {
         onLoadMore={fetchNextAvailableTracks}
         isLoadingMore={isLoadingMoreAvailableTracks}
         onSort={handleSort}
-        currentSort={`${sortField} ${sortDirection}`}
+        currentSort={currentSortValue}
       />
     </div>
   );
