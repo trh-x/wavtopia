@@ -38,21 +38,21 @@ export interface PaginationParams {
 }
 
 export interface SortedCursor {
-  primary: string | number | Date;
+  sortValue: string | number | Date;
   id: string;
 }
 
 export function encodeCursor(
-  primary: Date | string | number,
+  sortValue: Date | string | number,
   id: string
 ): string {
-  return Buffer.from(`${primary.toString()}_${id}`).toString("base64");
+  return Buffer.from(`${sortValue.toString()}_${id}`).toString("base64");
 }
 
 export function decodeCursor(cursor: string): SortedCursor {
-  const [primary, id] = Buffer.from(cursor, "base64").toString().split("_");
+  const [sortValue, id] = Buffer.from(cursor, "base64").toString().split("_");
   return {
-    primary: isNaN(Date.parse(primary)) ? primary : new Date(primary),
+    sortValue: isNaN(Date.parse(sortValue)) ? sortValue : new Date(sortValue),
     id,
   };
 }

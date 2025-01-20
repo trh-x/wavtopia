@@ -23,6 +23,7 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
 ): Promise<PaginatedResponse<Prisma.TrackGetPayload<{ include: I }>>> {
   const { sortField = "createdAt", sortDirection = "desc" } = params;
   const cursor = params.cursor ? decodeCursor(params.cursor) : null;
+  console.log({ cursor });
 
   const orderBy: Prisma.TrackOrderByWithRelationInput[] = [
     { [sortField]: sortDirection },
@@ -35,11 +36,11 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
           {
             [sortField]:
               sortDirection === "desc"
-                ? { lt: cursor.primary }
-                : { gt: cursor.primary },
+                ? { lt: cursor.sortValue }
+                : { gt: cursor.sortValue },
           },
           {
-            [sortField]: cursor.primary,
+            [sortField]: cursor.sortValue,
             id:
               sortDirection === "desc" ? { lt: cursor.id } : { gt: cursor.id },
           },
