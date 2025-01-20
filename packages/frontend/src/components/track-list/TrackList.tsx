@@ -9,6 +9,61 @@ import { cn } from "@/utils/cn";
 import { Checkbox } from "../ui/Checkbox";
 import { TrackCardMenu } from "./TrackCardMenu";
 import { useEffect, useRef, useCallback } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/Select";
+
+interface SortOption {
+  label: string;
+  value: string;
+  field: "createdAt" | "title" | "duration" | "artist";
+  direction: "asc" | "desc";
+}
+
+const sortOptions: SortOption[] = [
+  {
+    label: "Newest First",
+    value: "newest",
+    field: "createdAt",
+    direction: "desc",
+  },
+  {
+    label: "Oldest First",
+    value: "oldest",
+    field: "createdAt",
+    direction: "asc",
+  },
+  { label: "Title A-Z", value: "titleAsc", field: "title", direction: "asc" },
+  { label: "Title Z-A", value: "titleDesc", field: "title", direction: "desc" },
+  {
+    label: "Duration (Shortest)",
+    value: "durationAsc",
+    field: "duration",
+    direction: "asc",
+  },
+  {
+    label: "Duration (Longest)",
+    value: "durationDesc",
+    field: "duration",
+    direction: "desc",
+  },
+  {
+    label: "Artist A-Z",
+    value: "artistAsc",
+    field: "artist",
+    direction: "asc",
+  },
+  {
+    label: "Artist Z-A",
+    value: "artistDesc",
+    field: "artist",
+    direction: "desc",
+  },
+];
 
 function ImagePlaceholderIcon({
   className = "w-8 h-8 text-gray-400",
@@ -93,27 +148,52 @@ export function TrackWaveformPlaceholder({
   );
 }
 
+function formatDuration(seconds: number | null | undefined): string {
+  if (!seconds) return "--:--";
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
 interface TrackListProps {
   tracks: Track[];
+  isLoading?: boolean;
+  error?: Error | null;
   selectable?: boolean;
   selectedTracks?: Set<string>;
   onTrackSelect?: (trackId: string) => void;
   onDeleteTrack?: (trackId: string) => void;
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  onSort?: (
+    field: SortOption["field"],
+    direction: SortOption["direction"]
+  ) => void;
+  currentSort?: string;
 }
 
 export function TrackList({
   tracks,
+  isLoading,
+  error,
   selectable = false,
   selectedTracks,
   onTrackSelect,
   onDeleteTrack,
   onLoadMore,
   isLoadingMore,
+  onSort,
+  currentSort = "newest",
 }: TrackListProps) {
   const { appendTokenToUrl } = useAuthToken();
   const observerTarget = useRef<HTMLDivElement>(null);
+
+  const handleSort = (value: string) => {
+    const option = sortOptions.find((opt) => opt.value === value);
+    if (option && onSort) {
+      onSort(option.field, option.direction);
+    }
+  };
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -144,11 +224,30 @@ export function TrackList({
     };
   }, [handleObserver, onLoadMore]);
 
+  if (isLoading) return <LoadingState />;
+  if (error) return <ErrorState message={(error as Error).message} />;
   if (!tracks?.length)
     return <div className="text-gray-500">No tracks found</div>;
 
+  console.log({ currentSort, sortOptions });
   return (
     <TrackListPlaybackProvider>
+      {onSort && (
+        <div className="mb-4">
+          <Select value={currentSort} onValueChange={handleSort}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Sort by..." />
+            </SelectTrigger>
+            <SelectContent>
+              {sortOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tracks.map((track) => (
           <div
@@ -188,7 +287,12 @@ export function TrackList({
                     size="sm"
                   />
                   <div className="flex-1">
-                    <h3 className="font-medium">{track.title}</h3>
+                    <div className="flex justify-between items-center">
+                      <h3 className="font-medium">{track.title}</h3>
+                      <span className="text-sm text-gray-500 ml-2">
+                        {formatDuration(track.duration)}
+                      </span>
+                    </div>
                     <p className="text-sm text-gray-600">{track.artist}</p>
                     <p className="text-xs text-gray-500">
                       by {track.user.username}
@@ -220,44 +324,5 @@ export function TrackList({
         </div>
       )}
     </TrackListPlaybackProvider>
-  );
-}
-
-interface TrackSectionProps {
-  tracks: Track[];
-  isLoading: boolean;
-  error: unknown;
-  selectable?: boolean;
-  selectedTracks?: Set<string>;
-  onTrackSelect?: (trackId: string) => void;
-  onDeleteTrack?: (trackId: string) => void;
-  onLoadMore?: () => void;
-  isLoadingMore?: boolean;
-}
-
-export function TrackSection({
-  tracks,
-  isLoading,
-  error,
-  selectable,
-  selectedTracks,
-  onTrackSelect,
-  onDeleteTrack,
-  onLoadMore,
-  isLoadingMore,
-}: TrackSectionProps) {
-  if (isLoading) return <LoadingState />;
-  if (error) return <ErrorState message={(error as Error).message} />;
-
-  return (
-    <TrackList
-      tracks={tracks || []}
-      selectable={selectable}
-      selectedTracks={selectedTracks}
-      onTrackSelect={onTrackSelect}
-      onDeleteTrack={onDeleteTrack}
-      onLoadMore={onLoadMore}
-      isLoadingMore={isLoadingMore}
-    />
   );
 }

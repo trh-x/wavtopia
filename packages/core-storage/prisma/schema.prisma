@@ -54,6 +54,9 @@ model Track {
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
   @@index([createdAt, id])
+  @@index([title, id])
+  @@index([artist, id])
+  @@index([duration, id])
   @@map("tracks")
 }
 

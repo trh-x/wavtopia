@@ -1,16 +1,19 @@
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import { TrackSection } from "@/components/track-list/TrackList";
+import { TrackList } from "@/components/track-list/TrackList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { BatchActionsBar } from "@/components/BatchActionsBar";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
+import { useTrackSort } from "@/hooks/useTrackSort";
 
 export function MyTracks() {
   const { token } = useAuthToken();
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
+  const { sortField, sortDirection, handleSort, currentSortValue } =
+    useTrackSort();
   const queryClient = useQueryClient();
 
   if (!token) {
@@ -22,10 +25,10 @@ export function MyTracks() {
     isLoading: isLoadingUserTracks,
     error: userTracksError,
     fetchNextPage: fetchNextUserTracks,
-    isLoadingMore: isLoadingMoreUserTracks,
-  } = useInfiniteTracks({
-    queryKey: ["tracks", token],
-    fetchFn: (cursor) => api.tracks.list(token, { cursor }),
+    isFetchingNextPage: isLoadingMoreUserTracks,
+  } = useInfiniteTracks("/tracks", {
+    sortField,
+    sortDirection,
   });
 
   const {
@@ -33,10 +36,10 @@ export function MyTracks() {
     isLoading: isLoadingSharedTracks,
     error: sharedTracksError,
     fetchNextPage: fetchNextSharedTracks,
-    isLoadingMore: isLoadingMoreSharedTracks,
-  } = useInfiniteTracks({
-    queryKey: ["shared-tracks", token],
-    fetchFn: (cursor) => api.tracks.listShared(token, { cursor }),
+    isFetchingNextPage: isLoadingMoreSharedTracks,
+  } = useInfiniteTracks("/tracks/shared", {
+    sortField,
+    sortDirection,
   });
 
   const deleteTrackMutation = useMutation({
@@ -89,7 +92,7 @@ export function MyTracks() {
         </TabsList>
 
         <TabsContent value="my-tracks">
-          <TrackSection
+          <TrackList
             tracks={userTracks}
             isLoading={isLoadingUserTracks}
             error={userTracksError}
@@ -99,16 +102,20 @@ export function MyTracks() {
             onDeleteTrack={deleteTrackMutation.mutate}
             onLoadMore={fetchNextUserTracks}
             isLoadingMore={isLoadingMoreUserTracks}
+            onSort={handleSort}
+            currentSort={currentSortValue}
           />
         </TabsContent>
 
         <TabsContent value="shared">
-          <TrackSection
+          <TrackList
             tracks={sharedTracks}
             isLoading={isLoadingSharedTracks}
             error={sharedTracksError}
             onLoadMore={fetchNextSharedTracks}
             isLoadingMore={isLoadingMoreSharedTracks}
+            onSort={handleSort}
+            currentSort={currentSortValue}
           />
         </TabsContent>
       </Tabs>

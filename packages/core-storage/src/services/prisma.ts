@@ -1,4 +1,4 @@
-import { PrismaClient } from ".prisma/client";
+import { PrismaClient, Prisma } from ".prisma/client";
 import type { DatabaseConfig } from "../config";
 
 export class PrismaService {
@@ -13,7 +13,25 @@ export class PrismaService {
             url: config.url,
           },
         },
+        // Enable query logging only when debug is true
+        ...(config.debug && {
+          log: [
+            {
+              emit: "event",
+              level: "query",
+            },
+          ],
+        }),
       });
+
+      // Log all SQL queries only when debug is true
+      if (config.debug) {
+        PrismaService.instance.$on("query" as never, (e: Prisma.QueryEvent) => {
+          console.log("Query: " + e.query);
+          console.log("Params: " + e.params);
+          console.log("Duration: " + e.duration + "ms");
+        });
+      }
     }
 
     this.client = PrismaService.instance;

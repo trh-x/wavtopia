@@ -191,9 +191,18 @@ This document provides tips and common solutions for debugging issues in the Wav
    - Check relationships
 
 2. **Database Logs**
+
    ```bash
-   # Enable query logging
+   # Enable query logging via connection string
    DATABASE_URL="postgresql://user:pass@localhost:5432/db?connection_limit=5&log_statements=all"
+
+   # Enable Prisma query logging
+   DATABASE_DEBUG=true pnpm -F backend dev
+
+   # This will log:
+   # - All SQL queries
+   # - Query parameters
+   # - Query execution time in milliseconds
    ```
 
 ## Testing

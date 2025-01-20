@@ -68,7 +68,7 @@ export async function generateWaveformData(
           }
 
           // Calculate duration in seconds
-          const duration = totalSamples / format.sampleRate;
+          const duration = totalSamples / format.channels / format.sampleRate;
 
           resolve({
             peaks,

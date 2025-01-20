@@ -1,16 +1,27 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Track, PaginatedResponse } from "@/types";
-import { api } from "@/api/client";
+import { useAuthToken } from "./useAuthToken";
+import { apiRequest } from "@/api/client";
+
+type SortField = "createdAt" | "title" | "duration" | "artist";
+type SortDirection = "asc" | "desc";
 
 type UseInfiniteTracksOptions = {
-  queryKey: string[];
-  fetchFn: (cursor?: string) => Promise<PaginatedResponse<Track>>;
+  sortField?: SortField;
+  sortDirection?: SortDirection;
 };
 
-export function useInfiniteTracks({
-  queryKey,
-  fetchFn,
-}: UseInfiniteTracksOptions) {
+export function useInfiniteTracks(
+  endpoint:
+    | "/tracks"
+    | "/tracks/shared"
+    | "/tracks/public"
+    | "/tracks/available",
+  options: UseInfiniteTracksOptions = {}
+) {
+  const { token } = useAuthToken();
+  const { sortField = "createdAt", sortDirection = "desc" } = options;
+
   const {
     data,
     isLoading,
@@ -19,8 +30,21 @@ export function useInfiniteTracks({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey,
-    queryFn: ({ pageParam }) => fetchFn(pageParam),
+    queryKey: [endpoint, token, sortField, sortDirection],
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams();
+      if (pageParam) params.append("cursor", pageParam);
+      if (sortField) params.append("sortField", sortField);
+      if (sortDirection) params.append("sortDirection", sortDirection);
+
+      return apiRequest<PaginatedResponse<Track>>(
+        `${endpoint}?${params.toString()}`,
+        {
+          method: "GET",
+          token,
+        }
+      );
+    },
     getNextPageParam: (lastPage: PaginatedResponse<Track>) =>
       lastPage.metadata.nextCursor,
     initialPageParam: undefined as string | undefined,
@@ -32,7 +56,8 @@ export function useInfiniteTracks({
     tracks,
     isLoading,
     error,
+    hasNextPage,
     fetchNextPage: hasNextPage ? () => fetchNextPage() : undefined,
-    isLoadingMore: isFetchingNextPage,
+    isFetchingNextPage,
   };
 }

@@ -16,45 +16,66 @@ const DEFAULT_PAGE_SIZE = 6;
 async function getPaginatedTracks<I extends Prisma.TrackInclude>(
   where: Prisma.TrackWhereInput,
   include: I,
-  params: PaginationParams
+  params: PaginationParams & {
+    sortField?: "createdAt" | "title" | "duration" | "artist";
+    sortDirection?: "asc" | "desc";
+  }
 ): Promise<PaginatedResponse<Prisma.TrackGetPayload<{ include: I }>>> {
-  const limit = params.limit || DEFAULT_PAGE_SIZE;
+  const { sortField = "createdAt", sortDirection = "desc" } = params;
   const cursor = params.cursor ? decodeCursor(params.cursor) : null;
 
-  // Get one extra item to determine if there's a next page
+  const orderBy: Prisma.TrackOrderByWithRelationInput[] = [
+    { [sortField]: sortDirection },
+    // Use createdAt as stable secondary sort with millisecond precision
+    { createdAt: sortDirection },
+  ];
+
+  const cursorCondition = cursor
+    ? {
+        OR: [
+          {
+            [sortField]:
+              sortDirection === "desc"
+                ? { lt: cursor.sortValue }
+                : { gt: cursor.sortValue },
+          },
+          {
+            [sortField]: cursor.sortValue,
+            createdAt:
+              sortDirection === "desc"
+                ? { lt: cursor.createdAt }
+                : { gt: cursor.createdAt },
+          },
+        ],
+      }
+    : {};
+
+  const limit = params.limit || DEFAULT_PAGE_SIZE;
+
   const items = await prisma.track.findMany({
-    where: cursor
-      ? {
-          ...where,
-          OR: [
-            {
-              createdAt: { lt: cursor.date },
-            },
-            {
-              createdAt: cursor.date,
-              id: { lt: cursor.id },
-            },
-          ],
-        }
-      : where,
+    where: {
+      ...where,
+      ...cursorCondition,
+    },
     include,
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    orderBy,
     take: limit + 1,
   });
 
   const hasNextPage = items.length > limit;
   const paginatedItems = hasNextPage ? items.slice(0, -1) : items;
 
+  const lastItem = paginatedItems[paginatedItems.length - 1];
+  const sortValue = lastItem?.[sortField];
+
   return {
     items: paginatedItems,
     metadata: {
       hasNextPage,
-      nextCursor: hasNextPage
-        ? encodeCursor(
-            paginatedItems[paginatedItems.length - 1].createdAt,
-            paginatedItems[paginatedItems.length - 1].id
-          )
-        : undefined,
+      nextCursor:
+        hasNextPage && sortValue != null
+          ? encodeCursor(sortValue, lastItem.id, lastItem.createdAt)
+          : undefined,
     },
   };
 }
@@ -65,6 +86,13 @@ router.get("/public", async (req: Request, res: Response) => {
   const limit = req.query.limit
     ? parseInt(req.query.limit as string)
     : undefined;
+  const sortField = req.query.sortField as
+    | "createdAt"
+    | "title"
+    | "duration"
+    | "artist"
+    | undefined;
+  const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
 
   const result = await getPaginatedTracks(
     { isPublic: true },
@@ -76,7 +104,7 @@ router.get("/public", async (req: Request, res: Response) => {
         },
       },
     },
-    { cursor, limit }
+    { cursor, limit, sortField, sortDirection }
   );
 
   res.json(result);
@@ -92,6 +120,13 @@ router.get("/", async (req, res, next) => {
     const limit = req.query.limit
       ? parseInt(req.query.limit as string)
       : undefined;
+    const sortField = req.query.sortField as
+      | "createdAt"
+      | "title"
+      | "duration"
+      | "artist"
+      | undefined;
+    const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
 
     const result = await getPaginatedTracks(
       { userId: req.user!.id },
@@ -105,7 +140,7 @@ router.get("/", async (req, res, next) => {
           },
         },
       },
-      { cursor, limit }
+      { cursor, limit, sortField, sortDirection }
     );
 
     res.json(result);
@@ -121,6 +156,13 @@ router.get("/shared", async (req: Request, res: Response, next) => {
     const limit = req.query.limit
       ? parseInt(req.query.limit as string)
       : undefined;
+    const sortField = req.query.sortField as
+      | "createdAt"
+      | "title"
+      | "duration"
+      | "artist"
+      | undefined;
+    const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
 
     const result = await getPaginatedTracks(
       {
@@ -151,7 +193,7 @@ router.get("/shared", async (req: Request, res: Response, next) => {
           },
         },
       },
-      { cursor, limit }
+      { cursor, limit, sortField, sortDirection }
     );
 
     res.json(result);
