@@ -20,6 +20,12 @@ export const DatabaseConfigSchema = z.object({
     .string()
     .url()
     .default("postgresql://wavtopia:wavtopia@localhost:5432/wavtopia"),
+  debug: z
+    .preprocess((val: unknown) => {
+      if (typeof val === "string") return val === "true";
+      return val;
+    }, z.boolean())
+    .default(false),
 });
 
 export const RedisConfigSchema = z.object({
@@ -50,6 +56,7 @@ function loadConfig(): SharedConfig {
     },
     database: {
       url: process.env.DATABASE_URL,
+      debug: process.env.DATABASE_DEBUG,
     },
     redis: {
       host: process.env.REDIS_HOST,

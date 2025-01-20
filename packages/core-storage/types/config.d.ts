@@ -23,10 +23,13 @@ export declare const StorageConfigSchema: z.ZodObject<{
 }>;
 export declare const DatabaseConfigSchema: z.ZodObject<{
     url: z.ZodDefault<z.ZodString>;
+    debug: z.ZodDefault<z.ZodEffects<z.ZodBoolean, boolean, unknown>>;
 }, "strip", z.ZodTypeAny, {
     url: string;
+    debug: boolean;
 }, {
     url?: string | undefined;
+    debug?: unknown;
 }>;
 export declare const RedisConfigSchema: z.ZodObject<{
     host: z.ZodDefault<z.ZodString>;
@@ -63,10 +66,13 @@ export declare const SharedConfigSchema: z.ZodObject<{
     }>;
     database: z.ZodObject<{
         url: z.ZodDefault<z.ZodString>;
+        debug: z.ZodDefault<z.ZodEffects<z.ZodBoolean, boolean, unknown>>;
     }, "strip", z.ZodTypeAny, {
         url: string;
+        debug: boolean;
     }, {
         url?: string | undefined;
+        debug?: unknown;
     }>;
     redis: z.ZodObject<{
         host: z.ZodDefault<z.ZodString>;
@@ -89,6 +95,7 @@ export declare const SharedConfigSchema: z.ZodObject<{
     };
     database: {
         url: string;
+        debug: boolean;
     };
     redis: {
         port: number;
@@ -105,6 +112,7 @@ export declare const SharedConfigSchema: z.ZodObject<{
     };
     database: {
         url?: string | undefined;
+        debug?: unknown;
     };
     redis: {
         port?: number | undefined;
@@ -126,6 +134,7 @@ export declare const config: {
     };
     database: {
         url: string;
+        debug: boolean;
     };
     redis: {
         port: number;
