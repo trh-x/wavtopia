@@ -9,38 +9,70 @@ import { BatchActionsBar } from "@/components/BatchActionsBar";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 import { useTrackSort } from "@/hooks/useTrackSort";
 
+function UserTracksTab({
+  selectedTracks,
+  onTrackSelect,
+  onDeleteTrack,
+}: {
+  selectedTracks: Set<string>;
+  onTrackSelect: (trackId: string) => void;
+  onDeleteTrack: (trackId: string) => void;
+}) {
+  const { sortField, sortDirection, handleSort, currentSortValue } =
+    useTrackSort();
+  const { tracks, isLoading, error, fetchNextPage, isFetchingNextPage } =
+    useInfiniteTracks("/tracks", {
+      sortField,
+      sortDirection,
+    });
+
+  return (
+    <TrackList
+      tracks={tracks}
+      isLoading={isLoading}
+      error={error}
+      selectable={true}
+      selectedTracks={selectedTracks}
+      onTrackSelect={onTrackSelect}
+      onDeleteTrack={onDeleteTrack}
+      onLoadMore={fetchNextPage}
+      isLoadingMore={isFetchingNextPage}
+      onSort={handleSort}
+      currentSort={currentSortValue}
+    />
+  );
+}
+
+function SharedTracksTab() {
+  const { sortField, sortDirection, handleSort, currentSortValue } =
+    useTrackSort();
+  const { tracks, isLoading, error, fetchNextPage, isFetchingNextPage } =
+    useInfiniteTracks("/tracks/shared", {
+      sortField,
+      sortDirection,
+    });
+
+  return (
+    <TrackList
+      tracks={tracks}
+      isLoading={isLoading}
+      error={error}
+      onLoadMore={fetchNextPage}
+      isLoadingMore={isFetchingNextPage}
+      onSort={handleSort}
+      currentSort={currentSortValue}
+    />
+  );
+}
+
 export function MyTracks() {
   const { token } = useAuthToken();
   const [selectedTracks, setSelectedTracks] = useState<Set<string>>(new Set());
-  const { sortField, sortDirection, handleSort, currentSortValue } =
-    useTrackSort();
   const queryClient = useQueryClient();
 
   if (!token) {
     return <ErrorState message="Please log in to view your tracks" />;
   }
-
-  const {
-    tracks: userTracks,
-    isLoading: isLoadingUserTracks,
-    error: userTracksError,
-    fetchNextPage: fetchNextUserTracks,
-    isFetchingNextPage: isLoadingMoreUserTracks,
-  } = useInfiniteTracks("/tracks", {
-    sortField,
-    sortDirection,
-  });
-
-  const {
-    tracks: sharedTracks,
-    isLoading: isLoadingSharedTracks,
-    error: sharedTracksError,
-    fetchNextPage: fetchNextSharedTracks,
-    isFetchingNextPage: isLoadingMoreSharedTracks,
-  } = useInfiniteTracks("/tracks/shared", {
-    sortField,
-    sortDirection,
-  });
 
   const deleteTrackMutation = useMutation({
     mutationFn: async (trackId: string) => {
@@ -92,31 +124,15 @@ export function MyTracks() {
         </TabsList>
 
         <TabsContent value="my-tracks">
-          <TrackList
-            tracks={userTracks}
-            isLoading={isLoadingUserTracks}
-            error={userTracksError}
-            selectable={true}
+          <UserTracksTab
             selectedTracks={selectedTracks}
             onTrackSelect={handleTrackSelect}
             onDeleteTrack={deleteTrackMutation.mutate}
-            onLoadMore={fetchNextUserTracks}
-            isLoadingMore={isLoadingMoreUserTracks}
-            onSort={handleSort}
-            currentSort={currentSortValue}
           />
         </TabsContent>
 
         <TabsContent value="shared">
-          <TrackList
-            tracks={sharedTracks}
-            isLoading={isLoadingSharedTracks}
-            error={sharedTracksError}
-            onLoadMore={fetchNextSharedTracks}
-            isLoadingMore={isLoadingMoreSharedTracks}
-            onSort={handleSort}
-            currentSort={currentSortValue}
-          />
+          <SharedTracksTab />
         </TabsContent>
       </Tabs>
 
