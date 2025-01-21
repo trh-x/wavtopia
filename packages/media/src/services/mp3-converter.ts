@@ -18,9 +18,14 @@ export async function convertWAVToMP3(wavBuffer: Buffer): Promise<Buffer> {
       // Write WAV file to temp directory
       await writeFile(wavPath, wavBuffer);
 
-      // Convert to MP3 using FFmpeg with high quality settings
+      // Convert to MP3 using FFmpeg piped to LAME with stream buffering
+      // Using pipe-through with 'cat' ensures zero start time in the MP3.
+      // When LAME writes directly to a file, it can add padding/metadata that results in a non-zero start time (e.g. 0.025057s).
+      // Piping through 'cat' maintains clean stream writing, preserving the exact timing of the audio data.
+      // This is crucial for accurate seeking in the browser's audio player.
+      // TODO: Find a better solution that doesn't require piping through 'cat'.
       const { stderr } = await execAsync(
-        `ffmpeg -i "${wavPath}" -codec:a libmp3lame -b:a 320k -map_metadata 0 -id3v2_version 3 "${mp3Path}"`
+        `ffmpeg -i "${wavPath}" -f wav - | lame -b 320 --cbr --noreplaygain --pad-id3v2 - | cat > "${mp3Path}"`
       );
 
       if (stderr) {

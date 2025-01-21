@@ -101,25 +101,29 @@ export function WaveformDisplay({
 
   // Memoize the initial configuration to prevent unnecessary recreations
   const initialConfig = useMemo(
-    () => ({
-      container: containerRef.current,
-      height,
-      waveColor: color,
-      progressColor,
-      normalize: true,
-      interact: true,
-      cursorWidth: 1,
-      barWidth: 2,
-      barGap: 1,
-      barRadius: 2,
-      fillParent: true,
-      minPxPerSec: 0,
-      backend: "WebAudio" as const,
-      peaks: [new Float32Array(waveformData)],
-      duration,
-      url: audioUrl,
-      autoplay: false,
-    }),
+    () => {
+      const media = new Audio(audioUrl);
+      media.preload = duration ? "none" : "metadata";
+
+      return {
+        container: containerRef.current,
+        height,
+        waveColor: color,
+        progressColor,
+        normalize: true,
+        interact: true,
+        cursorWidth: 1,
+        barWidth: 2,
+        barGap: 1,
+        barRadius: 2,
+        fillParent: true,
+        minPxPerSec: 0,
+        peaks: [new Float32Array(waveformData)],
+        duration,
+        autoplay: false,
+        media,
+      };
+    },
     // Only include dependencies that should cause a full recreation
     [audioUrl, duration, waveformData]
   );
