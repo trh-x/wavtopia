@@ -12,13 +12,13 @@ import { Register } from "@/pages/Register";
 import { UploadTrack } from "@/pages/UploadTrack";
 import { MyTracks } from "./pages/MyTracks";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { FeatureFlagsProvider } from "./hooks/useFeatureFlags";
 import { AdminRoute } from "@/components/AdminRoute";
 import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
 import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
 import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 import Notifications from "@/pages/Notifications";
 import { BulkUploadTrack } from "./pages/BulkUploadTrack";
+import { useInitializeFeatureFlags } from "./hooks/useFeatureFlags";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -90,12 +90,12 @@ function AppRoutes() {
 }
 
 export default function App() {
+  useInitializeFeatureFlags();
+
   return (
     <Router>
       <AuthProvider>
-        <FeatureFlagsProvider>
-          <AppRoutes />
-        </FeatureFlagsProvider>
+        <AppRoutes />
       </AuthProvider>
     </Router>
   );
