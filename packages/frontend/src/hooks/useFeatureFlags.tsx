@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import { useAuthToken } from "./useAuthToken";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FeatureFlag } from "@wavtopia/core-storage";
+import { useMutation } from "@tanstack/react-query";
 
 type Middlewares = [["zustand/devtools", never], ["zustand/immer", never]];
 
@@ -155,32 +156,48 @@ export function useFeatureFlagsAdmin() {
     queryClient.invalidateQueries({ queryKey: ["enabledFeatures", token] });
   }
 
-  const toggleFlag = async (flagId: string, isEnabled: boolean) => {
-    if (!token) throw new Error("No auth token");
-    try {
-      await api.admin.updateFeatureFlag(token, flagId, { isEnabled });
-      await refetchFeatureFlags();
-    } catch (error) {
+  const toggleFlagMutation = useMutation({
+    mutationFn: async ({
+      flagId,
+      isEnabled,
+    }: {
+      flagId: string;
+      isEnabled: boolean;
+    }) => {
+      if (!token) throw new Error("No auth token");
+      return api.admin.updateFeatureFlag(token, flagId, { isEnabled });
+    },
+    onSuccess: () => {
+      refetchFeatureFlags();
+    },
+    onError: (error) => {
       console.error("Failed to update feature flag:", error);
-      throw error;
-    }
-  };
+    },
+  });
 
-  const createFlag = async (flag: { name: string; description: string }) => {
-    if (!token) throw new Error("No auth token");
-    try {
-      await api.admin.createFeatureFlag(token, flag);
-      await refetchFeatureFlags();
-    } catch (error) {
+  const createFlagMutation = useMutation({
+    mutationFn: async (flag: { name: string; description: string }) => {
+      if (!token) throw new Error("No auth token");
+      return api.admin.createFeatureFlag(token, flag);
+    },
+    onSuccess: () => {
+      refetchFeatureFlags();
+    },
+    onError: (error) => {
       console.error("Failed to create feature flag:", error);
-      throw error;
-    }
-  };
+    },
+  });
 
   return {
     flags,
     isLoading,
-    toggleFlag,
-    createFlag,
+    toggleFlag: (flagId: string, isEnabled: boolean) =>
+      toggleFlagMutation.mutate({ flagId, isEnabled }),
+    createFlag: (flag: { name: string; description: string }) =>
+      createFlagMutation.mutate(flag),
+    isToggling: toggleFlagMutation.isPending,
+    isCreating: createFlagMutation.isPending,
+    toggleError: toggleFlagMutation.error,
+    createError: createFlagMutation.error,
   };
 }
