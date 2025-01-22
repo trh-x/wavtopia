@@ -3,8 +3,10 @@ import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { api } from "../api/client";
 import { useAuthToken } from "./useAuthToken";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FeatureFlag } from "@wavtopia/core-storage";
+
+type Middlewares = [["zustand/devtools", never], ["zustand/immer", never]];
 
 interface FeatureFlagsSlice {
   featureFlags: {
@@ -27,49 +29,42 @@ interface FeatureFlagsAdminSlice {
 
 type StoreState = FeatureFlagsSlice & FeatureFlagsAdminSlice;
 
-const createFeatureFlagsSlice: StateCreator<
-  StoreState,
-  [],
-  [],
-  FeatureFlagsSlice
-> = (set, get) => ({
+type SliceCreator<T> = StateCreator<StoreState, Middlewares, [], T>;
+
+const createFeatureFlagsSlice: SliceCreator<FeatureFlagsSlice> = (
+  set,
+  get
+) => ({
   featureFlags: {
     enabledFeatures: new Set<string>(),
     isLoading: false,
-    setEnabledFeatures: (features: Set<string>) => {
+    setEnabledFeatures: (features) =>
       set((state) => {
         state.featureFlags.enabledFeatures = features;
-      });
-    },
-    setIsLoading: (isLoading: boolean) => {
+      }),
+    setIsLoading: (isLoading) =>
       set((state) => {
         state.featureFlags.isLoading = isLoading;
-      });
-    },
-    isFeatureEnabled: (feature: string) =>
+      }),
+    isFeatureEnabled: (feature) =>
       get().featureFlags.enabledFeatures.has(feature),
   },
 });
 
-const createFeatureFlagsAdminSlice: StateCreator<
-  StoreState,
-  [],
-  [],
-  FeatureFlagsAdminSlice
-> = (set, get) => ({
+const createFeatureFlagsAdminSlice: SliceCreator<FeatureFlagsAdminSlice> = (
+  set
+) => ({
   featureFlagsAdmin: {
     isLoading: false,
     flags: [],
-    setFlags: (flags: FeatureFlag[]) => {
+    setFlags: (flags) =>
       set((state) => {
         state.featureFlagsAdmin.flags = flags;
-      });
-    },
-    setIsLoading: (isLoading: boolean) => {
+      }),
+    setIsLoading: (isLoading) =>
       set((state) => {
         state.featureFlagsAdmin.isLoading = isLoading;
-      });
-    },
+      }),
   },
 });
 
@@ -130,6 +125,7 @@ export function useFeatureFlags() {
 export function useFeatureFlagsAdmin() {
   const { getToken } = useAuthToken();
   const token = getToken();
+  const queryClient = useQueryClient();
   const {
     featureFlagsAdmin: { setFlags, flags, setIsLoading, isLoading },
   } = useStore();
@@ -156,11 +152,16 @@ export function useFeatureFlagsAdmin() {
     refetchOnWindowFocus: false,
   });
 
+  function refetchFeatureFlags() {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ["enabledFeatures", token] });
+  }
+
   const toggleFlag = async (flagId: string, isEnabled: boolean) => {
     if (!token) throw new Error("No auth token");
     try {
       await api.admin.updateFeatureFlag(token, flagId, { isEnabled });
-      await refetch();
+      await refetchFeatureFlags();
     } catch (error) {
       console.error("Failed to update feature flag:", error);
       throw error;
@@ -171,7 +172,7 @@ export function useFeatureFlagsAdmin() {
     if (!token) throw new Error("No auth token");
     try {
       await api.admin.createFeatureFlag(token, flag);
-      await refetch();
+      await refetchFeatureFlags();
     } catch (error) {
       console.error("Failed to create feature flag:", error);
       throw error;
