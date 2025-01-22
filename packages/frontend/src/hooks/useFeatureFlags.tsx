@@ -94,8 +94,6 @@ export function useInitializeFeatureFlags() {
 
       try {
         const { flags } = await api.auth.getEnabledFeatures(token);
-
-        console.log("flags", flags);
         setEnabledFeatures(new Set(flags));
         return flags;
       } catch (error) {
