@@ -1,50 +1,70 @@
-import React, { createContext, useContext } from "react";
+import { create } from "zustand";
+import { immer } from "zustand/middleware/immer";
 import { api } from "../api/client";
-import { useAuthToken as useAuth } from "./useAuthToken";
+import { useAuthToken } from "./useAuthToken";
 import { useQuery } from "@tanstack/react-query";
 
-interface FeatureFlagsContextType {
+interface FeatureFlagsState {
   enabledFeatures: Set<string>;
-  isFeatureEnabled: (feature: string) => boolean;
   isLoading: boolean;
+  setEnabledFeatures: (features: Set<string>) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  isFeatureEnabled: (feature: string) => boolean;
 }
 
-const FeatureFlagsContext = createContext<FeatureFlagsContextType>({
-  enabledFeatures: new Set(),
-  isFeatureEnabled: () => false,
-  isLoading: true,
-});
+const useFeatureFlagsStore = create<FeatureFlagsState>()(
+  immer((set, get) => ({
+    enabledFeatures: new Set<string>(),
+    isLoading: true,
+    setEnabledFeatures: (features: Set<string>) => {
+      set((state) => {
+        state.enabledFeatures = features;
+      });
+    },
+    setIsLoading: (isLoading: boolean) => {
+      set((state) => {
+        state.isLoading = isLoading;
+      });
+    },
+    isFeatureEnabled: (feature: string) => get().enabledFeatures.has(feature),
+  }))
+);
 
-export function FeatureFlagsProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { getToken } = useAuth();
+export function useInitializeFeatureFlags() {
+  const { getToken } = useAuthToken();
   const token = getToken();
 
-  const { data: flags = [], isLoading } = useQuery({
+  const { setEnabledFeatures, setIsLoading } = useFeatureFlagsStore();
+
+  // Use React Query to fetch and manage feature flags
+  useQuery({
     queryKey: ["enabledFeatures", token],
     queryFn: async () => {
-      const { flags } = await api.auth.getEnabledFeatures(token);
-      return flags;
+      setIsLoading(true);
+
+      try {
+        const { flags } = await api.auth.getEnabledFeatures(token);
+
+        setEnabledFeatures(new Set(flags));
+        setIsLoading(false);
+        return flags;
+      } catch (error) {
+        setIsLoading(false);
+        throw error;
+      }
     },
     // Don't refetch on window focus for feature flags
     refetchOnWindowFocus: false,
   });
-
-  const enabledFeatures = new Set(flags);
-  const isFeatureEnabled = (feature: string) => enabledFeatures.has(feature);
-
-  return (
-    <FeatureFlagsContext.Provider
-      value={{ enabledFeatures, isFeatureEnabled, isLoading }}
-    >
-      {children}
-    </FeatureFlagsContext.Provider>
-  );
 }
 
 export function useFeatureFlags() {
-  return useContext(FeatureFlagsContext);
+  const { enabledFeatures, isLoading, isFeatureEnabled } =
+    useFeatureFlagsStore();
+
+  return {
+    enabledFeatures,
+    isFeatureEnabled,
+    isLoading,
+  };
 }
