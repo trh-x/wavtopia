@@ -1,6 +1,7 @@
 import Queue, { Job } from "bull";
 import { convertXMToWAV } from "../services/wav-converter";
 import { convertWAVToMP3 } from "../services/mp3-converter";
+import { convertWAVToFLAC } from "../services/flac-converter";
 import { generateWaveformData } from "../services/waveform";
 import {
   PrismaService,
@@ -82,26 +83,41 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
     const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackBuffer);
     console.log("Full track MP3 conversion complete");
 
+    // Convert full track to FLAC
+    console.log("Converting full track to FLAC...");
+    const fullTrackFlacBuffer = await convertWAVToFLAC(fullTrackBuffer);
+    console.log("Full track FLAC conversion complete");
+
     // Upload full track files
     console.log("Uploading full track files...");
-    const [fullTrackUrl, fullTrackMp3Url] = await Promise.all([
-      uploadFile(
-        {
-          buffer: fullTrackBuffer,
-          originalname: `${originalName}_full.wav`,
-          mimetype: "audio/wav",
-        } as StorageFile,
-        "tracks/"
-      ),
-      uploadFile(
-        {
-          buffer: fullTrackMp3Buffer,
-          originalname: `${originalName}_full.mp3`,
-          mimetype: "audio/mpeg",
-        } as StorageFile,
-        "tracks/"
-      ),
-    ]);
+    const [fullTrackUrl, fullTrackMp3Url, fullTrackFlacUrl] = await Promise.all(
+      [
+        uploadFile(
+          {
+            buffer: fullTrackBuffer,
+            originalname: `${originalName}_full.wav`,
+            mimetype: "audio/wav",
+          } as StorageFile,
+          "tracks/"
+        ),
+        uploadFile(
+          {
+            buffer: fullTrackMp3Buffer,
+            originalname: `${originalName}_full.mp3`,
+            mimetype: "audio/mpeg",
+          } as StorageFile,
+          "tracks/"
+        ),
+        uploadFile(
+          {
+            buffer: fullTrackFlacBuffer,
+            originalname: `${originalName}_full.flac`,
+            mimetype: "audio/flac",
+          } as StorageFile,
+          "tracks/"
+        ),
+      ]
+    );
     console.log("Full track files uploaded");
 
     // Convert and upload component files
@@ -114,6 +130,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           }`
         );
         const mp3Buffer = await convertWAVToMP3(component.buffer);
+        const flacBuffer = await convertWAVToFLAC(component.buffer);
         const componentName = `${originalName}_${component.name.replace(
           /[^a-z0-9]/gi,
           "_"
@@ -122,7 +139,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         const waveformResult = await generateWaveformData(component.buffer);
         console.log(`Generated waveform data for component: ${component.name}`);
 
-        const [wavUrl, mp3Url] = await Promise.all([
+        const [wavUrl, mp3Url, flacUrl] = await Promise.all([
           uploadFile(
             {
               buffer: component.buffer,
@@ -139,6 +156,14 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
             } as StorageFile,
             "components/"
           ),
+          uploadFile(
+            {
+              buffer: flacBuffer,
+              originalname: `${componentName}.flac`,
+              mimetype: "audio/flac",
+            } as StorageFile,
+            "components/"
+          ),
         ]);
 
         console.log(`Component ${component.name} files uploaded`);
@@ -147,6 +172,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           type: component.type,
           wavUrl,
           mp3Url,
+          flacUrl,
           waveformData: waveformResult.peaks,
           duration: waveformResult.duration,
         };
@@ -162,6 +188,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           originalUrl,
           fullTrackUrl,
           fullTrackMp3Url,
+          fullTrackFlacUrl,
           waveformData: waveformResult.peaks,
           duration: waveformResult.duration,
           coverArt: coverArtUrl,
@@ -182,10 +209,12 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           deleteFile(originalUrl),
           deleteFile(fullTrackUrl),
           deleteFile(fullTrackMp3Url),
+          deleteFile(fullTrackFlacUrl),
           ...(coverArtUrl ? [deleteFile(coverArtUrl)] : []),
           ...componentUploads.flatMap((comp) => [
             deleteFile(comp.wavUrl),
             deleteFile(comp.mp3Url),
+            deleteFile(comp.flacUrl),
           ]),
         ]);
         console.log("Cleanup completed");
