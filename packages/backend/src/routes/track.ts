@@ -44,6 +44,7 @@ const authenticateTrackAccess: RequestHandler = async (
   res: Response,
   next: NextFunction
 ) => {
+  console.log("DEBUG: Auth middleware hit:", req.path);
   try {
     // Get track ID from URL path
     const trackId = req.params.id;
@@ -252,6 +253,7 @@ router.get(
   "/:id/full.:format",
   authenticateTrackAccess,
   async (req: Request, res: Response, next) => {
+    console.log("DEBUG: Full track route hit");
     try {
       console.log(
         `[Full Track Request] ID: ${req.params.id}, Format: ${req.params.format}`
