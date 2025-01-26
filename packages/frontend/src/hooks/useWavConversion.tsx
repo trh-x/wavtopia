@@ -31,7 +31,11 @@ export function useWavConversion({
           const token = getToken();
           if (!token) return;
 
-          const response = await fetch(`/api/track/${trackId}/wav-status`, {
+          const statusUrl = componentId
+            ? `/api/track/${trackId}/component/${componentId}/wav-status`
+            : `/api/track/${trackId}/wav-status`;
+
+          const response = await fetch(statusUrl, {
             headers: {
               Authorization: `Bearer ${token}`,
             },

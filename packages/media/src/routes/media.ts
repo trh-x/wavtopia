@@ -112,7 +112,7 @@ router.post("/convert-wav", async (req, res, next) => {
   }
 });
 
-// Get WAV conversion status
+// Get track WAV conversion status
 router.get("/wav-status/:trackId", async (req, res, next) => {
   try {
     const { trackId } = req.params;
@@ -130,6 +130,31 @@ router.get("/wav-status/:trackId", async (req, res, next) => {
       status: "success",
       data: {
         conversionStatus: track.wavConversionStatus,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get component WAV conversion status
+router.get("/component/:componentId/wav-status", async (req, res, next) => {
+  try {
+    const { componentId } = req.params;
+
+    const component = await prisma.component.findUnique({
+      where: { id: componentId },
+      select: { wavConversionStatus: true },
+    });
+
+    if (!component) {
+      throw new AppError(404, "Component not found");
+    }
+
+    res.json({
+      status: "success",
+      data: {
+        conversionStatus: component.wavConversionStatus,
       },
     });
   } catch (error) {

@@ -634,7 +634,7 @@ router.post(
   }
 );
 
-// Get WAV conversion status
+// Get track WAV conversion status
 router.get(
   "/:id/wav-status",
   authenticateTrackAccess,
@@ -647,7 +647,30 @@ router.get(
       }
 
       const response = await fetch(
-        mediaServiceUrl + `/api/media/wav-status/${req.params.id}`
+        `${mediaServiceUrl}/api/media/wav-status/${req.params.id}`
+      );
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get component WAV conversion status
+router.get(
+  "/:id/component/:componentId/wav-status",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(
+        `${mediaServiceUrl}/api/media/component/${req.params.componentId}/wav-status`
       );
       const data = await response.json();
       res.json(data);
