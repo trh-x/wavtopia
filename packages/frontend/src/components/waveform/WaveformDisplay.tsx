@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 import { TrackListPlaybackContextType } from "@/contexts/TrackListPlaybackContext";
 import { SyncedPlaybackContextType } from "@/contexts/SyncedPlaybackContext";

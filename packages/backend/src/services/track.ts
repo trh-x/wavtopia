@@ -10,7 +10,11 @@ async function deleteTrackFiles(track: {
   fullTrackWavUrl?: string | null;
   fullTrackMp3Url?: string | null;
   coverArt?: string | null;
-  components: { wavUrl: string; mp3Url: string }[];
+  components: {
+    flacUrl: string | null;
+    wavUrl: string | null;
+    mp3Url: string | null;
+  }[];
 }) {
   await deleteFile(track.originalUrl);
 
@@ -27,8 +31,15 @@ async function deleteTrackFiles(track: {
   }
 
   for (const component of track.components) {
-    await deleteFile(component.wavUrl);
-    await deleteFile(component.mp3Url);
+    if (component.wavUrl) {
+      await deleteFile(component.wavUrl);
+    }
+    if (component.mp3Url) {
+      await deleteFile(component.mp3Url);
+    }
+    if (component.flacUrl) {
+      await deleteFile(component.flacUrl);
+    }
   }
 }
 
