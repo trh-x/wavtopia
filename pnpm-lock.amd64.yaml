@@ -179,7 +179,7 @@ importers:
         version: 1.0.2
       wavesurfer.js:
         specifier: ^7.8.14
-        version: 7.8.16
+        version: 7.8.17
       zustand:
         specifier: ^5.0.3
         version: 5.0.3(@types/react@18.3.18)(immer@10.1.1)(react@18.3.1)
@@ -2836,8 +2836,8 @@ packages:
   wav@1.0.2:
     resolution: {integrity: sha512-viHtz3cDd/Tcr/HbNqzQCofKdF6kWUymH9LGDdskfWFoIy/HJ+RTihgjEcHfnsy1PO4e9B+y4HwgTwMrByquhg==}
 
-  wavesurfer.js@7.8.16:
-    resolution: {integrity: sha512-lhQF42A4Wn7ug5bixaqGK53qWF2minWdXlzxPtLV+QoVH3WgvVSdsP2HBaHRbkfT2Lh67kJG6CquFdukmf95gg==}
+  wavesurfer.js@7.8.17:
+    resolution: {integrity: sha512-4/X9oQuTHjhzvqg2kco2NZGGYY8Uq7+HSJ1nH7T5RFOULwTTkVKugaIwtgQ/yKa2jGZuR7S0qFb4N/UxJO8ESg==}
 
   web-encoding@1.1.5:
     resolution: {integrity: sha512-HYLeVCdJ0+lBYV2FvNZmv3HJ2Nt0QYXqZojk3d9FJOLkwnuhzM9tmamh8d7HPM8QqjKH8DeHkFTx+CFlWpZZDA==}
@@ -5449,7 +5449,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  wavesurfer.js@7.8.16: {}
+  wavesurfer.js@7.8.17: {}
 
   web-encoding@1.1.5:
     dependencies:
