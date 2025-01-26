@@ -102,6 +102,18 @@ export class StorageService {
   }
 
   async getObject(fileName: string): Promise<internal.Readable> {
-    return this.client.getObject(this.bucket, fileName);
+    try {
+      const stream = await this.client.getObject(this.bucket, fileName);
+
+      // Set up error handling on the stream
+      stream.on("error", (err) => {
+        console.error("Error in MinIO stream:", err);
+      });
+
+      return stream;
+    } catch (error) {
+      console.error("Failed to get object from MinIO:", error);
+      throw error;
+    }
   }
 }

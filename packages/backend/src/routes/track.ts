@@ -259,11 +259,25 @@ router.get(
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
-      res.setHeader("Content-Type", "application/octet-stream");
+      res.setHeader(
+        "Content-Type",
+        format === "mp3" ? "audio/mpeg" : "audio/wav"
+      );
+      res.setHeader("Transfer-Encoding", "chunked");
+      res.setHeader("Cache-Control", "no-cache");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${track.title}.${format}"`
       );
+
+      // Handle errors in the stream
+      fileStream.on("error", (err) => {
+        console.error("Error streaming file:", err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Error streaming file" });
+        }
+      });
+
       fileStream.pipe(res);
     } catch (error) {
       next(error);
