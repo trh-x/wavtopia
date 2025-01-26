@@ -103,16 +103,48 @@ export class StorageService {
 
   async getObject(fileName: string): Promise<internal.Readable> {
     try {
+      console.log(
+        `[Storage] Getting object from MinIO - Bucket: ${this.bucket}, File: ${fileName}`
+      );
+
+      // Get object stats first to verify file exists and get size
+      try {
+        const stats = await this.client.statObject(this.bucket, fileName);
+        console.log(`[Storage] Object stats:`, {
+          size: stats.size,
+          lastModified: stats.lastModified,
+          metaData: stats.metaData,
+        });
+      } catch (statError) {
+        console.error(`[Storage] Failed to get object stats:`, statError);
+      }
+
       const stream = await this.client.getObject(this.bucket, fileName);
+      console.log(`[Storage] Successfully got object stream from MinIO`);
+
+      let bytesRead = 0;
+      stream.on("data", (chunk) => {
+        bytesRead += chunk.length;
+        if (bytesRead % (1024 * 1024) === 0) {
+          // Log every MB
+          console.log(`[Storage] Bytes read from MinIO: ${bytesRead}`);
+        }
+      });
+
+      stream.on("end", () => {
+        console.log(
+          `[Storage] Finished reading from MinIO. Total bytes: ${bytesRead}`
+        );
+      });
 
       // Set up error handling on the stream
       stream.on("error", (err) => {
-        console.error("Error in MinIO stream:", err);
+        console.error("[Storage] Error in MinIO stream:", err);
       });
 
       return stream;
     } catch (error) {
-      console.error("Failed to get object from MinIO:", error);
+      console.error("[Storage] Failed to get object from MinIO:", error);
       throw error;
     }
   }
