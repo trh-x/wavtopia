@@ -601,4 +601,60 @@ router.patch("/:id/visibility", async (req: Request, res: Response, next) => {
   }
 });
 
+// Request WAV conversion
+router.post(
+  "/:id/convert-wav",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const { type, componentId } = req.body;
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(mediaServiceUrl + "/api/media/convert-wav", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          trackId: req.params.id,
+          type,
+          componentId,
+        }),
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get WAV conversion status
+router.get(
+  "/:id/wav-status",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(
+        mediaServiceUrl + `/api/media/wav-status/${req.params.id}`
+      );
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export { router as trackRoutes };

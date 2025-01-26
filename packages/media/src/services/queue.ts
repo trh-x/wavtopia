@@ -1,13 +1,13 @@
 import Queue, { Job } from "bull";
 import { convertXMToWAV } from "../services/wav-converter";
 import { convertWAVToMP3 } from "../services/mp3-converter";
-import { convertWAVToFLAC } from "../services/flac-converter";
+import { convertWAVToFLAC, convertFLACToWAV } from "../services/flac-converter";
 import { generateWaveformData } from "../services/waveform";
 import {
   PrismaService,
   StorageFile,
   config,
-  deleteLocalFile,
+  WavConversionStatus,
 } from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../services/storage";
 
@@ -15,12 +15,25 @@ interface ConversionJob {
   trackId: string;
 }
 
+interface WavConversionJob {
+  trackId: string;
+  type: "full" | "component";
+  componentId?: string;
+}
+
 const prisma = new PrismaService(config.database).db;
 
-// Create a new queue
+// Create queues
 export const conversionQueue = new Queue<ConversionJob>("audio-conversion", {
   redis: config.redis,
 });
+
+export const wavConversionQueue = new Queue<WavConversionJob>(
+  "wav-conversion",
+  {
+    redis: config.redis,
+  }
+);
 
 // Process jobs
 conversionQueue.process(async (job: Job<ConversionJob>) => {
@@ -228,11 +241,136 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
   }
 });
 
+// Process WAV conversion jobs
+wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
+  console.log(
+    `Processing WAV conversion job ${job.id} for track: ${job.data.trackId}`
+  );
+
+  try {
+    const { trackId, type, componentId } = job.data;
+
+    // Update conversion status to IN_PROGRESS
+    await prisma.track.update({
+      where: { id: trackId },
+      data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
+    });
+
+    // Get the track
+    const track = await prisma.track.findUnique({
+      where: { id: trackId },
+      include: { components: true },
+    });
+
+    if (!track) {
+      throw new Error(`Track not found: ${trackId}`);
+    }
+
+    if (type === "full") {
+      if (!track.fullTrackFlacUrl) {
+        throw new Error(`Track ${trackId} has no FLAC file URL`);
+      }
+
+      // Get FLAC file and convert to WAV
+      const flacFile = await getLocalFile(track.fullTrackFlacUrl);
+      const wavBuffer = await convertFLACToWAV(flacFile.buffer);
+
+      // Upload WAV file
+      const wavUrl = await uploadFile(
+        {
+          buffer: wavBuffer,
+          originalname: `${track.title.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_"
+          )}_full.wav`,
+          mimetype: "audio/wav",
+        } as StorageFile,
+        "tracks/"
+      );
+
+      // Update track with WAV URL and status
+      await prisma.track.update({
+        where: { id: trackId },
+        data: {
+          fullTrackWavUrl: wavUrl,
+          wavConversionStatus: WavConversionStatus.COMPLETED,
+        },
+      });
+    } else if (type === "component" && componentId) {
+      const component = track.components.find((c) => c.id === componentId);
+      if (!component || !component.flacUrl) {
+        throw new Error(
+          `Component ${componentId} not found or has no FLAC file`
+        );
+      }
+
+      // Get FLAC file and convert to WAV
+      const flacFile = await getLocalFile(component.flacUrl);
+      const wavBuffer = await convertFLACToWAV(flacFile.buffer);
+
+      // Upload WAV file
+      const wavUrl = await uploadFile(
+        {
+          buffer: wavBuffer,
+          originalname: `${track.title.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_"
+          )}_${component.name.replace(/[^a-z0-9]/gi, "_")}.wav`,
+          mimetype: "audio/wav",
+        } as StorageFile,
+        "components/"
+      );
+
+      // Update component with WAV URL
+      await prisma.component.update({
+        where: { id: componentId },
+        data: { wavUrl },
+      });
+    }
+
+    console.log(`WAV conversion completed for track ${trackId}`);
+  } catch (error) {
+    console.error(`Error processing WAV conversion job ${job.id}:`, error);
+
+    // Update conversion status to FAILED
+    await prisma.track.update({
+      where: { id: job.data.trackId },
+      data: { wavConversionStatus: WavConversionStatus.FAILED },
+    });
+
+    throw error;
+  }
+});
+
 // Add job to queue
 export const queueConversion = async (trackId: string) => {
   const job = await conversionQueue.add(
     {
       trackId,
+    },
+    {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+    }
+  );
+
+  return job.id;
+};
+
+// Add WAV conversion job to queue
+export const queueWavConversion = async (
+  trackId: string,
+  type: "full" | "component",
+  componentId?: string
+) => {
+  const job = await wavConversionQueue.add(
+    {
+      trackId,
+      type,
+      componentId,
     },
     {
       attempts: 3,

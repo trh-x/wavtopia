@@ -41,3 +41,36 @@ export async function convertWAVToFLAC(wavBuffer: Buffer): Promise<Buffer> {
     throw new AppError(500, "Failed to convert WAV to FLAC");
   }
 }
+
+export async function convertFLACToWAV(flacBuffer: Buffer): Promise<Buffer> {
+  try {
+    // Create temporary directory
+    const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-wav-"));
+    const flacPath = join(tempDir, "input.flac");
+    const wavPath = join(tempDir, "output.wav");
+
+    try {
+      // Write FLAC file to temp directory
+      await writeFile(flacPath, flacBuffer);
+
+      // Convert to WAV using FFmpeg
+      const { stderr } = await execAsync(
+        `ffmpeg -i "${flacPath}" -c:a pcm_s16le "${wavPath}"`
+      );
+
+      if (stderr) {
+        console.error("WAV conversion stderr:", stderr);
+      }
+
+      // Read the WAV file
+      const wavBuffer = await readFile(wavPath);
+      return wavBuffer;
+    } finally {
+      // Clean up temporary directory
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  } catch (error) {
+    console.error("Error converting FLAC to WAV:", error);
+    throw new AppError(500, "Failed to convert FLAC to WAV");
+  }
+}

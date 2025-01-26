@@ -26,18 +26,36 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         )}
       </div>
       <div className="mt-4 flex flex-wrap gap-4">
-        <DownloadLink href={`/api/track/${track.id}/original`}>
+        <DownloadLink
+          href={`/api/track/${track.id}/original`}
+          trackId={track.id}
+          type="full"
+        >
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
-        <DownloadLink href={`/api/track/${track.id}/full.wav`}>
-          WAV
-        </DownloadLink>
-        <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
-          MP3
-        </DownloadLink>
-        <DownloadLink href={`/api/track/${track.id}/full.flac`}>
-          FLAC
-        </DownloadLink>
+        <div className="flex space-x-4">
+          <DownloadLink
+            href={`/api/track/${track.id}/full.wav`}
+            trackId={track.id}
+            type="full"
+          >
+            WAV
+          </DownloadLink>
+          <DownloadLink
+            href={`/api/track/${track.id}/full.mp3`}
+            trackId={track.id}
+            type="full"
+          >
+            MP3
+          </DownloadLink>
+          <DownloadLink
+            href={`/api/track/${track.id}/full.flac`}
+            trackId={track.id}
+            type="full"
+          >
+            FLAC
+          </DownloadLink>
+        </div>
       </div>
     </div>
   );
