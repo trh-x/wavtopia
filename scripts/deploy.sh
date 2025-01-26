@@ -297,7 +297,7 @@ bootstrap_prod() {
     if ! docker --context production info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
-    }
+    fi
 
     # Run bootstrap command in production context
     docker context use production
