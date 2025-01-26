@@ -68,33 +68,33 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
 
     // Convert XM to WAV
     console.log("Converting XM to WAV...");
-    const { fullTrackBuffer, components } = await convertXMToWAV(
+    const { fullTrackWavBuffer, components } = await convertXMToWAV(
       originalFile.buffer
     );
     console.log("XM conversion complete. Components:", components.length);
 
     // Generate waveform data for full track
     console.log("Generating waveform data for full track...");
-    const waveformResult = await generateWaveformData(fullTrackBuffer);
+    const waveformResult = await generateWaveformData(fullTrackWavBuffer);
     console.log("Full track waveform data generated");
 
     // Convert full track to MP3
     console.log("Converting full track to MP3...");
-    const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackBuffer);
+    const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackWavBuffer);
     console.log("Full track MP3 conversion complete");
 
     // Convert full track to FLAC
     console.log("Converting full track to FLAC...");
-    const fullTrackFlacBuffer = await convertWAVToFLAC(fullTrackBuffer);
+    const fullTrackFlacBuffer = await convertWAVToFLAC(fullTrackWavBuffer);
     console.log("Full track FLAC conversion complete");
 
     // Upload full track files
     console.log("Uploading full track files...");
-    const [fullTrackUrl, fullTrackMp3Url, fullTrackFlacUrl] = await Promise.all(
-      [
+    const [fullTrackWavUrl, fullTrackMp3Url, fullTrackFlacUrl] =
+      await Promise.all([
         uploadFile(
           {
-            buffer: fullTrackBuffer,
+            buffer: fullTrackWavBuffer,
             originalname: `${originalName}_full.wav`,
             mimetype: "audio/wav",
           } as StorageFile,
@@ -116,8 +116,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           } as StorageFile,
           "tracks/"
         ),
-      ]
-    );
+      ]);
     console.log("Full track files uploaded");
 
     // Convert and upload component files
@@ -186,7 +185,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         where: { id: trackId },
         data: {
           originalUrl,
-          fullTrackUrl,
+          fullTrackWavUrl,
           fullTrackMp3Url,
           fullTrackFlacUrl,
           waveformData: waveformResult.peaks,
@@ -207,7 +206,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
       try {
         await Promise.all([
           deleteFile(originalUrl),
-          deleteFile(fullTrackUrl),
+          deleteFile(fullTrackWavUrl),
           deleteFile(fullTrackMp3Url),
           deleteFile(fullTrackFlacUrl),
           ...(coverArtUrl ? [deleteFile(coverArtUrl)] : []),

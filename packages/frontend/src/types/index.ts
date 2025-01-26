@@ -11,6 +11,9 @@ export interface Track {
   artist: string;
   coverArt: string | null;
   originalUrl: string | null;
+  fullTrackWavUrl: string | null;
+  fullTrackMp3Url: string | null;
+  fullTrackFlacUrl: string | null;
   waveformData: number[];
   duration?: number;
   isPublic: boolean;

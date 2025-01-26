@@ -133,7 +133,7 @@ const authenticateTrackAccess: RequestHandler = async (
         artist: reqTrack.artist,
         coverArt: reqTrack.coverArt,
         isPublic: reqTrack.isPublic,
-        fullTrackUrl: reqTrack.fullTrackUrl,
+        fullTrackWavUrl: reqTrack.fullTrackWavUrl,
         fullTrackMp3Url: reqTrack.fullTrackMp3Url,
         originalFormat: reqTrack.originalFormat,
         waveformData: reqTrack.waveformData,
@@ -250,7 +250,7 @@ router.get(
       if (format === "mp3") {
         filePath = track.fullTrackMp3Url;
       } else if (format === "wav") {
-        filePath = track.fullTrackUrl;
+        filePath = track.fullTrackWavUrl;
       } else if (format === "flac") {
         filePath = track.fullTrackFlacUrl;
       } else {

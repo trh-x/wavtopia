@@ -7,15 +7,15 @@ import { deleteFile } from "./storage";
  */
 async function deleteTrackFiles(track: {
   originalUrl: string;
-  fullTrackUrl?: string | null;
+  fullTrackWavUrl?: string | null;
   fullTrackMp3Url?: string | null;
   coverArt?: string | null;
   components: { wavUrl: string; mp3Url: string }[];
 }) {
   await deleteFile(track.originalUrl);
 
-  if (track.fullTrackUrl) {
-    await deleteFile(track.fullTrackUrl);
+  if (track.fullTrackWavUrl) {
+    await deleteFile(track.fullTrackWavUrl);
   }
 
   if (track.fullTrackMp3Url) {
