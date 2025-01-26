@@ -5,6 +5,7 @@ import {
   normalizeFilePath,
 } from "@wavtopia/core-storage";
 import fs from "fs/promises";
+import internal from "stream";
 
 const storageService = new StorageService(config.storage);
 
@@ -26,6 +27,10 @@ export async function deleteFile(fileName: string): Promise<void> {
 
 export async function getFileUrl(fileName: string): Promise<string> {
   return await storageService.getFileUrl(fileName);
+}
+
+export async function getObject(fileName: string): Promise<internal.Readable> {
+  return await storageService.getObject(fileName);
 }
 
 export async function getLocalFile(

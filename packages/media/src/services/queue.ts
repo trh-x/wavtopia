@@ -4,12 +4,17 @@ import { convertWAVToMP3 } from "../services/mp3-converter";
 import { convertWAVToFLAC, convertFLACToWAV } from "../services/flac-converter";
 import { generateWaveformData } from "../services/waveform";
 import {
-  PrismaService,
   StorageFile,
-  config,
   WavConversionStatus,
+  PrismaService,
+  config,
 } from "@wavtopia/core-storage";
-import { uploadFile, deleteFile, getLocalFile } from "../services/storage";
+import {
+  uploadFile,
+  deleteFile,
+  getLocalFile,
+  getObject,
+} from "../services/storage";
 
 interface ConversionJob {
   trackId: string;
@@ -271,9 +276,16 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         throw new Error(`Track ${trackId} has no FLAC file URL`);
       }
 
-      // Get FLAC file and convert to WAV
-      const flacFile = await getLocalFile(track.fullTrackFlacUrl);
-      const wavBuffer = await convertFLACToWAV(flacFile.buffer);
+      // Download FLAC file from storage
+      const flacStream = await getObject(track.fullTrackFlacUrl);
+      const chunks: Buffer[] = [];
+      for await (const chunk of flacStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const flacBuffer = Buffer.concat(chunks);
+
+      // Convert to WAV
+      const wavBuffer = await convertFLACToWAV(flacBuffer);
 
       // Upload WAV file
       const wavUrl = await uploadFile(
@@ -304,9 +316,16 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         );
       }
 
-      // Get FLAC file and convert to WAV
-      const flacFile = await getLocalFile(component.flacUrl);
-      const wavBuffer = await convertFLACToWAV(flacFile.buffer);
+      // Download FLAC file from storage
+      const flacStream = await getObject(component.flacUrl);
+      const chunks: Buffer[] = [];
+      for await (const chunk of flacStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const flacBuffer = Buffer.concat(chunks);
+
+      // Convert to WAV
+      const wavBuffer = await convertFLACToWAV(flacBuffer);
 
       // Upload WAV file
       const wavUrl = await uploadFile(
