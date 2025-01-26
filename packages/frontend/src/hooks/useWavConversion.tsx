@@ -67,9 +67,9 @@ export function useWavConversion({
         }
       };
 
-      // Check immediately and then every 2 seconds
+      // Check immediately and then every 5 seconds
       checkStatus();
-      intervalId = setInterval(checkStatus, 2000);
+      intervalId = setInterval(checkStatus, 5000);
     }
 
     return () => {

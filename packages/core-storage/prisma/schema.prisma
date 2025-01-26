@@ -79,7 +79,7 @@ model Component {
   id           String   @id @default(uuid())
   name         String
   type         String
-  wavUrl       String   @map("wav_url")
+  wavUrl       String?  @map("wav_url")
   mp3Url       String   @map("mp3_url")
   flacUrl      String?  @map("flac_url")
   waveformData Float[]  @map("waveform_data")

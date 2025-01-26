@@ -148,15 +148,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         const waveformResult = await generateWaveformData(component.buffer);
         console.log(`Generated waveform data for component: ${component.name}`);
 
-        const [wavUrl, mp3Url, flacUrl] = await Promise.all([
-          uploadFile(
-            {
-              buffer: component.buffer,
-              originalname: `${componentName}.wav`,
-              mimetype: "audio/wav",
-            } as StorageFile,
-            "components/"
-          ),
+        const [mp3Url, flacUrl] = await Promise.all([
           uploadFile(
             {
               buffer: mp3Buffer,
@@ -179,7 +171,6 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         return {
           name: component.name,
           type: component.type,
-          wavUrl,
           mp3Url,
           flacUrl,
           waveformData: waveformResult.peaks,
@@ -219,7 +210,6 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           deleteFile(fullTrackFlacUrl),
           ...(coverArtUrl ? [deleteFile(coverArtUrl)] : []),
           ...componentUploads.flatMap((comp) => [
-            deleteFile(comp.wavUrl),
             deleteFile(comp.mp3Url),
             deleteFile(comp.flacUrl),
           ]),
