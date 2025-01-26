@@ -16,7 +16,7 @@ interface ConvertedComponent {
 }
 
 interface ConversionResult {
-  fullTrackBuffer: Buffer;
+  fullTrackWavBuffer: Buffer;
   components: ConvertedComponent[];
 }
 
@@ -36,7 +36,7 @@ export async function convertXMToWAV(
 
       // First, convert the full track
       const { stderr: fullTrackStderr } = await execAsync(
-        `"${config.tools.exportToWavPath}" "${xmPath}" "${join(
+        `"${config.tools.exportToWavPath}" "${xmPath}" --output "${join(
           tempDir,
           fullTrackOutput
         )}"`
@@ -47,11 +47,13 @@ export async function convertXMToWAV(
       }
 
       // Read the full track WAV
-      const fullTrackBuffer = await readWavFile(join(tempDir, fullTrackOutput));
+      const fullTrackWavBuffer = await readWavFile(
+        join(tempDir, fullTrackOutput)
+      );
 
       // Then convert individual components
       const { stderr: componentsStderr } = await execAsync(
-        `"${config.tools.exportToWavPath}" "${xmPath}" "${join(
+        `"${config.tools.exportToWavPath}" "${xmPath}" --output "${join(
           tempDir,
           componentsBaseName
         )}" --multi-track`
@@ -85,7 +87,7 @@ export async function convertXMToWAV(
       );
 
       return {
-        fullTrackBuffer,
+        fullTrackWavBuffer,
         components: convertedComponents,
       };
     } finally {

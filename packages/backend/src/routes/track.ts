@@ -133,7 +133,7 @@ const authenticateTrackAccess: RequestHandler = async (
         artist: reqTrack.artist,
         coverArt: reqTrack.coverArt,
         isPublic: reqTrack.isPublic,
-        fullTrackUrl: reqTrack.fullTrackUrl,
+        fullTrackWavUrl: reqTrack.fullTrackWavUrl,
         fullTrackMp3Url: reqTrack.fullTrackMp3Url,
         originalFormat: reqTrack.originalFormat,
         waveformData: reqTrack.waveformData,
@@ -211,7 +211,17 @@ router.get(
       }
 
       const format = req.params.format.toLowerCase();
-      const filePath = format === "mp3" ? component.mp3Url : component.wavUrl;
+
+      let filePath: string;
+      if (format === "mp3") {
+        filePath = component.mp3Url;
+      } else if (format === "wav") {
+        filePath = component.wavUrl;
+      } else if (format === "flac") {
+        filePath = component.flacUrl;
+      } else {
+        throw new AppError(400, "Invalid format");
+      }
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
@@ -235,8 +245,17 @@ router.get(
     try {
       const track = (req as any).track; // TODO: Fix this `any`
       const format = req.params.format.toLowerCase();
-      const filePath =
-        format === "mp3" ? track.fullTrackMp3Url : track.fullTrackUrl;
+
+      let filePath: string;
+      if (format === "mp3") {
+        filePath = track.fullTrackMp3Url;
+      } else if (format === "wav") {
+        filePath = track.fullTrackWavUrl;
+      } else if (format === "flac") {
+        filePath = track.fullTrackFlacUrl;
+      } else {
+        throw new AppError(400, "Invalid format");
+      }
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
@@ -581,5 +600,84 @@ router.patch("/:id/visibility", async (req: Request, res: Response, next) => {
     next(error);
   }
 });
+
+// Request WAV conversion
+router.post(
+  "/:id/convert-wav",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const { type, componentId } = req.body;
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(mediaServiceUrl + "/api/media/convert-wav", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          trackId: req.params.id,
+          type,
+          componentId,
+        }),
+      });
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get track WAV conversion status
+router.get(
+  "/:id/wav-status",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(
+        `${mediaServiceUrl}/api/media/wav-status/${req.params.id}`
+      );
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get component WAV conversion status
+router.get(
+  "/:id/component/:componentId/wav-status",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(
+        `${mediaServiceUrl}/api/media/component/${req.params.componentId}/wav-status`
+      );
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 export { router as trackRoutes };

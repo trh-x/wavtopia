@@ -1,25 +1,44 @@
 import Queue, { Job } from "bull";
 import { convertXMToWAV } from "../services/wav-converter";
 import { convertWAVToMP3 } from "../services/mp3-converter";
+import { convertWAVToFLAC, convertFLACToWAV } from "../services/flac-converter";
 import { generateWaveformData } from "../services/waveform";
 import {
-  PrismaService,
   StorageFile,
+  WavConversionStatus,
+  PrismaService,
   config,
-  deleteLocalFile,
 } from "@wavtopia/core-storage";
-import { uploadFile, deleteFile, getLocalFile } from "../services/storage";
+import {
+  uploadFile,
+  deleteFile,
+  getLocalFile,
+  getObject,
+} from "../services/storage";
 
 interface ConversionJob {
   trackId: string;
 }
 
+interface WavConversionJob {
+  trackId: string;
+  type: "full" | "component";
+  componentId?: string;
+}
+
 const prisma = new PrismaService(config.database).db;
 
-// Create a new queue
+// Create queues
 export const conversionQueue = new Queue<ConversionJob>("audio-conversion", {
   redis: config.redis,
 });
+
+export const wavConversionQueue = new Queue<WavConversionJob>(
+  "wav-conversion",
+  {
+    redis: config.redis,
+  }
+);
 
 // Process jobs
 conversionQueue.process(async (job: Job<ConversionJob>) => {
@@ -67,37 +86,43 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
 
     // Convert XM to WAV
     console.log("Converting XM to WAV...");
-    const { fullTrackBuffer, components } = await convertXMToWAV(
+    const { fullTrackWavBuffer, components } = await convertXMToWAV(
       originalFile.buffer
     );
     console.log("XM conversion complete. Components:", components.length);
 
     // Generate waveform data for full track
     console.log("Generating waveform data for full track...");
-    const waveformResult = await generateWaveformData(fullTrackBuffer);
+    const waveformResult = await generateWaveformData(fullTrackWavBuffer);
     console.log("Full track waveform data generated");
 
     // Convert full track to MP3
     console.log("Converting full track to MP3...");
-    const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackBuffer);
+    const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackWavBuffer);
     console.log("Full track MP3 conversion complete");
 
-    // Upload full track files
+    // Convert full track to FLAC
+    console.log("Converting full track to FLAC...");
+    const fullTrackFlacBuffer = await convertWAVToFLAC(fullTrackWavBuffer);
+    console.log("Full track FLAC conversion complete");
+
+    // Upload full track files, MP3 and FLAC. WAV is not uploaded, to save space.
+    // It can be converted from FLAC on demand.
     console.log("Uploading full track files...");
-    const [fullTrackUrl, fullTrackMp3Url] = await Promise.all([
-      uploadFile(
-        {
-          buffer: fullTrackBuffer,
-          originalname: `${originalName}_full.wav`,
-          mimetype: "audio/wav",
-        } as StorageFile,
-        "tracks/"
-      ),
+    const [fullTrackMp3Url, fullTrackFlacUrl] = await Promise.all([
       uploadFile(
         {
           buffer: fullTrackMp3Buffer,
           originalname: `${originalName}_full.mp3`,
           mimetype: "audio/mpeg",
+        } as StorageFile,
+        "tracks/"
+      ),
+      uploadFile(
+        {
+          buffer: fullTrackFlacBuffer,
+          originalname: `${originalName}_full.flac`,
+          mimetype: "audio/flac",
         } as StorageFile,
         "tracks/"
       ),
@@ -114,6 +139,7 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           }`
         );
         const mp3Buffer = await convertWAVToMP3(component.buffer);
+        const flacBuffer = await convertWAVToFLAC(component.buffer);
         const componentName = `${originalName}_${component.name.replace(
           /[^a-z0-9]/gi,
           "_"
@@ -122,20 +148,20 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         const waveformResult = await generateWaveformData(component.buffer);
         console.log(`Generated waveform data for component: ${component.name}`);
 
-        const [wavUrl, mp3Url] = await Promise.all([
-          uploadFile(
-            {
-              buffer: component.buffer,
-              originalname: `${componentName}.wav`,
-              mimetype: "audio/wav",
-            } as StorageFile,
-            "components/"
-          ),
+        const [mp3Url, flacUrl] = await Promise.all([
           uploadFile(
             {
               buffer: mp3Buffer,
               originalname: `${componentName}.mp3`,
               mimetype: "audio/mpeg",
+            } as StorageFile,
+            "components/"
+          ),
+          uploadFile(
+            {
+              buffer: flacBuffer,
+              originalname: `${componentName}.flac`,
+              mimetype: "audio/flac",
             } as StorageFile,
             "components/"
           ),
@@ -145,8 +171,8 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         return {
           name: component.name,
           type: component.type,
-          wavUrl,
           mp3Url,
+          flacUrl,
           waveformData: waveformResult.peaks,
           duration: waveformResult.duration,
         };
@@ -160,8 +186,8 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         where: { id: trackId },
         data: {
           originalUrl,
-          fullTrackUrl,
           fullTrackMp3Url,
+          fullTrackFlacUrl,
           waveformData: waveformResult.peaks,
           duration: waveformResult.duration,
           coverArt: coverArtUrl,
@@ -180,12 +206,12 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
       try {
         await Promise.all([
           deleteFile(originalUrl),
-          deleteFile(fullTrackUrl),
           deleteFile(fullTrackMp3Url),
+          deleteFile(fullTrackFlacUrl),
           ...(coverArtUrl ? [deleteFile(coverArtUrl)] : []),
           ...componentUploads.flatMap((comp) => [
-            deleteFile(comp.wavUrl),
             deleteFile(comp.mp3Url),
+            deleteFile(comp.flacUrl),
           ]),
         ]);
         console.log("Cleanup completed");
@@ -210,11 +236,166 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
   }
 });
 
+// Process WAV conversion jobs
+wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
+  console.log(
+    `Processing WAV conversion job ${job.id} for track: ${job.data.trackId}`
+  );
+
+  try {
+    const { trackId, type, componentId } = job.data;
+
+    // Get the track
+    const track = await prisma.track.findUnique({
+      where: { id: trackId },
+      include: { components: true },
+    });
+
+    if (!track) {
+      throw new Error(`Track not found: ${trackId}`);
+    }
+
+    if (type === "full") {
+      if (!track.fullTrackFlacUrl) {
+        throw new Error(`Track ${trackId} has no FLAC file URL`);
+      }
+
+      // Update conversion status to IN_PROGRESS for full track conversion
+      await prisma.track.update({
+        where: { id: trackId },
+        data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
+      });
+
+      // Download FLAC file from storage
+      const flacStream = await getObject(track.fullTrackFlacUrl);
+      const chunks: Buffer[] = [];
+      for await (const chunk of flacStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const flacBuffer = Buffer.concat(chunks);
+
+      // Convert to WAV
+      const wavBuffer = await convertFLACToWAV(flacBuffer);
+
+      // Upload WAV file
+      const wavUrl = await uploadFile(
+        {
+          buffer: wavBuffer,
+          originalname: `${track.title.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_"
+          )}_full.wav`,
+          mimetype: "audio/wav",
+        } as StorageFile,
+        "tracks/"
+      );
+
+      // Update track with WAV URL and status
+      await prisma.track.update({
+        where: { id: trackId },
+        data: {
+          fullTrackWavUrl: wavUrl,
+          wavConversionStatus: WavConversionStatus.COMPLETED,
+        },
+      });
+    } else if (type === "component" && componentId) {
+      const component = track.components.find((c) => c.id === componentId);
+      if (!component || !component.flacUrl) {
+        throw new Error(
+          `Component ${componentId} not found or has no FLAC file`
+        );
+      }
+
+      // Update conversion status to IN_PROGRESS for component conversion
+      await prisma.component.update({
+        where: { id: componentId },
+        data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
+      });
+
+      // Download FLAC file from storage
+      const flacStream = await getObject(component.flacUrl);
+      const chunks: Buffer[] = [];
+      for await (const chunk of flacStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const flacBuffer = Buffer.concat(chunks);
+
+      // Convert to WAV
+      const wavBuffer = await convertFLACToWAV(flacBuffer);
+
+      // Upload WAV file
+      const wavUrl = await uploadFile(
+        {
+          buffer: wavBuffer,
+          originalname: `${track.title.replace(
+            /[^a-zA-Z0-9._-]/g,
+            "_"
+          )}_${component.name.replace(/[^a-z0-9]/gi, "_")}.wav`,
+          mimetype: "audio/wav",
+        } as StorageFile,
+        "components/"
+      );
+
+      // Update component with WAV URL and status
+      await prisma.component.update({
+        where: { id: componentId },
+        data: {
+          wavUrl,
+          wavConversionStatus: WavConversionStatus.COMPLETED,
+        },
+      });
+    }
+
+    console.log(`WAV conversion completed for track ${trackId}`);
+  } catch (error) {
+    console.error(`Error processing WAV conversion job ${job.id}:`, error);
+
+    // Only update conversion status to FAILED for full track conversions
+    if (job.data.type === "full") {
+      await prisma.track.update({
+        where: { id: job.data.trackId },
+        data: { wavConversionStatus: WavConversionStatus.FAILED },
+      });
+    } else if (job.data.type === "component" && job.data.componentId) {
+      await prisma.component.update({
+        where: { id: job.data.componentId },
+        data: { wavConversionStatus: WavConversionStatus.FAILED },
+      });
+    }
+
+    throw error;
+  }
+});
+
 // Add job to queue
 export const queueConversion = async (trackId: string) => {
   const job = await conversionQueue.add(
     {
       trackId,
+    },
+    {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+    }
+  );
+
+  return job.id;
+};
+
+// Add WAV conversion job to queue
+export const queueWavConversion = async (
+  trackId: string,
+  type: "full" | "component",
+  componentId?: string
+) => {
+  const job = await wavConversionQueue.add(
+    {
+      trackId,
+      type,
+      componentId,
     },
     {
       attempts: 3,

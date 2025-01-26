@@ -33,7 +33,7 @@ export function ComponentsSection({
           <TrackComponent
             key={component.id}
             component={component}
-            trackId={track.id}
+            track={track}
             isGridView={viewMode === "grid"}
           />
         ))}

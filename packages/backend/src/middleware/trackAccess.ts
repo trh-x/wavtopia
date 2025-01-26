@@ -72,7 +72,7 @@ export function requireTrackAccess(options: { allowPublic?: boolean } = {}) {
           artist: track.artist,
           coverArt: track.coverArt,
           isPublic: track.isPublic,
-          fullTrackUrl: track.fullTrackUrl,
+          fullTrackWavUrl: track.fullTrackWavUrl,
           fullTrackMp3Url: track.fullTrackMp3Url,
           waveformData: track.waveformData,
           components: track.components,

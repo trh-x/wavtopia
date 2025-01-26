@@ -19,6 +19,7 @@ import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 import Notifications from "@/pages/Notifications";
 import { BulkUploadTrack } from "./pages/BulkUploadTrack";
 import { useInitializeFeatureFlags } from "./hooks/useFeatureFlags";
+import { NotificationsProvider } from "./contexts/NotificationsContext";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -95,7 +96,9 @@ export default function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <NotificationsProvider>
+          <AppRoutes />
+        </NotificationsProvider>
       </AuthProvider>
     </Router>
   );

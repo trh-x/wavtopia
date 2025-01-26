@@ -26,6 +26,7 @@ export function WaveformDisplay({
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -99,13 +100,17 @@ export function WaveformDisplay({
     );
   };
 
-  // Memoize the initial configuration to prevent unnecessary recreations
-  const initialConfig = useMemo(
-    () => {
-      const media = new Audio(audioUrl);
-      media.preload = duration ? "none" : "metadata";
+  // Initialize WaveSurfer instance
+  useEffect(() => {
+    if (!containerRef.current || !waveformData?.length) return;
 
-      return {
+    // Only create if we don't have an instance
+    if (!wavesurferRef.current) {
+      audioRef.current = new Audio(audioUrl);
+      audioRef.current.preload = isFullTrack ? "metadata" : "none";
+      audioRef.current.src = audioUrl;
+
+      const params = {
         container: containerRef.current,
         height,
         waveColor: color,
@@ -121,23 +126,10 @@ export function WaveformDisplay({
         peaks: [new Float32Array(waveformData)],
         duration,
         autoplay: false,
-        media,
+        media: audioRef.current,
       };
-    },
-    // Only include dependencies that should cause a full recreation
-    [audioUrl, duration, waveformData]
-  );
 
-  // Initialize WaveSurfer instance
-  useEffect(() => {
-    if (!containerRef.current || !waveformData?.length) return;
-
-    // Only create if we don't have an instance
-    if (!wavesurferRef.current) {
-      const wavesurfer = WaveSurfer.create({
-        ...initialConfig,
-        container: containerRef.current, // Need to set this here as it might not be available during useMemo
-      });
+      const wavesurfer = WaveSurfer.create(params);
 
       wavesurfer.on("loading", () => {
         setIsLoading(true);
@@ -169,21 +161,28 @@ export function WaveformDisplay({
       });
 
       wavesurferRef.current = wavesurfer;
-    }
 
-    // Cleanup on unmount
-    return () => {
-      const wavesurfer = wavesurferRef.current;
-      if (wavesurfer) {
-        // Only cleanup if we're actually unmounting, not just re-rendering
-        if (!document.body.contains(containerRef.current)) {
-          unregisterWaveform(wavesurfer);
-          wavesurfer.destroy();
-          wavesurferRef.current = null;
+      return () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+          audioRef.current.load();
         }
-      }
-    };
-  }, [initialConfig]);
+
+        unregisterWaveform(wavesurfer);
+        wavesurfer.destroy();
+        wavesurferRef.current = null;
+      };
+    }
+  }, []);
+
+  // Update Audio element when props change
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.preload = isFullTrack ? "metadata" : "none";
+      audioRef.current.src = audioUrl;
+    }
+  }, [audioUrl, isFullTrack]);
 
   // Update WaveSurfer options when props change
   useEffect(() => {
