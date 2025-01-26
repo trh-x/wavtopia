@@ -5,20 +5,44 @@ import { useWavConversion } from "../../hooks/useWavConversion";
 interface DownloadLinkProps {
   href: string;
   small?: boolean;
+  children: React.ReactNode;
+}
+
+interface DownloadLinkWavProps {
+  href: string;
+  small?: boolean;
   trackId: string;
   type: "full" | "component";
   componentId?: string;
   children: React.ReactNode;
 }
 
-export function DownloadLink({
+export function DownloadLink({ href, small, children }: DownloadLinkProps) {
+  const { appendTokenToUrl } = useAuthToken();
+  const onClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.location.href = appendTokenToUrl(href);
+  };
+
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className={small ? styles.button.small : styles.button.inactive}
+    >
+      {children}
+    </a>
+  );
+}
+
+export function DownloadLinkWav({
   href,
   small,
   trackId,
   type,
   componentId,
   children,
-}: DownloadLinkProps) {
+}: DownloadLinkWavProps) {
   const { appendTokenToUrl } = useAuthToken();
   const { status, isConverting, startConversion } = useWavConversion({
     trackId,
@@ -26,8 +50,7 @@ export function DownloadLink({
     componentId,
   });
 
-  const isWav = href.endsWith(".wav");
-  const showConversionIcon = isWav && status !== "COMPLETED";
+  const showConversionIcon = status !== "COMPLETED";
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -101,7 +124,7 @@ export function ComponentDownloadButtons({
 }) {
   return (
     <div className="space-x-2">
-      <DownloadLink
+      <DownloadLinkWav
         href={`/api/track/${trackId}/component/${componentId}.wav`}
         small
         trackId={trackId}
@@ -109,22 +132,16 @@ export function ComponentDownloadButtons({
         componentId={componentId}
       >
         WAV
-      </DownloadLink>
+      </DownloadLinkWav>
       <DownloadLink
         href={`/api/track/${trackId}/component/${componentId}.mp3`}
         small
-        trackId={trackId}
-        type="component"
-        componentId={componentId}
       >
         MP3
       </DownloadLink>
       <DownloadLink
         href={`/api/track/${trackId}/component/${componentId}.flac`}
         small
-        trackId={trackId}
-        type="component"
-        componentId={componentId}
       >
         FLAC
       </DownloadLink>

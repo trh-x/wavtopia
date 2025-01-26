@@ -1,6 +1,6 @@
 import { Track } from "@/types";
 import { SyncedWaveform } from "../waveform/SyncedWaveform";
-import { DownloadLink } from "./DownloadLink";
+import { DownloadLink, DownloadLinkWav } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 import { TrackWaveformPlaceholder } from "../track-list/TrackList";
@@ -26,36 +26,22 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         )}
       </div>
       <div className="mt-4 flex flex-wrap gap-4">
-        <DownloadLink
-          href={`/api/track/${track.id}/original`}
+        <DownloadLink href={`/api/track/${track.id}/original`}>
+          Download Original {track.originalFormat.toUpperCase()} File
+        </DownloadLink>
+        <DownloadLinkWav
+          href={`/api/track/${track.id}/full.wav`}
           trackId={track.id}
           type="full"
         >
-          Download Original {track.originalFormat.toUpperCase()} File
+          WAV
+        </DownloadLinkWav>
+        <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
+          MP3
         </DownloadLink>
-        <div className="flex space-x-4">
-          <DownloadLink
-            href={`/api/track/${track.id}/full.wav`}
-            trackId={track.id}
-            type="full"
-          >
-            WAV
-          </DownloadLink>
-          <DownloadLink
-            href={`/api/track/${track.id}/full.mp3`}
-            trackId={track.id}
-            type="full"
-          >
-            MP3
-          </DownloadLink>
-          <DownloadLink
-            href={`/api/track/${track.id}/full.flac`}
-            trackId={track.id}
-            type="full"
-          >
-            FLAC
-          </DownloadLink>
-        </div>
+        <DownloadLink href={`/api/track/${track.id}/full.flac`}>
+          FLAC
+        </DownloadLink>
       </div>
     </div>
   );
