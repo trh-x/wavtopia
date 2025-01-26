@@ -35,6 +35,9 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
           MP3
         </DownloadLink>
+        <DownloadLink href={`/api/track/${track.id}/full.flac`}>
+          FLAC
+        </DownloadLink>
       </div>
     </div>
   );

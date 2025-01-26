@@ -56,6 +56,12 @@ export function ComponentDownloadButtons({
       >
         MP3
       </DownloadLink>
+      <DownloadLink
+        href={`/api/track/${trackId}/component/${componentId}.flac`}
+        small
+      >
+        FLAC
+      </DownloadLink>
     </div>
   );
 }

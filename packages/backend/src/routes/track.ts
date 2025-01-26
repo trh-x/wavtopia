@@ -211,7 +211,17 @@ router.get(
       }
 
       const format = req.params.format.toLowerCase();
-      const filePath = format === "mp3" ? component.mp3Url : component.wavUrl;
+
+      let filePath: string;
+      if (format === "mp3") {
+        filePath = component.mp3Url;
+      } else if (format === "wav") {
+        filePath = component.wavUrl;
+      } else if (format === "flac") {
+        filePath = component.flacUrl;
+      } else {
+        throw new AppError(400, "Invalid format");
+      }
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
@@ -235,8 +245,17 @@ router.get(
     try {
       const track = (req as any).track; // TODO: Fix this `any`
       const format = req.params.format.toLowerCase();
-      const filePath =
-        format === "mp3" ? track.fullTrackMp3Url : track.fullTrackUrl;
+
+      let filePath: string;
+      if (format === "mp3") {
+        filePath = track.fullTrackMp3Url;
+      } else if (format === "wav") {
+        filePath = track.fullTrackUrl;
+      } else if (format === "flac") {
+        filePath = track.fullTrackFlacUrl;
+      } else {
+        throw new AppError(400, "Invalid format");
+      }
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
