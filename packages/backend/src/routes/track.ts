@@ -257,18 +257,20 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
-      // Stream the file directly from MinIO
-      const fileStream = await getObject(filePath);
+      // Set basic headers
       res.setHeader(
         "Content-Type",
         format === "mp3" ? "audio/mpeg" : "audio/wav"
       );
-      res.setHeader("Transfer-Encoding", "chunked");
+      res.setHeader("Accept-Ranges", "bytes");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${track.title}.${format}"`
       );
+
+      // Stream the file
+      const fileStream = await getObject(filePath);
 
       // Handle errors in the stream
       fileStream.on("error", (err) => {
