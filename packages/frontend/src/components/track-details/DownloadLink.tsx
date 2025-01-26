@@ -134,16 +134,16 @@ export function ComponentDownloadButtons({
         WAV
       </DownloadLinkWav>
       <DownloadLink
-        href={`/api/track/${trackId}/component/${componentId}.mp3`}
-        small
-      >
-        MP3
-      </DownloadLink>
-      <DownloadLink
         href={`/api/track/${trackId}/component/${componentId}.flac`}
         small
       >
         FLAC
+      </DownloadLink>
+      <DownloadLink
+        href={`/api/track/${trackId}/component/${componentId}.mp3`}
+        small
+      >
+        MP3
       </DownloadLink>
     </div>
   );

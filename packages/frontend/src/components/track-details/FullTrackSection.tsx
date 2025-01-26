@@ -5,6 +5,23 @@ import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 import { TrackWaveformPlaceholder } from "../track-list/TrackList";
 
+interface WavDownloadButtonProps {
+  track: Track;
+}
+
+function WavDownloadButton({ track }: WavDownloadButtonProps) {
+  const downloadProps = {
+    href: `/api/track/${track.id}/full.wav`,
+    children: "WAV",
+  };
+
+  if (track.wavConversionStatus === "COMPLETED") {
+    return <DownloadLink {...downloadProps} />;
+  }
+
+  return <DownloadLinkWav {...downloadProps} trackId={track.id} type="full" />;
+}
+
 interface FullTrackSectionProps {
   track: Track;
 }
@@ -29,18 +46,12 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         <DownloadLink href={`/api/track/${track.id}/original`}>
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
-        <DownloadLinkWav
-          href={`/api/track/${track.id}/full.wav`}
-          trackId={track.id}
-          type="full"
-        >
-          WAV
-        </DownloadLinkWav>
-        <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
-          MP3
-        </DownloadLink>
+        <WavDownloadButton track={track} />
         <DownloadLink href={`/api/track/${track.id}/full.flac`}>
           FLAC
+        </DownloadLink>
+        <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
+          MP3
         </DownloadLink>
       </div>
     </div>
