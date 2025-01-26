@@ -255,12 +255,6 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
   try {
     const { trackId, type, componentId } = job.data;
 
-    // Update conversion status to IN_PROGRESS
-    await prisma.track.update({
-      where: { id: trackId },
-      data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
-    });
-
     // Get the track
     const track = await prisma.track.findUnique({
       where: { id: trackId },
@@ -275,6 +269,12 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       if (!track.fullTrackFlacUrl) {
         throw new Error(`Track ${trackId} has no FLAC file URL`);
       }
+
+      // Update conversion status to IN_PROGRESS for full track conversion
+      await prisma.track.update({
+        where: { id: trackId },
+        data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
+      });
 
       // Download FLAC file from storage
       const flacStream = await getObject(track.fullTrackFlacUrl);
@@ -316,6 +316,12 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         );
       }
 
+      // Update conversion status to IN_PROGRESS for component conversion
+      await prisma.component.update({
+        where: { id: componentId },
+        data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
+      });
+
       // Download FLAC file from storage
       const flacStream = await getObject(component.flacUrl);
       const chunks: Buffer[] = [];
@@ -340,10 +346,13 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         "components/"
       );
 
-      // Update component with WAV URL
+      // Update component with WAV URL and status
       await prisma.component.update({
         where: { id: componentId },
-        data: { wavUrl },
+        data: {
+          wavUrl,
+          wavConversionStatus: WavConversionStatus.COMPLETED,
+        },
       });
     }
 
@@ -351,11 +360,18 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
   } catch (error) {
     console.error(`Error processing WAV conversion job ${job.id}:`, error);
 
-    // Update conversion status to FAILED
-    await prisma.track.update({
-      where: { id: job.data.trackId },
-      data: { wavConversionStatus: WavConversionStatus.FAILED },
-    });
+    // Only update conversion status to FAILED for full track conversions
+    if (job.data.type === "full") {
+      await prisma.track.update({
+        where: { id: job.data.trackId },
+        data: { wavConversionStatus: WavConversionStatus.FAILED },
+      });
+    } else if (job.data.type === "component" && job.data.componentId) {
+      await prisma.component.update({
+        where: { id: job.data.componentId },
+        data: { wavConversionStatus: WavConversionStatus.FAILED },
+      });
+    }
 
     throw error;
   }

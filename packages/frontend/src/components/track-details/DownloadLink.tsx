@@ -30,9 +30,12 @@ export function DownloadLink({
   const showConversionIcon = isWav && status !== "COMPLETED";
 
   const handleClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+
     if (showConversionIcon) {
-      e.preventDefault();
       startConversion();
+    } else {
+      window.location.href = appendTokenToUrl(href);
     }
   };
 
