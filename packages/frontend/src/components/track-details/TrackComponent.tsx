@@ -6,13 +6,13 @@ import { styles } from "../../styles/common";
 
 interface TrackComponentProps {
   component: Track["components"][0];
-  trackId: string;
+  track: Track;
   isGridView: boolean;
 }
 
 export function TrackComponent({
   component,
-  trackId,
+  track,
   isGridView,
 }: TrackComponentProps) {
   return (
@@ -30,10 +30,7 @@ export function TrackComponent({
           </h3>
           {isGridView && <p className={styles.text.label}>{component.type}</p>}
         </div>
-        <ComponentDownloadButtons
-          trackId={trackId}
-          componentId={component.id}
-        />
+        <ComponentDownloadButtons track={track} componentId={component.id} />
       </div>
       <SyncedWaveform
         waveformData={component.waveformData}
@@ -42,7 +39,7 @@ export function TrackComponent({
         color="#4b5563"
         progressColor="#6366f1"
         audioUrl={getAudioUrl(
-          `/api/track/${trackId}/component/${component.id}.mp3`
+          `/api/track/${track.id}/component/${component.id}.mp3`
         )}
       />
     </div>
