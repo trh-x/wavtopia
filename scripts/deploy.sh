@@ -247,7 +247,8 @@ deploy_prod() {
     
     # Build workspace first since other images depend on it
     build_workspace
-    
+    git submodule update --remote # Pull MilkyTracker changes into this repo
+
     # Build and push service images
     docker compose build media backend
     docker tag wavtopia-media "${REGISTRY}/wavtopia-media:latest"
@@ -316,6 +317,7 @@ case $COMMAND in
         ;;
     "build-media")
         build_workspace
+        git submodule update --remote # Pull MilkyTracker changes into this repo
         docker compose build media
         ;;
     "build-backend")
@@ -324,6 +326,7 @@ case $COMMAND in
         ;;
     "build-services")
         build_workspace
+        git submodule update --remote # Pull MilkyTracker changes into this repo
         docker compose build media backend
         ;;
     "up-dev")
@@ -331,6 +334,7 @@ case $COMMAND in
         ;;
     "up-prod")
         build_workspace
+        git submodule update --remote # Pull MilkyTracker changes into this repo
         docker compose build media backend
         docker compose --profile production up -d
         ;;
