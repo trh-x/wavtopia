@@ -49,6 +49,10 @@ git clone --recursive https://github.com/your-repo/wavtopia.git
 
 # If you've already cloned the repository:
 git submodule update --init --recursive
+
+# Pulling MilkyTracker changes into this repo:
+git submodule update --remote
+git add packages/media/deps/milkytracker && git commit
 ```
 
 The media service's Dockerfile will automatically build and install the `export-to-wav` utility during container build.
