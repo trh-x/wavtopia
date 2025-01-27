@@ -89,15 +89,15 @@ services:
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
     image: ${REGISTRY_PREFIX:-}wavtopia-backend
-    environment:
-      - NODE_ENV=production
-      - DEBUG=*
-      - LOG_LEVEL=debug
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    # environment:
+    #   - NODE_ENV=production
+    #   - DEBUG=*
+    #   - LOG_LEVEL=debug
+    # logging:
+    #   driver: "json-file"
+    #   options:
+    #     max-size: "10m"
+    #     max-file: "3"
     ports:
       - "3002:3002"
     volumes:

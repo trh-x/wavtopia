@@ -125,10 +125,10 @@ export class StorageService {
       let bytesRead = 0;
       stream.on("data", (chunk) => {
         bytesRead += chunk.length;
-        if (bytesRead % (1024 * 1024) === 0) {
-          // Log every MB
-          console.log(`[Storage] Bytes read from MinIO: ${bytesRead}`);
-        }
+        // if (bytesRead % (1024 * 1024) === 0) {
+        //   // Log every MB
+        //   console.log(`[Storage] Bytes read from MinIO: ${bytesRead}`);
+        // }
       });
 
       stream.on("end", () => {
@@ -139,12 +139,12 @@ export class StorageService {
 
       // Set up error handling on the stream
       stream.on("error", (err) => {
-        console.error("[Storage] Error in MinIO stream:", err);
+        console.error("Error in MinIO stream:", err);
       });
 
       return stream;
     } catch (error) {
-      console.error("[Storage] Failed to get object from MinIO:", error);
+      console.error("Failed to get object from MinIO:", error);
       throw error;
     }
   }

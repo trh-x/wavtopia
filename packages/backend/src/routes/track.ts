@@ -48,13 +48,14 @@ const authenticateTrackAccess: RequestHandler = async (
   try {
     // Get track ID from URL path
     const trackId = req.params.id;
-    console.log(req.path, "Track ID:", trackId);
+    // console.log(req.path, "Track ID:", trackId);
     if (!trackId) {
-      console.log(req.path, "Track ID is required");
+      // console.log(req.path, "Track ID is required");
       return next(new AppError(400, "Track ID is required"));
     }
 
-    console.log(req.path, "Authenticating track access for track:", trackId);
+    // console.log(req.path, "Authenticating track access for track:", trackId);
+    console.log("Authenticating track access for track:", trackId);
 
     // First check if track is public
     const track = await prisma.track.findUnique({
@@ -63,7 +64,7 @@ const authenticateTrackAccess: RequestHandler = async (
     });
 
     if (!track) {
-      console.log(req.path, "Track not found");
+      // console.log(req.path, "Track not found");
       return next(new AppError(404, "Track not found"));
     }
 
@@ -71,11 +72,11 @@ const authenticateTrackAccess: RequestHandler = async (
       (req.query.token as string) || req.headers.authorization?.split(" ")[1];
 
     if (!track.isPublic && !token) {
-      console.log(req.path, "No token provided", {
-        isPublic: track.isPublic,
-        trackId,
-        token,
-      });
+      // console.log(req.path, "No token provided", {
+      //   isPublic: track.isPublic,
+      //   trackId,
+      //   token,
+      // });
       return next(new AppError(401, "No token provided"));
     }
 
@@ -90,7 +91,7 @@ const authenticateTrackAccess: RequestHandler = async (
           track.sharedWith.some((share) => share.userId === decoded.userId);
 
         if (!hasAccess) {
-          console.log(req.path, "You don't have access to this track");
+          // console.log(req.path, "You don't have access to this track");
           return next(new AppError(403, "You don't have access to this track"));
         }
 
@@ -132,7 +133,7 @@ const authenticateTrackAccess: RequestHandler = async (
     });
 
     if (!reqTrack) {
-      console.log(req.path, "Track not found");
+      // console.log(req.path, "Track not found");
       return next(new AppError(404, "Track not found"));
     }
 
@@ -253,22 +254,22 @@ router.get(
   "/:id/full.:format",
   authenticateTrackAccess,
   async (req: Request, res: Response, next) => {
-    console.log("DEBUG: Full track route hit");
+    // console.log("DEBUG: Full track route hit");
     try {
-      console.log(
-        `[Full Track Request] ID: ${req.params.id}, Format: ${req.params.format}`
-      );
-      console.log(`[Full Track Request] Headers:`, req.headers);
+      // console.log(
+      //   `[Full Track Request] ID: ${req.params.id}, Format: ${req.params.format}`
+      // );
+      // console.log(`[Full Track Request] Headers:`, req.headers);
 
       const track = (req as any).track; // TODO: Fix this `any`
-      console.log(`[Full Track] Track data:`, {
-        id: track.id,
-        title: track.title,
-        format: req.params.format,
-        mp3Url: track.fullTrackMp3Url,
-        wavUrl: track.fullTrackWavUrl,
-        flacUrl: track.fullTrackFlacUrl,
-      });
+      // console.log(`[Full Track] Track data:`, {
+      //   id: track.id,
+      //   title: track.title,
+      //   format: req.params.format,
+      //   mp3Url: track.fullTrackMp3Url,
+      //   wavUrl: track.fullTrackWavUrl,
+      //   flacUrl: track.fullTrackFlacUrl,
+      // });
 
       const format = req.params.format.toLowerCase();
 
@@ -283,7 +284,7 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
-      console.log(`[Full Track] Using file path:`, filePath);
+      // console.log(`[Full Track] Using file path:`, filePath);
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
@@ -295,7 +296,7 @@ router.get(
         "Cache-Control": "no-cache",
         "Content-Disposition": `attachment; filename="${track.title}.${format}"`,
       };
-      console.log(`[Full Track] Setting response headers:`, responseHeaders);
+      // console.log(`[Full Track] Setting response headers:`, responseHeaders);
 
       res.setHeader("Content-Type", responseHeaders["Content-Type"]);
       res.setHeader("Transfer-Encoding", responseHeaders["Transfer-Encoding"]);
