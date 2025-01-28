@@ -248,12 +248,9 @@ deploy_prod() {
     # Build workspace first since other images depend on it
     build_workspace
 
-    # Get and export MilkyTracker commit hash
-    export MILKYTRACKER_COMMIT=$(./scripts/get-milkytracker-commit.sh)
-    echo "Building with MilkyTracker commit: ${MILKYTRACKER_COMMIT}"
-
     # Build and push services
-    docker compose build media backend
+    build_media
+    docker compose build backend
     
     # Debug: Show MilkyTracker commit label
     echo "Checking MilkyTracker commit in image..."
@@ -295,6 +292,21 @@ deploy_prod() {
     echo "Services deployed! Don't forget to update the frontend too if there are any changes."
 }
 
+# Function to build media service (used by other build commands)
+build_media() {
+    # Get and export MilkyTracker commit hash
+    local commit_hash=$(./scripts/get-milkytracker-commit.sh)
+    echo "Building media service with MilkyTracker commit: ${commit_hash}"
+    
+    # Build with explicit build arg
+    docker compose build --build-arg MILKYTRACKER_COMMIT="${commit_hash}" media
+    
+    # Verify the label was set
+    echo "Verifying build..."
+    echo "Expected commit: ${commit_hash}"
+    echo "Actual label in image: $(docker inspect wavtopia-media --format '{{json .Config.Labels}}')"
+}
+
 # Function to build workspace (used by other build commands)
 build_workspace() {
     docker compose --profile build build workspace
@@ -325,7 +337,7 @@ case $COMMAND in
         ;;
     "build-media")
         build_workspace
-        docker compose build media
+        build_media
         ;;
     "build-backend")
         build_workspace
@@ -333,14 +345,16 @@ case $COMMAND in
         ;;
     "build-services")
         build_workspace
-        docker compose build media backend
+        build_media
+        docker compose build backend
         ;;
     "up-dev")
         docker compose --profile development up -d
         ;;
     "up-prod")
         build_workspace
-        docker compose build media backend
+        build_media
+        docker compose build backend
         docker compose --profile production up -d
         ;;
     "down")
