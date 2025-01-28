@@ -11,6 +11,9 @@ FROM node:18-slim
 # Add build arg for MilkyTracker version
 ARG MILKYTRACKER_COMMIT
 
+# Add label for information purposes (not for cache invalidation)
+LABEL org.opencontainers.image.revision.milkytracker="${MILKYTRACKER_COMMIT:-unknown}"
+
 # Install FFmpeg and build dependencies
 RUN apt-get update && \
     apt-get install -y \
@@ -49,9 +52,6 @@ RUN mkdir -p /tmp/uploads /tmp/converted && \
 
 # Copy env file for the media service
 COPY packages/media/.env.docker .env
-
-# Add label for information purposes (not for cache invalidation)
-LABEL org.opencontainers.image.revision.milkytracker="${MILKYTRACKER_COMMIT:-unknown}"
 
 ENV NODE_ENV=production
 

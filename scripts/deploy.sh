@@ -298,13 +298,17 @@ build_media() {
     local commit_hash=$(./scripts/get-milkytracker-commit.sh)
     echo "Building media service with MilkyTracker commit: ${commit_hash}"
     
-    # Build with explicit build arg
-    docker compose build --build-arg MILKYTRACKER_COMMIT="${commit_hash}" media
+    # Debug: Show build command that will be run
+    echo "Running build command with BuildKit enabled"
     
-    # Verify the label was set
+    # Build with explicit build arg and BuildKit enabled
+    DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build --build-arg MILKYTRACKER_COMMIT="${commit_hash}" media
+    
+    # Debug: Show more image details
     echo "Verifying build..."
     echo "Expected commit: ${commit_hash}"
-    echo "Actual label in image: $(docker inspect wavtopia-media --format '{{json .Config.Labels}}')"
+    echo "Full image inspection:"
+    docker inspect wavtopia-media
 }
 
 # Function to build workspace (used by other build commands)
