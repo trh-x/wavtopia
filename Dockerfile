@@ -7,7 +7,6 @@ SHELL ["/bin/sh", "-c"]
 RUN apt-get update && \
     apt-get install -y \
     openssl \
-    lame \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
