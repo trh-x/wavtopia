@@ -220,28 +220,28 @@ setup_remote() {
     fi
 }
 
-# Function to build media service (used by other build commands)
-build_media() {
+# Function to build a service and capture its image ID
+build_service() {
+    local service_name="$1"
+    
     # Build and capture the image ID
-    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build media 2>&1 | while read -r line; do
+    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build "$service_name" 2>&1 | while read -r line; do
         echo "$line"
         if [[ $line =~ "writing image sha256:" ]]; then
-            media_image_id=$(echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
-            echo "Media image ID: ${media_image_id}"
+            new_docker_image_id=$(echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
+            echo "${service_name} image ID: ${new_docker_image_id}"
         fi
     done
 }
 
+# Function to build media service (used by other build commands)
+build_media() {
+    build_service "media"
+}
+
 # Function to build backend service
 build_backend() {
-    # Build and capture the image ID
-    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build backend 2>&1 | while read -r line; do
-        echo "$line"
-        if [[ $line =~ "writing image sha256:" ]]; then
-            backend_image_id=$(echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
-            echo "Backend image ID: ${backend_image_id}"
-        fi
-    done
+    build_service "backend"
 }
 
 # Function to build workspace (used by other build commands)
@@ -287,9 +287,13 @@ deploy_prod() {
     build_media
     echo "Media build completed"
 
+    local media_image_id="$new_docker_image_id"
+
     echo "About to start backend build..."
     build_backend
     echo "Backend build completed"
+
+    local backend_image_id="$new_docker_image_id"
 
     # Tag and push using image IDs to ensure we use the correct images
     echo "==> Tagging images..."
