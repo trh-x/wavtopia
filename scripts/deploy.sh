@@ -248,8 +248,17 @@ deploy_prod() {
     # Build workspace first since other images depend on it
     build_workspace
 
-    # Build and push service images
+    # Get and export MilkyTracker commit hash
+    export MILKYTRACKER_COMMIT=$(./scripts/get-milkytracker-commit.sh)
+    echo "Building with MilkyTracker commit: ${MILKYTRACKER_COMMIT}"
+
+    # Build and push services
     docker compose build media backend
+    
+    # Debug: Show MilkyTracker commit label
+    echo "Checking MilkyTracker commit in image..."
+    echo "Labels in image: $(docker inspect wavtopia-media --format '{{json .Config.Labels}}')"
+    
     docker tag wavtopia-media "${REGISTRY}/wavtopia-media:latest"
     docker tag wavtopia-backend "${REGISTRY}/wavtopia-backend:latest"
     docker push "${REGISTRY}/wavtopia-media:latest"

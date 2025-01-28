@@ -62,7 +62,7 @@ services:
       dockerfile: packages/media/Dockerfile
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
-        - MILKYTRACKER_COMMIT=${MILKYTRACKER_COMMIT:-$(./scripts/get-milkytracker-commit.sh)}
+        - MILKYTRACKER_COMMIT=${MILKYTRACKER_COMMIT:-unknown}
     image: ${REGISTRY_PREFIX:-}wavtopia-media
     ports:
       - "3001:3001"

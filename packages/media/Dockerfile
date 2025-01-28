@@ -8,10 +8,12 @@ RUN pnpm --filter @wavtopia/media --prod deploy media-service
 # Create the final image
 FROM node:18-slim
 
-# Add build arg for MilkyTracker version
+# Add build arg for MilkyTracker version - needs to be redeclared after FROM
 ARG MILKYTRACKER_COMMIT
+# Debug output for MilkyTracker commit
+RUN echo "Building with MilkyTracker commit: ${MILKYTRACKER_COMMIT:-unknown}"
 # Use it in a label to force cache invalidation when it changes
-LABEL milkytracker.commit=$MILKYTRACKER_COMMIT
+LABEL org.opencontainers.image.revision.milkytracker="${MILKYTRACKER_COMMIT:-unknown}"
 
 # Install FFmpeg and build dependencies
 RUN apt-get update && \
