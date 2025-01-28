@@ -222,18 +222,20 @@ setup_remote() {
 
 # Function to build media service (used by other build commands)
 build_media() {
-    # Get and export MilkyTracker commit hash
-    local commit_hash=$(./scripts/get-milkytracker-commit.sh)
-    echo "Building media service with MilkyTracker commit: ${commit_hash}"
-    
-    # Build with explicit build arg and capture the image ID
-    DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build --build-arg MILKYTRACKER_COMMIT="${commit_hash}" media 2>&1 | tee >(grep "writing image sha256:" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
+    # Build and capture the image ID
+    local build_output=$(DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build media 2>&1)
+    echo "$build_output"
+    media_image_id=$(echo "$build_output" | grep "writing image sha256:" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
+    echo "Media image ID: ${media_image_id}"
 }
 
 # Function to build backend service
 build_backend() {
     # Build and capture the image ID
-    DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build backend 2>&1 | tee >(grep "writing image sha256:" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
+    local build_output=$(DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build backend 2>&1)
+    echo "$build_output"
+    backend_image_id=$(echo "$build_output" | grep "writing image sha256:" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
+    echo "Backend image ID: ${backend_image_id}"
 }
 
 # Function to deploy to production
@@ -265,10 +267,11 @@ deploy_prod() {
     build_workspace
 
     # Build and push services
-    local media_image_id=$(build_media | tail -n1)
-    local backend_image_id=$(build_backend | tail -n1)
+    build_media
+    build_backend
     
     # Tag and push using image IDs to ensure we use the correct images
+    echo "==> Tagging images..."
     docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
     docker tag "${backend_image_id}" "${REGISTRY}/wavtopia-backend:latest"
     docker push "${REGISTRY}/wavtopia-media:latest"
