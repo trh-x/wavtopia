@@ -1,6 +1,11 @@
-# Exclude .git directories and files everywhere
-.git
-**/.git
-**/.gitignore
-**/.gitmodules
-**/.gitattributes
+# Exclude everything by default
+*
+
+# Allow the following directories and files
+!packages/**
+!scripts/**
+!package.json
+!pnpm-*.yaml
+
+# Exclude .git directories and files in packages
+packages/**/.git
