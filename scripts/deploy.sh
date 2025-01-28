@@ -249,15 +249,20 @@ deploy_prod() {
     build_workspace
 
     # Build and push services
-    build_media
+    local media_image_id=$(build_media)
+    echo "Built media image: ${media_image_id}"
+    
     docker compose build backend
+    local backend_image_id=$(docker images -q localhost:5050/wavtopia-backend:latest)
+    echo "Built backend image: ${backend_image_id}"
     
     # Debug: Show MilkyTracker commit label
     echo "Checking MilkyTracker commit in image..."
-    echo "Labels in image: $(docker inspect wavtopia-media --format '{{json .Config.Labels}}')"
+    echo "Labels in image: $(docker inspect ${media_image_id} --format '{{json .Config.Labels}}')"
     
-    docker tag wavtopia-media "${REGISTRY}/wavtopia-media:latest"
-    docker tag wavtopia-backend "${REGISTRY}/wavtopia-backend:latest"
+    # Tag and push using image IDs to ensure we use the correct images
+    docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
+    docker tag "${backend_image_id}" "${REGISTRY}/wavtopia-backend:latest"
     docker push "${REGISTRY}/wavtopia-media:latest"
     docker push "${REGISTRY}/wavtopia-backend:latest"
 
@@ -301,14 +306,42 @@ build_media() {
     # Debug: Show build command that will be run
     echo "Running build command with BuildKit enabled"
     
-    # Build with explicit build arg and BuildKit enabled
-    DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build --build-arg MILKYTRACKER_COMMIT="${commit_hash}" media
+    # Build and capture the full output
+    local build_output
+    build_output=$(DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build --build-arg MILKYTRACKER_COMMIT="${commit_hash}" media 2>&1)
+    echo "${build_output}"
+    
+    # Extract the image ID using sed to match the exact pattern
+    # Matches exactly 64 hex characters after "writing image sha256:"
+    local image_id
+    image_id=$(echo "${build_output}" | grep "writing image sha256:" | sed -n 's/.*writing image sha256:\([a-f0-9]\{64\}\).*/\1/p' | tail -n1)
+    
+    if [ -z "${image_id}" ]; then
+        echo "Failed to get image ID from build output"
+        exit 1
+    fi
+    
+    # Verify it's a valid SHA-256 (64 characters)
+    if ! [[ "${image_id}" =~ ^[a-f0-9]{64}$ ]]; then
+        echo "Invalid image ID format: ${image_id}"
+        exit 1
+    fi
+    
+    image_id="sha256:${image_id}"
+    echo "New image ID: ${image_id}"
     
     # Debug: Show more image details
     echo "Verifying build..."
     echo "Expected commit: ${commit_hash}"
     echo "Full image inspection:"
-    docker inspect wavtopia-media
+    docker inspect "${image_id}" || {
+        echo "Failed to inspect image. Build output was:"
+        echo "${build_output}"
+        exit 1
+    }
+    
+    # Return the image ID for use by the caller
+    echo "${image_id}"
 }
 
 # Function to build workspace (used by other build commands)
