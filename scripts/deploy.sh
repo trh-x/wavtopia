@@ -223,15 +223,19 @@ setup_remote() {
 # Function to build a service and capture its image ID
 build_service() {
     local service_name="$1"
+    local temp_file=$(mktemp)
     
     # Build and capture the image ID
     COMPOSE_DOCKER_CLI_BUILD=1 docker compose build "$service_name" 2>&1 | while read -r line; do
         echo "$line"
         if [[ $line =~ "writing image sha256:" ]]; then
-            new_docker_image_id=$(echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
-            echo "${service_name} image ID: ${new_docker_image_id}"
+            echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p' > "$temp_file"
+            echo "${service_name} image ID: $(cat "$temp_file")"
         fi
     done
+
+    new_docker_image_id=$(cat "$temp_file")
+    rm "$temp_file"
 }
 
 # Function to build media service (used by other build commands)
