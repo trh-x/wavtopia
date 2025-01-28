@@ -297,6 +297,9 @@ deploy_prod() {
 
     # Tag and push using image IDs to ensure we use the correct images
     echo "==> Tagging images..."
+    echo "Media image ID: ${media_image_id}"
+    echo "Backend image ID: ${backend_image_id}"
+    echo "Registry: ${REGISTRY}"
     docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
     docker tag "${backend_image_id}" "${REGISTRY}/wavtopia-backend:latest"
     docker push "${REGISTRY}/wavtopia-media:latest"
