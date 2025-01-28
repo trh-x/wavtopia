@@ -249,7 +249,7 @@ deploy_prod() {
     build_workspace
 
     # Build and push services
-    local media_image_id=$(build_media)
+    local media_image_id=$(build_media | tail -n1)
     echo "Built media image: ${media_image_id}"
     
     docker compose build backend
@@ -258,7 +258,7 @@ deploy_prod() {
     
     # Debug: Show MilkyTracker commit label
     echo "Checking MilkyTracker commit in image..."
-    echo "Labels in image: $(docker inspect ${media_image_id} --format '{{json .Config.Labels}}')"
+    echo "Labels in image: $(docker inspect "${media_image_id}" --format '{{json .Config.Labels}}')"
     
     # Tag and push using image IDs to ensure we use the correct images
     docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
