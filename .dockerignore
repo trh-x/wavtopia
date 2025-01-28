@@ -1,21 +1,6 @@
-# Exclude everything by default
-*
-
-# But include specific directories we need
-!packages/
-!packages/media/
-!packages/media/deps/
-!packages/media/deps/milkytracker/
-!packages/media/deps/milkytracker/**
-# Include git files to ensure changes are always detected
-!packages/media/deps/milkytracker/.git*
-!packages/media/.env.docker
-
-# Include scripts directory for build scripts
-!scripts/
-!scripts/**
-
-# Include workspace files
-!pnpm-workspace.yaml
-!package.json
-!pnpm-lock.yaml 
+# Exclude .git directories and files everywhere
+.git
+**/.git
+**/.gitignore
+**/.gitmodules
+**/.gitattributes
