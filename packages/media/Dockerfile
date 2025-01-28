@@ -8,9 +8,14 @@ RUN pnpm --filter @wavtopia/media --prod deploy media-service
 # Create the final image
 FROM node:18-slim
 
+# Configure apt to be more resilient
+RUN echo "Acquire::http::Timeout \"5\";" > /etc/apt/apt.conf.d/99timeout && \
+    echo "Acquire::ftp::Timeout \"5\";" >> /etc/apt/apt.conf.d/99timeout && \
+    echo "Acquire::Retries \"3\";" >> /etc/apt/apt.conf.d/99timeout
+
 # Install FFmpeg and build dependencies
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get update -o Acquire::Check-Valid-Until=false && \
+    apt-get install -y --no-install-recommends \
     ffmpeg \
     lame \
     build-essential \
