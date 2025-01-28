@@ -8,6 +8,11 @@ RUN pnpm --filter @wavtopia/media --prod deploy media-service
 # Create the final image
 FROM node:18-slim
 
+# Add build arg for MilkyTracker version
+ARG MILKYTRACKER_COMMIT
+# Use it in a label to force cache invalidation when it changes
+LABEL milkytracker.commit=$MILKYTRACKER_COMMIT
+
 # Install FFmpeg and build dependencies
 RUN apt-get update && \
     apt-get install -y \
