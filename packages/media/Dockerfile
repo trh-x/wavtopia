@@ -11,7 +11,9 @@ FROM node:18-slim
 # Add build arg for MilkyTracker version - needs to be redeclared after FROM
 ARG MILKYTRACKER_COMMIT
 # Debug output for MilkyTracker commit
-RUN echo "Building with MilkyTracker commit: ${MILKYTRACKER_COMMIT:-unknown}"
+RUN echo "Building with MilkyTracker commit: ${MILKYTRACKER_COMMIT:-unknown}" && \
+    echo "MILKYTRACKER_COMMIT=${MILKYTRACKER_COMMIT:-unknown}" > /tmp/build-info && \
+    cat /tmp/build-info
 # Use it in a label to force cache invalidation when it changes
 LABEL org.opencontainers.image.revision.milkytracker="${MILKYTRACKER_COMMIT:-unknown}"
 
