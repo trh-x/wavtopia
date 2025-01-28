@@ -223,19 +223,25 @@ setup_remote() {
 # Function to build media service (used by other build commands)
 build_media() {
     # Build and capture the image ID
-    local build_output=$(DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build media 2>&1)
-    echo "$build_output"
-    media_image_id=$(echo "$build_output" | grep "writing image sha256:" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
-    echo "Media image ID: ${media_image_id}"
+    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build media 2>&1 | while read -r line; do
+        echo "$line"
+        if [[ $line =~ "writing image sha256:" ]]; then
+            media_image_id=$(echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
+            echo "Media image ID: ${media_image_id}"
+        fi
+    done
 }
 
 # Function to build backend service
 build_backend() {
     # Build and capture the image ID
-    local build_output=$(DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose build backend 2>&1)
-    echo "$build_output"
-    backend_image_id=$(echo "$build_output" | grep "writing image sha256:" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
-    echo "Backend image ID: ${backend_image_id}"
+    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build backend 2>&1 | while read -r line; do
+        echo "$line"
+        if [[ $line =~ "writing image sha256:" ]]; then
+            backend_image_id=$(echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p')
+            echo "Backend image ID: ${backend_image_id}"
+        fi
+    done
 }
 
 # Function to build workspace (used by other build commands)
