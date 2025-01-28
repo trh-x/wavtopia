@@ -8,14 +8,8 @@ RUN pnpm --filter @wavtopia/media --prod deploy media-service
 # Create the final image
 FROM node:18-slim
 
-# Add build arg for MilkyTracker version - needs to be redeclared after FROM
+# Add build arg for MilkyTracker version
 ARG MILKYTRACKER_COMMIT
-# Debug output for MilkyTracker commit
-RUN echo "Building with MilkyTracker commit: ${MILKYTRACKER_COMMIT:-unknown}" && \
-    echo "MILKYTRACKER_COMMIT=${MILKYTRACKER_COMMIT:-unknown}" > /tmp/build-info && \
-    cat /tmp/build-info
-# Use it in a label to force cache invalidation when it changes
-LABEL org.opencontainers.image.revision.milkytracker="${MILKYTRACKER_COMMIT:-unknown}"
 
 # Install FFmpeg and build dependencies
 RUN apt-get update && \
@@ -32,7 +26,9 @@ RUN apt-get update && \
 
 # Build export-to-wav utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker
-RUN cd deps/milkytracker && \
+# Create a file with the commit hash that will affect the layer hash
+RUN echo "${MILKYTRACKER_COMMIT:-unknown}" > /deps/milkytracker/.commit && \
+    cd deps/milkytracker && \
     cmake -B build -DCMAKE_BUILD_TYPE=Release && \
     cmake --build build --target export-to-wav && \
     cp build/src/tools/export-to-wav/export-to-wav /usr/local/bin/ && \
@@ -50,6 +46,9 @@ RUN mkdir -p /tmp/uploads /tmp/converted && \
 
 # Copy env file for the media service
 COPY packages/media/.env.docker .env
+
+# Add label for information purposes (not for cache invalidation)
+LABEL org.opencontainers.image.revision.milkytracker="${MILKYTRACKER_COMMIT:-unknown}"
 
 ENV NODE_ENV=production
 
