@@ -11,6 +11,10 @@ FROM node:18-slim
 # Add build arg for MilkyTracker version
 ARG MILKYTRACKER_COMMIT
 
+# Debug: Show what Docker sees
+RUN echo "Build arg MILKYTRACKER_COMMIT is: ${MILKYTRACKER_COMMIT}" && \
+    ls -la /deps/milkytracker || true
+
 # Add label for information purposes (not for cache invalidation)
 LABEL org.opencontainers.image.revision.milkytracker="${MILKYTRACKER_COMMIT:-unknown}"
 
@@ -30,8 +34,15 @@ RUN apt-get update && \
 # Build export-to-wav utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker
 
+# Debug: Show contents after copy
+RUN echo "After COPY, contents are:" && \
+    ls -la /deps/milkytracker
+
 # Create commit file in its own layer for debugging
-RUN echo "${MILKYTRACKER_COMMIT:-unknown}" > /deps/milkytracker/.commit
+RUN echo "Creating commit file with: ${MILKYTRACKER_COMMIT}" && \
+    echo "${MILKYTRACKER_COMMIT:-unknown}" > /deps/milkytracker/.commit && \
+    echo "Commit file contents:" && \
+    cat /deps/milkytracker/.commit
 
 # Build MilkyTracker
 RUN cd deps/milkytracker && \

@@ -1,0 +1,20 @@
+# Exclude everything by default
+*
+
+# But include specific directories we need
+!packages/
+!packages/media/
+!packages/media/deps/
+!packages/media/deps/milkytracker/
+!packages/media/deps/milkytracker/**
+!packages/media/deps/milkytracker/.git*
+!packages/media/.env.docker
+
+# Include scripts directory for build scripts
+!scripts/
+!scripts/**
+
+# Include workspace files
+!pnpm-workspace.yaml
+!package.json
+!pnpm-lock.yaml 
