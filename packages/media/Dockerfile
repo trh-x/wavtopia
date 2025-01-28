@@ -26,9 +26,12 @@ RUN apt-get update && \
 
 # Build export-to-wav utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker
-# Create a file with the commit hash that will affect the layer hash
-RUN echo "${MILKYTRACKER_COMMIT:-unknown}" > /deps/milkytracker/.commit && \
-    cd deps/milkytracker && \
+
+# Create commit file in its own layer for debugging
+RUN echo "${MILKYTRACKER_COMMIT:-unknown}" > /deps/milkytracker/.commit
+
+# Build MilkyTracker
+RUN cd deps/milkytracker && \
     cmake -B build -DCMAKE_BUILD_TYPE=Release && \
     cmake --build build --target export-to-wav && \
     cp build/src/tools/export-to-wav/export-to-wav /usr/local/bin/ && \
