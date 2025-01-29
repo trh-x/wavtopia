@@ -1,0 +1,14 @@
+# Exclude everything by default
+*
+
+# Allow the following directories and files
+!packages/**
+!scripts/**
+!package.json
+!pnpm-*.yaml
+
+# Exclude deploy script so changes to it don't trigger a rebuild
+!scripts/deploy.sh
+
+# Exclude .git directories and files in packages
+packages/**/.git

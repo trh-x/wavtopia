@@ -10,8 +10,9 @@ FROM node:18-slim
 
 # Install FFmpeg and build dependencies
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
     ffmpeg \
+    lame \
     build-essential \
     cmake \
     libsdl2-dev \
@@ -23,6 +24,8 @@ RUN apt-get update && \
 
 # Build export-to-wav utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker
+
+# Build MilkyTracker
 RUN cd deps/milkytracker && \
     cmake -B build -DCMAKE_BUILD_TYPE=Release && \
     cmake --build build --target export-to-wav && \

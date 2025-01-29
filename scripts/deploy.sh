@@ -220,6 +220,39 @@ setup_remote() {
     fi
 }
 
+# Function to build a service and capture its image ID
+build_service() {
+    local service_name="$1"
+    local temp_file=$(mktemp)
+    
+    # Build and capture the image ID
+    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build "$service_name" 2>&1 | while read -r line; do
+        echo "$line"
+        if [[ $line =~ "writing image sha256:" ]]; then
+            echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p' > "$temp_file"
+            echo "${service_name} image ID: $(cat "$temp_file")"
+        fi
+    done
+
+    new_docker_image_id=$(cat "$temp_file")
+    rm "$temp_file"
+}
+
+# Function to build media service (used by other build commands)
+build_media() {
+    build_service "media"
+}
+
+# Function to build backend service
+build_backend() {
+    build_service "backend"
+}
+
+# Function to build workspace (used by other build commands)
+build_workspace() {
+    docker compose --profile build build workspace
+}
+
 # Function to deploy to production
 deploy_prod() {
     echo "Deploying to production server..."
@@ -247,11 +280,19 @@ deploy_prod() {
     
     # Build workspace first since other images depend on it
     build_workspace
-    
-    # Build and push service images
-    docker compose build media backend
-    docker tag wavtopia-media "${REGISTRY}/wavtopia-media:latest"
-    docker tag wavtopia-backend "${REGISTRY}/wavtopia-backend:latest"
+
+    # Build and push services
+    build_media
+
+    local media_image_id="$new_docker_image_id"
+
+    build_backend
+
+    local backend_image_id="$new_docker_image_id"
+
+    # Tag and push using image IDs to ensure we use the correct images
+    docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
+    docker tag "${backend_image_id}" "${REGISTRY}/wavtopia-backend:latest"
     docker push "${REGISTRY}/wavtopia-media:latest"
     docker push "${REGISTRY}/wavtopia-backend:latest"
 
@@ -286,11 +327,6 @@ deploy_prod() {
     echo "Services deployed! Don't forget to update the frontend too if there are any changes."
 }
 
-# Function to build workspace (used by other build commands)
-build_workspace() {
-    docker compose --profile build build workspace
-}
-
 # Function to bootstrap production database
 bootstrap_prod() {
     echo "Bootstrapping production database..."
@@ -316,22 +352,24 @@ case $COMMAND in
         ;;
     "build-media")
         build_workspace
-        docker compose build media
+        build_media
         ;;
     "build-backend")
         build_workspace
-        docker compose build backend
+        build_backend
         ;;
     "build-services")
         build_workspace
-        docker compose build media backend
+        build_media
+        build_backend
         ;;
     "up-dev")
         docker compose --profile development up -d
         ;;
     "up-prod")
         build_workspace
-        docker compose build media backend
+        build_media
+        build_backend
         docker compose --profile production up -d
         ;;
     "down")

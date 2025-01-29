@@ -9,12 +9,7 @@ import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
 import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
-import {
-  uploadFile,
-  deleteFile,
-  getFileUrl,
-  getObject,
-} from "../services/storage";
+import { uploadFile, getObject } from "../services/storage";
 import { z } from "zod";
 import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
@@ -259,6 +254,7 @@ router.get(
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
+
       res.setHeader(
         "Content-Type",
         format === "mp3" ? "audio/mpeg" : "audio/wav"
