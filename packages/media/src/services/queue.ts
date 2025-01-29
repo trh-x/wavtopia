@@ -148,6 +148,44 @@ function isDiskSpaceError(error: unknown): boolean {
   );
 }
 
+// Utility function to process a component
+async function processComponent(
+  component: { buffer: Buffer; name: string; type: string },
+  originalName: string,
+  index: number,
+  totalCount: number
+): Promise<{
+  name: string;
+  type: string;
+  mp3Url: string;
+  waveformData: number[];
+  duration: number;
+}> {
+  console.log(
+    `Processing component ${index + 1}/${totalCount}: ${component.name}`
+  );
+
+  const mp3Buffer = await convertWAVToMP3(component.buffer);
+  const componentName = `${originalName}_${component.name.replace(
+    /[^a-z0-9]/gi,
+    "_"
+  )}`;
+
+  const waveformResult = await generateWaveformData(component.buffer);
+  console.log(`Generated waveform data for component: ${component.name}`);
+
+  const mp3Url = await uploadMp3File(mp3Buffer, componentName, "components/");
+
+  console.log(`Component ${component.name} MP3 uploaded`);
+  return {
+    name: component.name,
+    type: component.type,
+    mp3Url,
+    waveformData: waveformResult.peaks,
+    duration: waveformResult.duration,
+  };
+}
+
 // Process jobs
 conversionQueue.process(async (job: Job<ConversionJob>) => {
   console.log(
@@ -222,36 +260,9 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
     // Convert and upload component files
     console.log("Processing components...");
     const componentUploads = await Promise.all(
-      components.map(async (component, index) => {
-        console.log(
-          `Processing component ${index + 1}/${components.length}: ${
-            component.name
-          }`
-        );
-        const mp3Buffer = await convertWAVToMP3(component.buffer);
-        const componentName = `${originalName}_${component.name.replace(
-          /[^a-z0-9]/gi,
-          "_"
-        )}`;
-
-        const waveformResult = await generateWaveformData(component.buffer);
-        console.log(`Generated waveform data for component: ${component.name}`);
-
-        const mp3Url = await uploadMp3File(
-          mp3Buffer,
-          `${componentName}.mp3`,
-          "components/"
-        );
-
-        console.log(`Component ${component.name} MP3 uploaded`);
-        return {
-          name: component.name,
-          type: component.type,
-          mp3Url,
-          waveformData: waveformResult.peaks,
-          duration: waveformResult.duration,
-        };
-      })
+      components.map((component, index) =>
+        processComponent(component, originalName, index, components.length)
+      )
     );
 
     // Update database record
