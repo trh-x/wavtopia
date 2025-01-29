@@ -294,29 +294,7 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         WavConversionStatus.IN_PROGRESS
       );
 
-      let wavBuffer: Buffer;
-
-      // Try FLAC path first
-      if (track.fullTrackFlacUrl) {
-        console.log("FLAC file found, converting from FLAC to WAV");
-        // Download FLAC file from storage
-        const flacBuffer = await downloadFileToBuffer(track.fullTrackFlacUrl);
-
-        // Convert FLAC to WAV
-        wavBuffer = await convertFLACToWAV(flacBuffer);
-      } else if (track.originalUrl) {
-        console.log("No FLAC file found, converting from XM to WAV");
-        // Download original XM file from storage
-        const sourceBuffer = await downloadFileToBuffer(track.originalUrl);
-
-        // Convert XM to WAV
-        const { fullTrackWavBuffer } = await convertXMToWAV(sourceBuffer);
-        wavBuffer = fullTrackWavBuffer;
-      } else {
-        throw new Error(
-          `Failed to find FLAC or original source XM file for track ${trackId}`
-        );
-      }
+      const wavBuffer = await convertToWav(track, track.fullTrackFlacUrl);
 
       // Upload WAV file
       const wavUrl = await uploadWavFile(
@@ -356,46 +334,15 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         WavConversionStatus.IN_PROGRESS
       );
 
-      let wavBuffer: Buffer;
+      const componentIndex = track.components.findIndex(
+        (c) => c.id === componentId
+      );
 
-      // Try FLAC path first
-      if (component.flacUrl) {
-        console.log(
-          "FLAC file found for component, converting from FLAC to WAV"
-        );
-        // Download FLAC file from storage
-        const flacBuffer = await downloadFileToBuffer(component.flacUrl);
-
-        // Convert FLAC to WAV
-        wavBuffer = await convertFLACToWAV(flacBuffer);
-      } else if (track.originalUrl) {
-        console.log(
-          "No FLAC file found for component, converting from XM to WAV"
-        );
-        // Download original XM file from storage
-        const sourceBuffer = await downloadFileToBuffer(track.originalUrl);
-
-        // Convert XM to WAV and get the specific component
-        // TODO: We might want to retain all components, seeing as the user has
-        // expressed an interest in this track.
-        const { components } = await convertXMToWAV(sourceBuffer);
-
-        // Find the matching component by name
-        const componentIndex = track.components.findIndex(
-          (c) => c.id === componentId
-        );
-        if (componentIndex === -1 || !components[componentIndex]) {
-          throw new Error(
-            `Could not find matching WAV component for ${componentId}`
-          );
-        }
-
-        wavBuffer = components[componentIndex].buffer;
-      } else {
-        throw new Error(
-          `Failed to find FLAC or original source XM file for track ${trackId} and component ${componentId}`
-        );
-      }
+      const wavBuffer = await convertToWav(
+        track,
+        component.flacUrl,
+        componentIndex
+      );
 
       // Upload WAV file
       const wavUrl = await uploadWavFile(
@@ -485,3 +432,44 @@ conversionQueue.on("completed", (job: Job<ConversionJob>) => {
 conversionQueue.on("failed", (job: Job<ConversionJob>, error: Error) => {
   console.error(`Job ${job.id} failed:`, error);
 });
+
+// Utility function to convert to WAV from either FLAC or XM source
+async function convertToWav(
+  track: {
+    originalUrl: string | null;
+    originalFormat: string | null;
+    fullTrackFlacUrl: string | null;
+  },
+  flacUrl?: string | null,
+  componentIndex?: number
+): Promise<Buffer> {
+  // Try FLAC path first
+  if (flacUrl) {
+    console.log("FLAC file found, converting from FLAC to WAV");
+    const flacBuffer = await downloadFileToBuffer(flacUrl);
+    return convertFLACToWAV(flacBuffer);
+  } else if (track.originalFormat === "xm" && track.originalUrl) {
+    console.log("No FLAC file found, converting from XM to WAV");
+    const sourceBuffer = await downloadFileToBuffer(track.originalUrl);
+
+    const converted = await convertXMToWAV(sourceBuffer);
+
+    if (typeof componentIndex === "number") {
+      // TODO: We might want to retain all components, seeing as the user has
+      // expressed an interest in this track.
+      // An alternative could be to check for other queued jobs for this track
+      // and merge them with the current job.
+      const { components } = converted;
+      if (!components[componentIndex]) {
+        throw new Error(
+          `Could not find matching WAV component at index ${componentIndex}`
+        );
+      }
+      return components[componentIndex].buffer;
+    } else {
+      return converted.fullTrackWavBuffer;
+    }
+  }
+
+  throw new Error("No valid source found for WAV conversion");
+}
