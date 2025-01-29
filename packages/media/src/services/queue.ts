@@ -26,6 +26,22 @@ async function downloadFileToBuffer(fileUrl: string): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
+// Utility function to upload a WAV file
+async function uploadWavFile(
+  buffer: Buffer,
+  filename: string,
+  directory: string
+): Promise<string> {
+  return uploadFile(
+    {
+      buffer,
+      originalname: `${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}.wav`,
+      mimetype: "audio/wav",
+    } as StorageFile,
+    directory
+  );
+}
+
 interface ConversionJob {
   trackId: string;
 }
@@ -276,15 +292,9 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       }
 
       // Upload WAV file
-      const wavUrl = await uploadFile(
-        {
-          buffer: wavBuffer,
-          originalname: `${track.title.replace(
-            /[^a-zA-Z0-9._-]/g,
-            "_"
-          )}_full.wav`,
-          mimetype: "audio/wav",
-        } as StorageFile,
+      const wavUrl = await uploadWavFile(
+        wavBuffer,
+        `${track.title}_full`,
         "tracks/"
       );
 
@@ -361,15 +371,9 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       }
 
       // Upload WAV file
-      const wavUrl = await uploadFile(
-        {
-          buffer: wavBuffer,
-          originalname: `${track.title.replace(
-            /[^a-zA-Z0-9._-]/g,
-            "_"
-          )}_${component.name.replace(/[^a-z0-9]/gi, "_")}.wav`,
-          mimetype: "audio/wav",
-        } as StorageFile,
+      const wavUrl = await uploadWavFile(
+        wavBuffer,
+        `${track.title}_${component.name}`,
         "components/"
       );
 
