@@ -68,6 +68,7 @@ export function useWavConversion({
       };
 
       // Check immediately and then every 5 seconds
+      // TODO: Maybe start more frequently and incrementally back off?
       checkStatus();
       intervalId = setInterval(checkStatus, 5000);
     }

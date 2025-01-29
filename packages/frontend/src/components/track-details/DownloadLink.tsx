@@ -132,7 +132,7 @@ function WavDownloadButton({ track, componentId }: WavDownloadButtonProps) {
     (component) => component.id === componentId
   );
 
-  if (component?.wavConversionStatus === "COMPLETED") {
+  if (component?.wavUrl) {
     return <DownloadLink {...downloadProps} />;
   }
 

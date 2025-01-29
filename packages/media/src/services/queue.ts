@@ -224,8 +224,15 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
     }
 
     if (type === "full") {
-      if (!track.fullTrackFlacUrl) {
-        throw new Error(`Track ${trackId} has no FLAC file URL`);
+      if (
+        !(
+          track.fullTrackFlacUrl ||
+          (track.originalFormat === "xm" && track.originalUrl)
+        )
+      ) {
+        throw new Error(
+          `Track ${trackId} has no FLAC or original source XM file URL`
+        );
       }
 
       // Update conversion status to IN_PROGRESS for full track conversion
@@ -234,16 +241,39 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
       });
 
-      // Download FLAC file from storage
-      const flacStream = await getObject(track.fullTrackFlacUrl);
-      const chunks: Buffer[] = [];
-      for await (const chunk of flacStream) {
-        chunks.push(Buffer.from(chunk));
-      }
-      const flacBuffer = Buffer.concat(chunks);
+      let wavBuffer: Buffer;
 
-      // Convert to WAV
-      const wavBuffer = await convertFLACToWAV(flacBuffer);
+      // Try FLAC path first
+      if (track.fullTrackFlacUrl) {
+        console.log("FLAC file found, converting from FLAC to WAV");
+        // Download FLAC file from storage
+        const flacStream = await getObject(track.fullTrackFlacUrl);
+        const chunks: Buffer[] = [];
+        for await (const chunk of flacStream) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const flacBuffer = Buffer.concat(chunks);
+
+        // Convert FLAC to WAV
+        wavBuffer = await convertFLACToWAV(flacBuffer);
+      } else if (track.originalUrl) {
+        console.log("No FLAC file found, converting from XM to WAV");
+        // Download original XM file from storage
+        const sourceStream = await getObject(track.originalUrl);
+        const chunks: Buffer[] = [];
+        for await (const chunk of sourceStream) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const sourceBuffer = Buffer.concat(chunks);
+
+        // Convert XM to WAV
+        const { fullTrackWavBuffer } = await convertXMToWAV(sourceBuffer);
+        wavBuffer = fullTrackWavBuffer;
+      } else {
+        throw new Error(
+          `Failed to find FLAC or original source XM file for track ${trackId}`
+        );
+      }
 
       // Upload WAV file
       const wavUrl = await uploadFile(
@@ -268,9 +298,18 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       });
     } else if (type === "component" && componentId) {
       const component = track.components.find((c) => c.id === componentId);
-      if (!component || !component.flacUrl) {
+      if (!component) {
+        throw new Error(`Component ${componentId} not found`);
+      }
+
+      if (
+        !(
+          component.flacUrl ||
+          (track.originalFormat === "xm" && track.originalUrl)
+        )
+      ) {
         throw new Error(
-          `Component ${componentId} not found or has no FLAC file`
+          `Component ${componentId} has no FLAC or full track original source XM file URL`
         );
       }
 
@@ -280,16 +319,56 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
         data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
       });
 
-      // Download FLAC file from storage
-      const flacStream = await getObject(component.flacUrl);
-      const chunks: Buffer[] = [];
-      for await (const chunk of flacStream) {
-        chunks.push(Buffer.from(chunk));
-      }
-      const flacBuffer = Buffer.concat(chunks);
+      let wavBuffer: Buffer;
 
-      // Convert to WAV
-      const wavBuffer = await convertFLACToWAV(flacBuffer);
+      // Try FLAC path first
+      if (component.flacUrl) {
+        console.log(
+          "FLAC file found for component, converting from FLAC to WAV"
+        );
+        // Download FLAC file from storage
+        const flacStream = await getObject(component.flacUrl);
+        const chunks: Buffer[] = [];
+        for await (const chunk of flacStream) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const flacBuffer = Buffer.concat(chunks);
+
+        // Convert FLAC to WAV
+        wavBuffer = await convertFLACToWAV(flacBuffer);
+      } else if (track.originalUrl) {
+        console.log(
+          "No FLAC file found for component, converting from XM to WAV"
+        );
+        // Download original XM file from storage
+        const sourceStream = await getObject(track.originalUrl);
+        const chunks: Buffer[] = [];
+        for await (const chunk of sourceStream) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const sourceBuffer = Buffer.concat(chunks);
+
+        // Convert XM to WAV and get the specific component
+        // TODO: We might want to retain all components, seeing as the user has
+        // expressed an interest in this track.
+        const { components } = await convertXMToWAV(sourceBuffer);
+
+        // Find the matching component by name
+        const componentIndex = track.components.findIndex(
+          (c) => c.id === componentId
+        );
+        if (componentIndex === -1 || !components[componentIndex]) {
+          throw new Error(
+            `Could not find matching WAV component for ${componentId}`
+          );
+        }
+
+        wavBuffer = components[componentIndex].buffer;
+      } else {
+        throw new Error(
+          `Failed to find FLAC or original source XM file for track ${trackId} and component ${componentId}`
+        );
+      }
 
       // Upload WAV file
       const wavUrl = await uploadFile(
@@ -318,7 +397,6 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
   } catch (error) {
     console.error(`Error processing WAV conversion job ${job.id}:`, error);
 
-    // Only update conversion status to FAILED for full track conversions
     if (job.data.type === "full") {
       await prisma.track.update({
         where: { id: job.data.trackId },
