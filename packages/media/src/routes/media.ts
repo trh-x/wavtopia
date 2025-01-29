@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AppError } from "../middleware/errorHandler";
 import {
   queueTrackConversion,
-  conversionQueue,
+  trackConversionQueue,
   queueWavConversion,
   wavConversionQueue,
 } from "../services/queue";
@@ -47,7 +47,7 @@ router.post("/convert", async (req, res, next) => {
 router.get("/status/:jobId", async (req, res, next) => {
   try {
     const { jobId } = req.params;
-    const job = await conversionQueue.getJob(jobId);
+    const job = await trackConversionQueue.getJob(jobId);
 
     if (!job) {
       throw new AppError(404, "Job not found");

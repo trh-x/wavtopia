@@ -47,6 +47,7 @@ export function useWavConversion({
 
             if (data.data.conversionStatus === "COMPLETED") {
               setIsConverting(false);
+              clearInterval(intervalId);
               addNotification({
                 type: "success",
                 title: "WAV Conversion Complete",
@@ -54,6 +55,7 @@ export function useWavConversion({
               });
             } else if (data.data.conversionStatus === "FAILED") {
               setIsConverting(false);
+              clearInterval(intervalId);
               addNotification({
                 type: "error",
                 title: "WAV Conversion Failed",
