@@ -382,20 +382,18 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
   }
 });
 
+// Standard job options for all queues
+const standardJobOptions = {
+  attempts: 3,
+  backoff: {
+    type: "exponential" as const,
+    delay: 1000,
+  },
+};
+
 // Add job to queue
 export const queueConversion = async (trackId: string) => {
-  const job = await conversionQueue.add(
-    {
-      trackId,
-    },
-    {
-      attempts: 3,
-      backoff: {
-        type: "exponential",
-        delay: 1000,
-      },
-    }
-  );
+  const job = await conversionQueue.add({ trackId }, standardJobOptions);
 
   return job.id;
 };
@@ -412,13 +410,7 @@ export const queueWavConversion = async (
       type,
       componentId,
     },
-    {
-      attempts: 3,
-      backoff: {
-        type: "exponential",
-        delay: 1000,
-      },
-    }
+    standardJobOptions
   );
 
   return job.id;
