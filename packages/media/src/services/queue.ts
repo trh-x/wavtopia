@@ -42,6 +42,32 @@ async function uploadWavFile(
   );
 }
 
+// Utility function to update WAV conversion status
+async function updateWavConversionStatus(
+  type: "full" | "component",
+  id: string,
+  status: WavConversionStatus,
+  wavUrl?: string
+): Promise<void> {
+  if (type === "full") {
+    await prisma.track.update({
+      where: { id },
+      data: {
+        wavConversionStatus: status,
+        ...(wavUrl && { fullTrackWavUrl: wavUrl }),
+      },
+    });
+  } else {
+    await prisma.component.update({
+      where: { id },
+      data: {
+        wavConversionStatus: status,
+        ...(wavUrl && { wavUrl }),
+      },
+    });
+  }
+}
+
 interface ConversionJob {
   trackId: string;
 }
@@ -262,10 +288,11 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       }
 
       // Update conversion status to IN_PROGRESS for full track conversion
-      await prisma.track.update({
-        where: { id: trackId },
-        data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
-      });
+      await updateWavConversionStatus(
+        "full",
+        trackId,
+        WavConversionStatus.IN_PROGRESS
+      );
 
       let wavBuffer: Buffer;
 
@@ -299,13 +326,12 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       );
 
       // Update track with WAV URL and status
-      await prisma.track.update({
-        where: { id: trackId },
-        data: {
-          fullTrackWavUrl: wavUrl,
-          wavConversionStatus: WavConversionStatus.COMPLETED,
-        },
-      });
+      await updateWavConversionStatus(
+        "full",
+        trackId,
+        WavConversionStatus.COMPLETED,
+        wavUrl
+      );
     } else if (type === "component" && componentId) {
       const component = track.components.find((c) => c.id === componentId);
       if (!component) {
@@ -324,10 +350,11 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       }
 
       // Update conversion status to IN_PROGRESS for component conversion
-      await prisma.component.update({
-        where: { id: componentId },
-        data: { wavConversionStatus: WavConversionStatus.IN_PROGRESS },
-      });
+      await updateWavConversionStatus(
+        "component",
+        componentId,
+        WavConversionStatus.IN_PROGRESS
+      );
 
       let wavBuffer: Buffer;
 
@@ -378,13 +405,12 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       );
 
       // Update component with WAV URL and status
-      await prisma.component.update({
-        where: { id: componentId },
-        data: {
-          wavUrl,
-          wavConversionStatus: WavConversionStatus.COMPLETED,
-        },
-      });
+      await updateWavConversionStatus(
+        "component",
+        componentId,
+        WavConversionStatus.COMPLETED,
+        wavUrl
+      );
     }
 
     console.log(`WAV conversion completed for track ${trackId}`);
@@ -392,15 +418,17 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
     console.error(`Error processing WAV conversion job ${job.id}:`, error);
 
     if (job.data.type === "full") {
-      await prisma.track.update({
-        where: { id: job.data.trackId },
-        data: { wavConversionStatus: WavConversionStatus.FAILED },
-      });
+      await updateWavConversionStatus(
+        "full",
+        job.data.trackId,
+        WavConversionStatus.FAILED
+      );
     } else if (job.data.type === "component" && job.data.componentId) {
-      await prisma.component.update({
-        where: { id: job.data.componentId },
-        data: { wavConversionStatus: WavConversionStatus.FAILED },
-      });
+      await updateWavConversionStatus(
+        "component",
+        job.data.componentId,
+        WavConversionStatus.FAILED
+      );
     }
 
     throw error;
