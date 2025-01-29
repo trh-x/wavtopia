@@ -1,4 +1,4 @@
-import Queue, { Job } from "bull";
+import Queue, { Job, QueueOptions } from "bull";
 import { convertXMToWAV } from "../services/wav-converter";
 import { convertWAVToMP3 } from "../services/mp3-converter";
 import { convertWAVToFLAC, convertFLACToWAV } from "../services/flac-converter";
@@ -80,17 +80,17 @@ interface WavConversionJob {
 
 const prisma = new PrismaService(config.database).db;
 
-// Create queues
-export const conversionQueue = new Queue<ConversionJob>("audio-conversion", {
-  redis: config.redis,
-});
-
-export const wavConversionQueue = new Queue<WavConversionJob>(
-  "wav-conversion",
-  {
+// Utility function to create a queue with standard configuration
+function createQueue<T>(name: string): Queue.Queue<T> {
+  return new Queue<T>(name, {
     redis: config.redis,
-  }
-);
+  });
+}
+
+// Create queues
+export const conversionQueue = createQueue<ConversionJob>("audio-conversion");
+export const wavConversionQueue =
+  createQueue<WavConversionJob>("wav-conversion");
 
 // Process jobs
 conversionQueue.process(async (job: Job<ConversionJob>) => {
