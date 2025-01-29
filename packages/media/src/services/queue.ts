@@ -186,6 +186,41 @@ async function processComponent(
   };
 }
 
+// Utility function to process full track
+async function processFullTrack(
+  buffer: Buffer,
+  originalName: string
+): Promise<{
+  mp3Url: string;
+  waveformData: number[];
+  duration: number;
+}> {
+  // Generate waveform data for full track
+  console.log("Generating waveform data for full track...");
+  const waveformResult = await generateWaveformData(buffer);
+  console.log("Full track waveform data generated");
+
+  // Convert full track to MP3
+  console.log("Converting full track to MP3...");
+  const mp3Buffer = await convertWAVToMP3(buffer);
+  console.log("Full track MP3 conversion complete");
+
+  // Upload MP3 file
+  console.log("Uploading full track MP3 file...");
+  const mp3Url = await uploadMp3File(
+    mp3Buffer,
+    `${originalName}_full`,
+    "tracks/"
+  );
+  console.log("Full track MP3 uploaded");
+
+  return {
+    mp3Url,
+    waveformData: waveformResult.peaks,
+    duration: waveformResult.duration,
+  };
+}
+
 // Process jobs
 conversionQueue.process(async (job: Job<ConversionJob>) => {
   console.log(
@@ -237,25 +272,11 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
     );
     console.log("XM conversion complete. Components:", components.length);
 
-    // Generate waveform data for full track
-    console.log("Generating waveform data for full track...");
-    const waveformResult = await generateWaveformData(fullTrackWavBuffer);
-    console.log("Full track waveform data generated");
-
-    // Convert full track to MP3
-    console.log("Converting full track to MP3...");
-    const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackWavBuffer);
-    console.log("Full track MP3 conversion complete");
-
-    // Upload full track files, MP3 and FLAC. WAV is not uploaded, to save space.
-    // It can be converted from FLAC on demand.
-    console.log("Uploading full track files...");
-    const fullTrackMp3Url = await uploadMp3File(
-      fullTrackMp3Buffer,
-      `${originalName}_full`,
-      "tracks/"
-    );
-    console.log("Full track MP3 uploaded");
+    const {
+      mp3Url: fullTrackMp3Url,
+      waveformData,
+      duration,
+    } = await processFullTrack(fullTrackWavBuffer, originalName);
 
     // Convert and upload component files
     console.log("Processing components...");
@@ -273,8 +294,8 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         data: {
           originalUrl,
           fullTrackMp3Url,
-          waveformData: waveformResult.peaks,
-          duration: waveformResult.duration,
+          waveformData,
+          duration,
           coverArt: coverArtUrl,
           components: {
             create: componentUploads,
