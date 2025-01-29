@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { AppError } from "../middleware/errorHandler";
 import {
-  queueConversion,
+  queueTrackConversion,
   conversionQueue,
   queueWavConversion,
   wavConversionQueue,
@@ -29,7 +29,7 @@ router.post("/convert", async (req, res, next) => {
     // Parse conversion options
     const options = conversionOptionsSchema.parse(req.body);
 
-    const jobId = await queueConversion(options.trackId);
+    const jobId = await queueTrackConversion(options.trackId);
 
     res.json({
       status: "success",
