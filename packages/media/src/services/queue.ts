@@ -101,33 +101,18 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
     const fullTrackMp3Buffer = await convertWAVToMP3(fullTrackWavBuffer);
     console.log("Full track MP3 conversion complete");
 
-    // Convert full track to FLAC
-    console.log("Converting full track to FLAC...");
-    const fullTrackFlacBuffer = await convertWAVToFLAC(fullTrackWavBuffer);
-    console.log("Full track FLAC conversion complete");
-
     // Upload full track files, MP3 and FLAC. WAV is not uploaded, to save space.
     // It can be converted from FLAC on demand.
     console.log("Uploading full track files...");
-    const [fullTrackMp3Url, fullTrackFlacUrl] = await Promise.all([
-      uploadFile(
-        {
-          buffer: fullTrackMp3Buffer,
-          originalname: `${originalName}_full.mp3`,
-          mimetype: "audio/mpeg",
-        } as StorageFile,
-        "tracks/"
-      ),
-      uploadFile(
-        {
-          buffer: fullTrackFlacBuffer,
-          originalname: `${originalName}_full.flac`,
-          mimetype: "audio/flac",
-        } as StorageFile,
-        "tracks/"
-      ),
-    ]);
-    console.log("Full track files uploaded");
+    const fullTrackMp3Url = await uploadFile(
+      {
+        buffer: fullTrackMp3Buffer,
+        originalname: `${originalName}_full.mp3`,
+        mimetype: "audio/mpeg",
+      } as StorageFile,
+      "tracks/"
+    );
+    console.log("Full track MP3 uploaded");
 
     // Convert and upload component files
     console.log("Processing components...");
@@ -139,7 +124,6 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
           }`
         );
         const mp3Buffer = await convertWAVToMP3(component.buffer);
-        const flacBuffer = await convertWAVToFLAC(component.buffer);
         const componentName = `${originalName}_${component.name.replace(
           /[^a-z0-9]/gi,
           "_"
@@ -148,31 +132,20 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         const waveformResult = await generateWaveformData(component.buffer);
         console.log(`Generated waveform data for component: ${component.name}`);
 
-        const [mp3Url, flacUrl] = await Promise.all([
-          uploadFile(
-            {
-              buffer: mp3Buffer,
-              originalname: `${componentName}.mp3`,
-              mimetype: "audio/mpeg",
-            } as StorageFile,
-            "components/"
-          ),
-          uploadFile(
-            {
-              buffer: flacBuffer,
-              originalname: `${componentName}.flac`,
-              mimetype: "audio/flac",
-            } as StorageFile,
-            "components/"
-          ),
-        ]);
+        const mp3Url = await uploadFile(
+          {
+            buffer: mp3Buffer,
+            originalname: `${componentName}.mp3`,
+            mimetype: "audio/mpeg",
+          } as StorageFile,
+          "components/"
+        );
 
-        console.log(`Component ${component.name} files uploaded`);
+        console.log(`Component ${component.name} MP3 uploaded`);
         return {
           name: component.name,
           type: component.type,
           mp3Url,
-          flacUrl,
           waveformData: waveformResult.peaks,
           duration: waveformResult.duration,
         };
@@ -187,7 +160,6 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         data: {
           originalUrl,
           fullTrackMp3Url,
-          fullTrackFlacUrl,
           waveformData: waveformResult.peaks,
           duration: waveformResult.duration,
           coverArt: coverArtUrl,
@@ -207,12 +179,8 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         await Promise.all([
           deleteFile(originalUrl),
           deleteFile(fullTrackMp3Url),
-          deleteFile(fullTrackFlacUrl),
           ...(coverArtUrl ? [deleteFile(coverArtUrl)] : []),
-          ...componentUploads.flatMap((comp) => [
-            deleteFile(comp.mp3Url),
-            deleteFile(comp.flacUrl),
-          ]),
+          ...componentUploads.flatMap((comp) => [deleteFile(comp.mp3Url)]),
         ]);
         console.log("Cleanup completed");
       } catch (cleanupError) {
