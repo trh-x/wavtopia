@@ -5,6 +5,8 @@ import {
   trackConversionQueue,
   queueWavConversion,
   wavConversionQueue,
+  queueFlacConversion,
+  flacConversionQueue,
 } from "../services/queue";
 import { z } from "zod";
 import { PrismaService, config } from "@wavtopia/core-storage";
@@ -18,6 +20,14 @@ const conversionOptionsSchema = z.object({
 });
 
 const wavConversionOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+  type: z.enum(["full", "component"]),
+  componentId: z.string().uuid().optional(),
+});
+
+// TODO: DRY this with the above
+
+const flacConversionOptionsSchema = z.object({
   trackId: z.string().uuid(),
   type: z.enum(["full", "component"]),
   componentId: z.string().uuid().optional(),
@@ -155,6 +165,99 @@ router.get("/component/:componentId/wav-status", async (req, res, next) => {
       status: "success",
       data: {
         conversionStatus: component.wavConversionStatus,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// TODO: DRY these FLAC routes with the corresponding WAV routes
+
+// Request FLAC conversion
+router.post("/convert-flac", async (req, res, next) => {
+  try {
+    const options = flacConversionOptionsSchema.parse(req.body);
+
+    // Check if track exists and get current status
+    const track = await prisma.track.findUnique({
+      where: { id: options.trackId },
+      select: { flacConversionStatus: true },
+    });
+
+    if (!track) {
+      throw new AppError(404, "Track not found");
+    }
+
+    // If conversion is already in progress, return existing status
+    if (track.flacConversionStatus === "IN_PROGRESS") {
+      return res.json({
+        status: "in_progress",
+        message: "FLAC conversion is already in progress",
+      });
+    }
+
+    const jobId = await queueFlacConversion(
+      options.trackId,
+      options.type,
+      options.componentId
+    );
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "FLAC conversion has been queued",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get track FLAC conversion status
+router.get("/flac-status/:trackId", async (req, res, next) => {
+  try {
+    const { trackId } = req.params;
+
+    const track = await prisma.track.findUnique({
+      where: { id: trackId },
+      select: { flacConversionStatus: true },
+    });
+
+    if (!track) {
+      throw new AppError(404, "Track not found");
+    }
+
+    res.json({
+      status: "success",
+      data: {
+        conversionStatus: track.flacConversionStatus,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get component FLAC conversion status
+router.get("/component/:componentId/flac-status", async (req, res, next) => {
+  try {
+    const { componentId } = req.params;
+
+    const component = await prisma.component.findUnique({
+      where: { id: componentId },
+      select: { flacConversionStatus: true },
+    });
+
+    if (!component) {
+      throw new AppError(404, "Component not found");
+    }
+
+    res.json({
+      status: "success",
+      data: {
+        conversionStatus: component.flacConversionStatus,
       },
     });
   } catch (error) {

@@ -690,4 +690,65 @@ router.get(
   }
 );
 
+// TODO: DRY this with the WAV conversion routes
+
+// Request FLAC conversion
+router.post(
+  "/:id/convert-flac",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const { type, componentId } = req.body;
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(
+        mediaServiceUrl + "/api/media/convert-flac",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            trackId: req.params.id,
+            type,
+            componentId,
+          }),
+        }
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get track FLAC conversion status
+router.get(
+  "/:id/flac-status",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// Get component FLAC conversion status
+router.get(
+  "/:id/component/:componentId/flac-status",
+  authenticateTrackAccess,
+  async (req, res, next) => {
+    try {
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export { router as trackRoutes };

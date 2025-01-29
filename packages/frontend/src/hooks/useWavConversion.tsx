@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { useAuthToken } from "../hooks/useAuthToken";
 
+// TODO: DRY this with useFlacConversion
+
 type ConversionType = "full" | "component";
 type ConversionStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
 

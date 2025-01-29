@@ -23,10 +23,13 @@ export {
   Notification,
   NotificationType,
   WavConversionStatus,
+  FlacConversionStatus,
 } from ".prisma/client";
 
 export {
   type Track,
+  type Component,
+  type TrackShare,
   type PaginatedResponse,
   type PaginationParams,
   encodeCursor,

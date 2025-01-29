@@ -1,6 +1,10 @@
 import { Track } from "@/types";
 import { SyncedWaveform } from "../waveform/SyncedWaveform";
-import { DownloadLink, DownloadLinkWav } from "./DownloadLink";
+import {
+  DownloadLink,
+  DownloadLinkWav,
+  DownloadLinkFlac,
+} from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 import { TrackWaveformPlaceholder } from "../track-list/TrackList";
@@ -15,11 +19,28 @@ function WavDownloadButton({ track }: WavDownloadButtonProps) {
     children: "WAV",
   };
 
-  if (track.wavConversionStatus === "COMPLETED") {
+  if (track.fullTrackWavUrl) {
     return <DownloadLink {...downloadProps} />;
   }
 
   return <DownloadLinkWav {...downloadProps} trackId={track.id} type="full" />;
+}
+
+interface FlacDownloadButtonProps {
+  track: Track;
+}
+
+function FlacDownloadButton({ track }: FlacDownloadButtonProps) {
+  const downloadProps = {
+    href: `/api/track/${track.id}/full.flac`,
+    children: "FLAC",
+  };
+
+  if (track.fullTrackFlacUrl) {
+    return <DownloadLink {...downloadProps} />;
+  }
+
+  return <DownloadLinkFlac {...downloadProps} trackId={track.id} type="full" />;
 }
 
 interface FullTrackSectionProps {
@@ -47,9 +68,7 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
         <WavDownloadButton track={track} />
-        <DownloadLink href={`/api/track/${track.id}/full.flac`}>
-          FLAC
-        </DownloadLink>
+        <FlacDownloadButton track={track} />
         <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
           MP3
         </DownloadLink>
