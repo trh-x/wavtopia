@@ -16,6 +16,16 @@ import {
   getObject,
 } from "../services/storage";
 
+// Utility function to download and buffer a file from storage
+async function downloadFileToBuffer(fileUrl: string): Promise<Buffer> {
+  const stream = await getObject(fileUrl);
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
 interface ConversionJob {
   trackId: string;
 }
@@ -247,24 +257,14 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
       if (track.fullTrackFlacUrl) {
         console.log("FLAC file found, converting from FLAC to WAV");
         // Download FLAC file from storage
-        const flacStream = await getObject(track.fullTrackFlacUrl);
-        const chunks: Buffer[] = [];
-        for await (const chunk of flacStream) {
-          chunks.push(Buffer.from(chunk));
-        }
-        const flacBuffer = Buffer.concat(chunks);
+        const flacBuffer = await downloadFileToBuffer(track.fullTrackFlacUrl);
 
         // Convert FLAC to WAV
         wavBuffer = await convertFLACToWAV(flacBuffer);
       } else if (track.originalUrl) {
         console.log("No FLAC file found, converting from XM to WAV");
         // Download original XM file from storage
-        const sourceStream = await getObject(track.originalUrl);
-        const chunks: Buffer[] = [];
-        for await (const chunk of sourceStream) {
-          chunks.push(Buffer.from(chunk));
-        }
-        const sourceBuffer = Buffer.concat(chunks);
+        const sourceBuffer = await downloadFileToBuffer(track.originalUrl);
 
         // Convert XM to WAV
         const { fullTrackWavBuffer } = await convertXMToWAV(sourceBuffer);
@@ -327,12 +327,7 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
           "FLAC file found for component, converting from FLAC to WAV"
         );
         // Download FLAC file from storage
-        const flacStream = await getObject(component.flacUrl);
-        const chunks: Buffer[] = [];
-        for await (const chunk of flacStream) {
-          chunks.push(Buffer.from(chunk));
-        }
-        const flacBuffer = Buffer.concat(chunks);
+        const flacBuffer = await downloadFileToBuffer(component.flacUrl);
 
         // Convert FLAC to WAV
         wavBuffer = await convertFLACToWAV(flacBuffer);
@@ -341,12 +336,7 @@ wavConversionQueue.process(async (job: Job<WavConversionJob>) => {
           "No FLAC file found for component, converting from XM to WAV"
         );
         // Download original XM file from storage
-        const sourceStream = await getObject(track.originalUrl);
-        const chunks: Buffer[] = [];
-        for await (const chunk of sourceStream) {
-          chunks.push(Buffer.from(chunk));
-        }
-        const sourceBuffer = Buffer.concat(chunks);
+        const sourceBuffer = await downloadFileToBuffer(track.originalUrl);
 
         // Convert XM to WAV and get the specific component
         // TODO: We might want to retain all components, seeing as the user has
