@@ -62,7 +62,6 @@ services:
       dockerfile: packages/media/Dockerfile
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
-        # - MILKYTRACKER_COMMIT=${MILKYTRACKER_COMMIT:-unknown}
     image: ${REGISTRY_PREFIX:-}wavtopia-media
     ports:
       - "3001:3001"
@@ -90,15 +89,6 @@ services:
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
     image: ${REGISTRY_PREFIX:-}wavtopia-backend
-    # environment:
-    #   - NODE_ENV=production
-    #   - DEBUG=*
-    #   - LOG_LEVEL=debug
-    # logging:
-    #   driver: "json-file"
-    #   options:
-    #     max-size: "10m"
-    #     max-file: "3"
     ports:
       - "3002:3002"
     volumes:

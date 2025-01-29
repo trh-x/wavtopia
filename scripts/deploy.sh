@@ -250,9 +250,7 @@ build_backend() {
 
 # Function to build workspace (used by other build commands)
 build_workspace() {
-    echo "Starting workspace build..."
     docker compose --profile build build workspace
-    echo "Workspace build command completed"
 }
 
 # Function to deploy to production
@@ -279,31 +277,20 @@ deploy_prod() {
     # Build and tag images locally
     echo "Building images locally..."
     docker context use default
-    echo "Current Docker context: $(docker context show)"
     
-    echo "Starting workspace build..."
     # Build workspace first since other images depend on it
     build_workspace
-    echo "Workspace build function returned"
 
-    echo "About to start media build..."
     # Build and push services
     build_media
-    echo "Media build completed"
 
     local media_image_id="$new_docker_image_id"
 
-    echo "About to start backend build..."
     build_backend
-    echo "Backend build completed"
 
     local backend_image_id="$new_docker_image_id"
 
     # Tag and push using image IDs to ensure we use the correct images
-    echo "==> Tagging images..."
-    echo "Media image ID: ${media_image_id}"
-    echo "Backend image ID: ${backend_image_id}"
-    echo "Registry: ${REGISTRY}"
     docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
     docker tag "${backend_image_id}" "${REGISTRY}/wavtopia-backend:latest"
     docker push "${REGISTRY}/wavtopia-media:latest"

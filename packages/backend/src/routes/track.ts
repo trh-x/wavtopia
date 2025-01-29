@@ -9,12 +9,7 @@ import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
 import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
-import {
-  uploadFile,
-  deleteFile,
-  getFileUrl,
-  getObject,
-} from "../services/storage";
+import { uploadFile, getObject } from "../services/storage";
 import { z } from "zod";
 import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
@@ -44,17 +39,13 @@ const authenticateTrackAccess: RequestHandler = async (
   res: Response,
   next: NextFunction
 ) => {
-  console.log("DEBUG: Auth middleware hit:", req.path);
   try {
     // Get track ID from URL path
     const trackId = req.params.id;
-    // console.log(req.path, "Track ID:", trackId);
     if (!trackId) {
-      // console.log(req.path, "Track ID is required");
       return next(new AppError(400, "Track ID is required"));
     }
 
-    // console.log(req.path, "Authenticating track access for track:", trackId);
     console.log("Authenticating track access for track:", trackId);
 
     // First check if track is public
@@ -64,7 +55,6 @@ const authenticateTrackAccess: RequestHandler = async (
     });
 
     if (!track) {
-      // console.log(req.path, "Track not found");
       return next(new AppError(404, "Track not found"));
     }
 
@@ -72,11 +62,6 @@ const authenticateTrackAccess: RequestHandler = async (
       (req.query.token as string) || req.headers.authorization?.split(" ")[1];
 
     if (!track.isPublic && !token) {
-      // console.log(req.path, "No token provided", {
-      //   isPublic: track.isPublic,
-      //   trackId,
-      //   token,
-      // });
       return next(new AppError(401, "No token provided"));
     }
 
@@ -91,7 +76,6 @@ const authenticateTrackAccess: RequestHandler = async (
           track.sharedWith.some((share) => share.userId === decoded.userId);
 
         if (!hasAccess) {
-          // console.log(req.path, "You don't have access to this track");
           return next(new AppError(403, "You don't have access to this track"));
         }
 
@@ -133,7 +117,6 @@ const authenticateTrackAccess: RequestHandler = async (
     });
 
     if (!reqTrack) {
-      // console.log(req.path, "Track not found");
       return next(new AppError(404, "Track not found"));
     }
 
@@ -254,23 +237,8 @@ router.get(
   "/:id/full.:format",
   authenticateTrackAccess,
   async (req: Request, res: Response, next) => {
-    // console.log("DEBUG: Full track route hit");
     try {
-      // console.log(
-      //   `[Full Track Request] ID: ${req.params.id}, Format: ${req.params.format}`
-      // );
-      // console.log(`[Full Track Request] Headers:`, req.headers);
-
       const track = (req as any).track; // TODO: Fix this `any`
-      // console.log(`[Full Track] Track data:`, {
-      //   id: track.id,
-      //   title: track.title,
-      //   format: req.params.format,
-      //   mp3Url: track.fullTrackMp3Url,
-      //   wavUrl: track.fullTrackWavUrl,
-      //   flacUrl: track.fullTrackFlacUrl,
-      // });
-
       const format = req.params.format.toLowerCase();
 
       let filePath: string;
@@ -284,43 +252,23 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
-      // console.log(`[Full Track] Using file path:`, filePath);
-
       // Stream the file directly from MinIO
       const fileStream = await getObject(filePath);
 
-      // Log response headers before sending
-      const responseHeaders = {
-        "Content-Type": format === "mp3" ? "audio/mpeg" : "audio/wav",
-        "Transfer-Encoding": "chunked",
-        "Cache-Control": "no-cache",
-        "Content-Disposition": `attachment; filename="${track.title}.${format}"`,
-      };
-      // console.log(`[Full Track] Setting response headers:`, responseHeaders);
-
-      res.setHeader("Content-Type", responseHeaders["Content-Type"]);
-      res.setHeader("Transfer-Encoding", responseHeaders["Transfer-Encoding"]);
-      res.setHeader("Cache-Control", responseHeaders["Cache-Control"]);
+      res.setHeader(
+        "Content-Type",
+        format === "mp3" ? "audio/mpeg" : "audio/wav"
+      );
+      res.setHeader("Transfer-Encoding", "chunked");
+      res.setHeader("Cache-Control", "no-cache");
       res.setHeader(
         "Content-Disposition",
-        responseHeaders["Content-Disposition"]
+        `attachment; filename="${track.title}.${format}"`
       );
-
-      // Track stream events
-      let bytesStreamed = 0;
-      fileStream.on("data", (chunk) => {
-        bytesStreamed += chunk.length;
-      });
-
-      fileStream.on("end", () => {
-        console.log(
-          `[Full Track] Stream completed. Total bytes streamed: ${bytesStreamed}`
-        );
-      });
 
       // Handle errors in the stream
       fileStream.on("error", (err) => {
-        console.error("[Full Track] Error streaming file:", err);
+        console.error("Error streaming file:", err);
         if (!res.headersSent) {
           res.status(500).json({ error: "Error streaming file" });
         }
@@ -328,7 +276,6 @@ router.get(
 
       fileStream.pipe(res);
     } catch (error) {
-      console.error("[Full Track] Error in route handler:", error);
       next(error);
     }
   }
