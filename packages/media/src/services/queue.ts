@@ -42,6 +42,22 @@ async function uploadWavFile(
   );
 }
 
+// Utility function to upload an MP3 file
+async function uploadMp3File(
+  buffer: Buffer,
+  filename: string,
+  directory: string
+): Promise<string> {
+  return uploadFile(
+    {
+      buffer,
+      originalname: `${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}.mp3`,
+      mimetype: "audio/mpeg",
+    } as StorageFile,
+    directory
+  );
+}
+
 // Utility function to update WAV conversion status
 async function updateWavConversionStatus(
   type: "full" | "component",
@@ -87,10 +103,25 @@ function createQueue<T>(name: string): Queue.Queue<T> {
   });
 }
 
+// Utility function to set up queue monitoring
+function setupQueueMonitoring<T>(queue: Queue.Queue<T>, name: string): void {
+  queue.on("completed", (job: Job<T>) => {
+    console.log(`${name} job ${job.id} completed successfully`);
+  });
+
+  queue.on("failed", (job: Job<T>, error: Error) => {
+    console.error(`${name} job ${job.id} failed:`, error);
+  });
+}
+
 // Create queues
 export const conversionQueue = createQueue<ConversionJob>("audio-conversion");
 export const wavConversionQueue =
   createQueue<WavConversionJob>("wav-conversion");
+
+// Set up monitoring for both queues
+setupQueueMonitoring(conversionQueue, "Conversion");
+setupQueueMonitoring(wavConversionQueue, "WAV conversion");
 
 // Process jobs
 conversionQueue.process(async (job: Job<ConversionJob>) => {
@@ -156,12 +187,9 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
     // Upload full track files, MP3 and FLAC. WAV is not uploaded, to save space.
     // It can be converted from FLAC on demand.
     console.log("Uploading full track files...");
-    const fullTrackMp3Url = await uploadFile(
-      {
-        buffer: fullTrackMp3Buffer,
-        originalname: `${originalName}_full.mp3`,
-        mimetype: "audio/mpeg",
-      } as StorageFile,
+    const fullTrackMp3Url = await uploadMp3File(
+      fullTrackMp3Buffer,
+      `${originalName}_full`,
       "tracks/"
     );
     console.log("Full track MP3 uploaded");
@@ -184,12 +212,9 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
         const waveformResult = await generateWaveformData(component.buffer);
         console.log(`Generated waveform data for component: ${component.name}`);
 
-        const mp3Url = await uploadFile(
-          {
-            buffer: mp3Buffer,
-            originalname: `${componentName}.mp3`,
-            mimetype: "audio/mpeg",
-          } as StorageFile,
+        const mp3Url = await uploadMp3File(
+          mp3Buffer,
+          `${componentName}.mp3`,
           "components/"
         );
 
@@ -415,15 +440,6 @@ export const queueWavConversion = async (
 
   return job.id;
 };
-
-// Event handlers for monitoring
-conversionQueue.on("completed", (job: Job<ConversionJob>) => {
-  console.log(`Job ${job.id} completed successfully`);
-});
-
-conversionQueue.on("failed", (job: Job<ConversionJob>, error: Error) => {
-  console.error(`Job ${job.id} failed:`, error);
-});
 
 // Utility function to convert to WAV from either FLAC or XM source
 async function convertToWav(
