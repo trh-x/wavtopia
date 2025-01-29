@@ -123,6 +123,31 @@ export const wavConversionQueue =
 setupQueueMonitoring(conversionQueue, "Conversion");
 setupQueueMonitoring(wavConversionQueue, "WAV conversion");
 
+// Utility function to clean up uploaded files
+async function cleanupUploadedFiles(
+  files: (string | undefined)[]
+): Promise<void> {
+  console.log("Cleaning up uploaded files...");
+  try {
+    await Promise.all(
+      files.filter((f): f is string => !!f).map((file) => deleteFile(file))
+    );
+    console.log("Cleanup completed");
+  } catch (cleanupError) {
+    console.error("Error during cleanup:", cleanupError);
+  }
+}
+
+// Utility function to check for disk space error
+function isDiskSpaceError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "53100"
+  );
+}
+
 // Process jobs
 conversionQueue.process(async (job: Job<ConversionJob>) => {
   console.log(
@@ -251,26 +276,14 @@ conversionQueue.process(async (job: Job<ConversionJob>) => {
       console.error("Database error during track creation:", dbError);
 
       // Clean up uploaded files if database operation fails
-      console.log("Cleaning up uploaded files...");
-      try {
-        await Promise.all([
-          deleteFile(originalUrl),
-          deleteFile(fullTrackMp3Url),
-          ...(coverArtUrl ? [deleteFile(coverArtUrl)] : []),
-          ...componentUploads.flatMap((comp) => [deleteFile(comp.mp3Url)]),
-        ]);
-        console.log("Cleanup completed");
-      } catch (cleanupError) {
-        console.error("Error during cleanup:", cleanupError);
-      }
+      await cleanupUploadedFiles([
+        originalUrl,
+        fullTrackMp3Url,
+        coverArtUrl,
+        ...componentUploads.map((comp) => comp.mp3Url),
+      ]);
 
-      // Check for disk space error
-      if (
-        typeof dbError === "object" &&
-        dbError !== null &&
-        "code" in dbError &&
-        dbError.code === "53100"
-      ) {
+      if (isDiskSpaceError(dbError)) {
         console.error("Insufficient storage space.");
       }
       throw dbError;
