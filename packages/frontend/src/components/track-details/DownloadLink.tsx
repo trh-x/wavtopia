@@ -1,7 +1,6 @@
 import { useAuthToken } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
-import { useWavConversion } from "../../hooks/useWavConversion";
-import { useFlacConversion } from "../../hooks/useFlacConversion";
+import { useAudioFileConversion } from "../../hooks/useAudioFileConversion";
 import { Track } from "@/types";
 
 interface DownloadLinkProps {
@@ -12,21 +11,13 @@ interface DownloadLinkProps {
 
 // TODO: DRY the FLAC and WAV download links
 
-interface DownloadLinkWavProps {
+interface ConvertAudioFileProps {
   href: string;
   small?: boolean;
   trackId: string;
   type: "full" | "component";
   componentId?: string;
-  children: React.ReactNode;
-}
-
-interface DownloadLinkFlacProps {
-  href: string;
-  small?: boolean;
-  trackId: string;
-  type: "full" | "component";
-  componentId?: string;
+  format: "wav" | "flac";
   children: React.ReactNode;
 }
 
@@ -48,19 +39,21 @@ export function DownloadLink({ href, small, children }: DownloadLinkProps) {
   );
 }
 
-export function DownloadLinkWav({
+export function ConvertAudioFile({
   href,
   small,
   trackId,
   type,
   componentId,
+  format,
   children,
-}: DownloadLinkWavProps) {
+}: ConvertAudioFileProps) {
   const { appendTokenToUrl } = useAuthToken();
-  const { status, isConverting, startConversion } = useWavConversion({
+  const { status, isConverting, startConversion } = useAudioFileConversion({
     trackId,
     type,
     componentId,
+    format,
   });
 
   const showConversionIcon = status !== "COMPLETED";
@@ -128,95 +121,20 @@ export function DownloadLinkWav({
   );
 }
 
-export function DownloadLinkFlac({
-  href,
-  small,
-  trackId,
-  type,
+interface AudioFileDownloadButtonProps {
+  track: Track;
+  componentId: string;
+  format: "wav" | "flac";
+}
+
+function AudioFileDownloadButton({
+  track,
   componentId,
-  children,
-}: DownloadLinkFlacProps) {
-  const { appendTokenToUrl } = useAuthToken();
-  const { status, isConverting, startConversion } = useFlacConversion({
-    trackId,
-    type,
-    componentId,
-  });
-
-  const showConversionIcon = status !== "COMPLETED";
-
-  const handleClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-
-    if (showConversionIcon) {
-      startConversion();
-    } else {
-      window.location.href = appendTokenToUrl(href);
-    }
-  };
-
-  return (
-    <a
-      href={status === "COMPLETED" ? href : "#"}
-      onClick={handleClick}
-      className={`inline-flex items-center space-x-1 ${
-        small ? "text-sm" : ""
-      } text-primary-600 hover:text-primary-700 font-medium`}
-      download
-    >
-      {showConversionIcon ? (
-        isConverting ? (
-          <svg
-            className="animate-spin h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-        ) : (
-          <svg
-            className="h-4 w-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-        )
-      ) : null}
-      <span>{children}</span>
-    </a>
-  );
-}
-
-interface WavDownloadButtonProps {
-  track: Track;
-  componentId: string;
-}
-
-function WavDownloadButton({ track, componentId }: WavDownloadButtonProps) {
+  format,
+}: AudioFileDownloadButtonProps) {
   const downloadProps = {
-    href: `/api/track/${track.id}/component/${componentId}.wav`,
-    children: "WAV",
+    href: `/api/track/${track.id}/component/${componentId}.${format}`,
+    children: format === "wav" ? "WAV" : "FLAC",
     small: true,
   };
 
@@ -224,46 +142,20 @@ function WavDownloadButton({ track, componentId }: WavDownloadButtonProps) {
     (component) => component.id === componentId
   );
 
-  if (component?.wavUrl) {
+  const audioFileUrl =
+    format === "wav" ? component?.wavUrl : component?.flacUrl;
+
+  if (audioFileUrl) {
     return <DownloadLink {...downloadProps} />;
   }
 
   return (
-    <DownloadLinkWav
+    <ConvertAudioFile
       {...downloadProps}
       trackId={track.id}
       type="component"
       componentId={componentId}
-    />
-  );
-}
-
-interface FlacDownloadButtonProps {
-  track: Track;
-  componentId: string;
-}
-
-function FlacDownloadButton({ track, componentId }: FlacDownloadButtonProps) {
-  const downloadProps = {
-    href: `/api/track/${track.id}/component/${componentId}.flac`,
-    children: "FLAC",
-    small: true,
-  };
-
-  const component = track.components.find(
-    (component) => component.id === componentId
-  );
-
-  if (component?.flacUrl) {
-    return <DownloadLink {...downloadProps} />;
-  }
-
-  return (
-    <DownloadLinkFlac
-      {...downloadProps}
-      trackId={track.id}
-      type="component"
-      componentId={componentId}
+      format={format}
     />
   );
 }
@@ -277,8 +169,16 @@ export function ComponentDownloadButtons({
 }) {
   return (
     <div className="space-x-2">
-      <WavDownloadButton track={track} componentId={componentId} />
-      <FlacDownloadButton track={track} componentId={componentId} />
+      <AudioFileDownloadButton
+        track={track}
+        componentId={componentId}
+        format="wav"
+      />
+      <AudioFileDownloadButton
+        track={track}
+        componentId={componentId}
+        format="flac"
+      />
       <DownloadLink
         href={`/api/track/${track.id}/component/${componentId}.mp3`}
         small

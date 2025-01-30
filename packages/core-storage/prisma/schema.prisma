@@ -53,8 +53,8 @@ model Track {
   sharedWith       TrackShare[] @relation("SharedTracks")
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
-  wavConversionStatus WavConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
-  flacConversionStatus FlacConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
+  wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
+  flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
 
   @@index([createdAt, id])
   @@index([title, id])
@@ -87,8 +87,8 @@ model Component {
   duration     Float?   @map("duration")
   trackId      String   @map("track_id")
   track        Track    @relation(fields: [trackId], references: [id])
-  wavConversionStatus WavConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
-  flacConversionStatus FlacConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
+  wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
+  flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -177,14 +177,7 @@ model Notification {
   @@map("notifications")
 }
 
-enum WavConversionStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-  FAILED
-}
-
-enum FlacConversionStatus {
+enum AudioFileConversionStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED

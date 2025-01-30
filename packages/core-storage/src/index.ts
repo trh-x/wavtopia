@@ -22,8 +22,7 @@ export {
   FeatureFlag,
   Notification,
   NotificationType,
-  WavConversionStatus,
-  FlacConversionStatus,
+  AudioFileConversionStatus,
 } from ".prisma/client";
 
 export {

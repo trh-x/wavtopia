@@ -1,5 +1,5 @@
 import { Job } from "bull";
-import { convertXMToWAV } from "../../services/wav-converter";
+import { convertXMToWAV } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
 import { StorageFile } from "@wavtopia/core-storage";

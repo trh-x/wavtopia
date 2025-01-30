@@ -372,13 +372,16 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       // Now POST to the media service to convert the track
       const mediaServiceUrl = config.services.mediaServiceUrl;
       if (mediaServiceUrl) {
-        const response = await fetch(mediaServiceUrl + "/api/media/convert", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ trackId: track.id }),
-        });
+        const response = await fetch(
+          mediaServiceUrl + "/api/media/convert-module",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ trackId: track.id }),
+          }
+        );
         const data = await response.json();
         console.log("Media service response:", data);
       } else {
@@ -611,45 +614,13 @@ router.patch("/:id/visibility", async (req: Request, res: Response, next) => {
   }
 });
 
-// Request WAV conversion
+// Request audio file generation
 router.post(
-  "/:id/convert-wav",
+  "/:id/convert-audio",
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
-      const { type, componentId } = req.body;
-      const mediaServiceUrl = config.services.mediaServiceUrl;
-
-      if (!mediaServiceUrl) {
-        throw new AppError(500, "Media service URL not configured");
-      }
-
-      const response = await fetch(mediaServiceUrl + "/api/media/convert-wav", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          trackId: req.params.id,
-          type,
-          componentId,
-        }),
-      });
-
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// Get track WAV conversion status
-router.get(
-  "/:id/wav-status",
-  authenticateTrackAccess,
-  async (req, res, next) => {
-    try {
+      const { type, componentId, format } = req.body;
       const mediaServiceUrl = config.services.mediaServiceUrl;
 
       if (!mediaServiceUrl) {
@@ -657,56 +628,7 @@ router.get(
       }
 
       const response = await fetch(
-        `${mediaServiceUrl}/api/media/wav-status/${req.params.id}`
-      );
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// Get component WAV conversion status
-router.get(
-  "/:id/component/:componentId/wav-status",
-  authenticateTrackAccess,
-  async (req, res, next) => {
-    try {
-      const mediaServiceUrl = config.services.mediaServiceUrl;
-
-      if (!mediaServiceUrl) {
-        throw new AppError(500, "Media service URL not configured");
-      }
-
-      const response = await fetch(
-        `${mediaServiceUrl}/api/media/component/${req.params.componentId}/wav-status`
-      );
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// TODO: DRY this with the WAV conversion routes
-
-// Request FLAC conversion
-router.post(
-  "/:id/convert-flac",
-  authenticateTrackAccess,
-  async (req, res, next) => {
-    try {
-      const { type, componentId } = req.body;
-      const mediaServiceUrl = config.services.mediaServiceUrl;
-
-      if (!mediaServiceUrl) {
-        throw new AppError(500, "Media service URL not configured");
-      }
-
-      const response = await fetch(
-        mediaServiceUrl + "/api/media/convert-flac",
+        mediaServiceUrl + "/api/media/convert-audio",
         {
           method: "POST",
           headers: {
@@ -716,35 +638,59 @@ router.post(
             trackId: req.params.id,
             type,
             componentId,
+            format,
           }),
         }
       );
+
+      const data = await response.json();
+      res.json(data);
     } catch (error) {
       next(error);
     }
   }
 );
 
-// Get track FLAC conversion status
+// Get track audio file conversion status
 router.get(
-  "/:id/flac-status",
+  "/:id/audio-conversion-status",
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
       const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(
+        `${mediaServiceUrl}/api/media/audio-conversion-status/${req.params.id}`
+      );
+      const data = await response.json();
+      res.json(data);
     } catch (error) {
       next(error);
     }
   }
 );
 
-// Get component FLAC conversion status
+// Get component audio file conversion status
 router.get(
-  "/:id/component/:componentId/flac-status",
+  "/:id/component/:componentId/audio-conversion-status",
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
       const mediaServiceUrl = config.services.mediaServiceUrl;
+
+      if (!mediaServiceUrl) {
+        throw new AppError(500, "Media service URL not configured");
+      }
+
+      const response = await fetch(
+        `${mediaServiceUrl}/api/media/component/${req.params.componentId}/audio-conversion-status`
+      );
+      const data = await response.json();
+      res.json(data);
     } catch (error) {
       next(error);
     }

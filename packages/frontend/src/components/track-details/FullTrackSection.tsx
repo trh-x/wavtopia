@@ -1,46 +1,36 @@
 import { Track } from "@/types";
 import { SyncedWaveform } from "../waveform/SyncedWaveform";
-import {
-  DownloadLink,
-  DownloadLinkWav,
-  DownloadLinkFlac,
-} from "./DownloadLink";
+import { DownloadLink, ConvertAudioFile } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 import { TrackWaveformPlaceholder } from "../track-list/TrackList";
 
-interface WavDownloadButtonProps {
+interface AudioFileDownloadButtonProps {
   track: Track;
+  format: "wav" | "flac";
 }
 
-function WavDownloadButton({ track }: WavDownloadButtonProps) {
+function AudioFileDownloadButton({
+  track,
+  format,
+}: AudioFileDownloadButtonProps) {
   const downloadProps = {
-    href: `/api/track/${track.id}/full.wav`,
-    children: "WAV",
+    href: `/api/track/${track.id}/full.${format}`,
+    children: format === "wav" ? "WAV" : "FLAC",
   };
 
   if (track.fullTrackWavUrl) {
     return <DownloadLink {...downloadProps} />;
   }
 
-  return <DownloadLinkWav {...downloadProps} trackId={track.id} type="full" />;
-}
-
-interface FlacDownloadButtonProps {
-  track: Track;
-}
-
-function FlacDownloadButton({ track }: FlacDownloadButtonProps) {
-  const downloadProps = {
-    href: `/api/track/${track.id}/full.flac`,
-    children: "FLAC",
-  };
-
-  if (track.fullTrackFlacUrl) {
-    return <DownloadLink {...downloadProps} />;
-  }
-
-  return <DownloadLinkFlac {...downloadProps} trackId={track.id} type="full" />;
+  return (
+    <ConvertAudioFile
+      {...downloadProps}
+      trackId={track.id}
+      type="full"
+      format={format}
+    />
+  );
 }
 
 interface FullTrackSectionProps {
@@ -67,8 +57,8 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         <DownloadLink href={`/api/track/${track.id}/original`}>
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
-        <WavDownloadButton track={track} />
-        <FlacDownloadButton track={track} />
+        <AudioFileDownloadButton track={track} format="wav" />
+        <AudioFileDownloadButton track={track} format="flac" />
         <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
           MP3
         </DownloadLink>
