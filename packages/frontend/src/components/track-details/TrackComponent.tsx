@@ -28,7 +28,6 @@ export function TrackComponent({
           >
             {component.name}
           </h3>
-          {isGridView && <p className={styles.text.label}>{component.type}</p>}
         </div>
         <ComponentDownloadButtons track={track} component={component} />
       </div>

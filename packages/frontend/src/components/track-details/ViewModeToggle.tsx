@@ -1,4 +1,4 @@
-import { styles } from "../../styles/common";
+import { Switch } from "../ui/Switch";
 
 export type ViewMode = "grid" | "list";
 
@@ -12,22 +12,26 @@ export function ViewModeToggle({
   onViewModeChange,
 }: ViewModeToggleProps) {
   return (
-    <div className="flex gap-2">
+    <div className="inline-flex rounded-lg border border-gray-200 p-1 text-sm">
       <button
         onClick={() => onViewModeChange("grid")}
-        className={`${styles.button.base} ${
-          viewMode === "grid" ? styles.button.active : styles.button.inactive
+        className={`relative rounded-md px-3 py-1.5 transition-colors duration-200 ${
+          viewMode === "grid"
+            ? "bg-primary-600 text-white"
+            : "text-gray-600 hover:text-gray-900"
         }`}
       >
-        Grid View
+        Grid
       </button>
       <button
         onClick={() => onViewModeChange("list")}
-        className={`${styles.button.base} ${
-          viewMode === "list" ? styles.button.active : styles.button.inactive
+        className={`relative rounded-md px-3 py-1.5 transition-colors duration-200 ${
+          viewMode === "list"
+            ? "bg-primary-600 text-white"
+            : "text-gray-600 hover:text-gray-900"
         }`}
       >
-        List View
+        List
       </button>
     </div>
   );
