@@ -1,4 +1,5 @@
 import { Prisma } from ".prisma/client";
+export type Component = Prisma.ComponentGetPayload<{}>;
 export type Track = Prisma.TrackGetPayload<{
     include: {
         user: {
@@ -20,11 +21,6 @@ export type Track = Prisma.TrackGetPayload<{
                 };
             };
         };
-    };
-}>;
-export type Component = Prisma.ComponentGetPayload<{
-    include: {
-        track: true;
     };
 }>;
 export type TrackShare = Prisma.TrackShareGetPayload<{
