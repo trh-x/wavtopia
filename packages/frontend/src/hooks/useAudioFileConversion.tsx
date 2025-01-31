@@ -124,7 +124,7 @@ export function useAudioFileConversion({
         },
         body: JSON.stringify({
           type,
-          component,
+          componentId: component?.id,
           format,
         }),
       });
