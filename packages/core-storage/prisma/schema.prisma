@@ -37,7 +37,7 @@ model Track {
   id               String       @id @default(uuid())
   title            String
   artist           String
-  originalFormat   String       @map("original_format")
+  originalFormat   String       @map("original_format") // TODO: Define enum for formats
   originalUrl      String       @map("original_url")
   fullTrackWavUrl  String?      @map("full_track_wav_url")
   fullTrackMp3Url  String?      @map("full_track_mp3_url")
@@ -53,7 +53,8 @@ model Track {
   sharedWith       TrackShare[] @relation("SharedTracks")
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
-  wavConversionStatus WavConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
+  wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
+  flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
 
   @@index([createdAt, id])
   @@index([title, id])
@@ -77,6 +78,7 @@ model TrackShare {
 
 model Component {
   id           String   @id @default(uuid())
+  index        Int
   name         String
   type         String
   wavUrl       String?  @map("wav_url")
@@ -86,10 +88,12 @@ model Component {
   duration     Float?   @map("duration")
   trackId      String   @map("track_id")
   track        Track    @relation(fields: [trackId], references: [id])
-  wavConversionStatus WavConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
+  wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
+  flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  @@unique([trackId, index])
   @@map("components")
 }
 
@@ -175,7 +179,7 @@ model Notification {
   @@map("notifications")
 }
 
-enum WavConversionStatus {
+enum AudioFileConversionStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED

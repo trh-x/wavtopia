@@ -7,7 +7,20 @@ import { AppError } from "../middleware/errorHandler";
 
 const execAsync = promisify(exec);
 
-export async function convertWAVToFLAC(wavBuffer: Buffer): Promise<Buffer> {
+export async function convertAudioToFormat(
+  audioBuffer: Buffer,
+  format: "flac" | "wav"
+): Promise<Buffer> {
+  if (format === "flac") {
+    return convertWAVToFLAC(audioBuffer);
+  } else {
+    return convertFLACToWAV(audioBuffer);
+  }
+}
+
+// TODO: Improve the DRY of this code
+
+async function convertWAVToFLAC(wavBuffer: Buffer): Promise<Buffer> {
   try {
     // Create temporary directory
     const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-flac-"));
@@ -42,7 +55,7 @@ export async function convertWAVToFLAC(wavBuffer: Buffer): Promise<Buffer> {
   }
 }
 
-export async function convertFLACToWAV(flacBuffer: Buffer): Promise<Buffer> {
+async function convertFLACToWAV(flacBuffer: Buffer): Promise<Buffer> {
   try {
     // Create temporary directory
     const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-wav-"));

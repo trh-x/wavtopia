@@ -1,4 +1,5 @@
 import { Prisma } from ".prisma/client";
+export type Component = Prisma.ComponentGetPayload<{}>;
 export type Track = Prisma.TrackGetPayload<{
     include: {
         user: {
@@ -20,6 +21,11 @@ export type Track = Prisma.TrackGetPayload<{
                 };
             };
         };
+    };
+}>;
+export type TrackShare = Prisma.TrackShareGetPayload<{
+    include: {
+        user: true;
     };
 }>;
 export interface PaginatedResponse<T> {

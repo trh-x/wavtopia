@@ -1,7 +1,7 @@
 import { useAuthToken } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
-import { useWavConversion } from "../../hooks/useWavConversion";
-import { Track } from "@/types";
+import { useAudioFileConversion } from "../../hooks/useAudioFileConversion";
+import { Component, Track } from "@/types"; // TODO: Rename Component to save confusion with React.
 
 interface DownloadLinkProps {
   href: string;
@@ -9,12 +9,13 @@ interface DownloadLinkProps {
   children: React.ReactNode;
 }
 
-interface DownloadLinkWavProps {
+interface ConvertAudioFileProps {
   href: string;
   small?: boolean;
-  trackId: string;
+  track: Track;
   type: "full" | "component";
-  componentId?: string;
+  component?: Component;
+  format: "wav" | "flac";
   children: React.ReactNode;
 }
 
@@ -36,19 +37,21 @@ export function DownloadLink({ href, small, children }: DownloadLinkProps) {
   );
 }
 
-export function DownloadLinkWav({
+export function ConvertAudioFile({
   href,
   small,
-  trackId,
+  track,
   type,
-  componentId,
+  component,
+  format,
   children,
-}: DownloadLinkWavProps) {
+}: ConvertAudioFileProps) {
   const { appendTokenToUrl } = useAuthToken();
-  const { status, isConverting, startConversion } = useWavConversion({
-    trackId,
+  const { status, isConverting, startConversion } = useAudioFileConversion({
+    track,
     type,
-    componentId,
+    component,
+    format,
   });
 
   const showConversionIcon = status !== "COMPLETED";
@@ -63,6 +66,7 @@ export function DownloadLinkWav({
     }
   };
 
+  // TODO: Add a tooltip to explain the conversion process
   return (
     <a
       href={status === "COMPLETED" ? href : "#"}
@@ -116,58 +120,66 @@ export function DownloadLinkWav({
   );
 }
 
-interface WavDownloadButtonProps {
+interface AudioFileDownloadButtonProps {
   track: Track;
-  componentId: string;
+  component: Component;
+  format: "wav" | "flac";
 }
 
-function WavDownloadButton({ track, componentId }: WavDownloadButtonProps) {
+function AudioFileDownloadButton({
+  track,
+  component,
+  format,
+}: AudioFileDownloadButtonProps) {
   const downloadProps = {
-    href: `/api/track/${track.id}/component/${componentId}.wav`,
-    children: "WAV",
+    href: `/api/track/${track.id}/component/${component.id}.${format}`,
+    children: format === "wav" ? "WAV" : "FLAC",
     small: true,
   };
 
-  const component = track.components.find(
-    (component) => component.id === componentId
-  );
+  const audioFileUrl =
+    format === "wav" ? component?.wavUrl : component?.flacUrl;
 
-  if (component?.wavConversionStatus === "COMPLETED") {
+  if (audioFileUrl) {
     return <DownloadLink {...downloadProps} />;
   }
 
   return (
-    <DownloadLinkWav
+    <ConvertAudioFile
       {...downloadProps}
-      trackId={track.id}
+      track={track}
       type="component"
-      componentId={componentId}
+      component={component}
+      format={format}
     />
   );
 }
 
 export function ComponentDownloadButtons({
   track,
-  componentId,
+  component,
 }: {
   track: Track;
-  componentId: string;
+  component: Component;
 }) {
   return (
-    <div className="space-x-2">
-      <WavDownloadButton track={track} componentId={componentId} />
+    <div className="flex gap-2">
       <DownloadLink
-        href={`/api/track/${track.id}/component/${componentId}.flac`}
-        small
-      >
-        FLAC
-      </DownloadLink>
-      <DownloadLink
-        href={`/api/track/${track.id}/component/${componentId}.mp3`}
+        href={`/api/track/${track.id}/component/${component.id}.mp3`}
         small
       >
         MP3
       </DownloadLink>
+      <AudioFileDownloadButton
+        track={track}
+        component={component}
+        format="flac"
+      />
+      <AudioFileDownloadButton
+        track={track}
+        component={component}
+        format="wav"
+      />
     </div>
   );
 }

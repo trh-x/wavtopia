@@ -1,5 +1,8 @@
 import { Prisma } from ".prisma/client";
 
+// Base Component type - matches what Prisma gives us in track.components
+export type Component = Prisma.ComponentGetPayload<{}>;
+
 export type Track = Prisma.TrackGetPayload<{
   include: {
     user: {
@@ -21,6 +24,12 @@ export type Track = Prisma.TrackGetPayload<{
         };
       };
     };
+  };
+}>;
+
+export type TrackShare = Prisma.TrackShareGetPayload<{
+  include: {
+    user: true;
   };
 }>;
 

@@ -372,13 +372,16 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       // Now POST to the media service to convert the track
       const mediaServiceUrl = config.services.mediaServiceUrl;
       if (mediaServiceUrl) {
-        const response = await fetch(mediaServiceUrl + "/api/media/convert", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ trackId: track.id }),
-        });
+        const response = await fetch(
+          mediaServiceUrl + "/api/media/convert-module",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ trackId: track.id }),
+          }
+        );
         const data = await response.json();
         console.log("Media service response:", data);
       } else {
@@ -611,30 +614,34 @@ router.patch("/:id/visibility", async (req: Request, res: Response, next) => {
   }
 });
 
-// Request WAV conversion
+// Request audio file generation
 router.post(
-  "/:id/convert-wav",
+  "/:id/convert-audio",
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
-      const { type, componentId } = req.body;
+      const { type, componentId, format } = req.body;
       const mediaServiceUrl = config.services.mediaServiceUrl;
 
       if (!mediaServiceUrl) {
         throw new AppError(500, "Media service URL not configured");
       }
 
-      const response = await fetch(mediaServiceUrl + "/api/media/convert-wav", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          trackId: req.params.id,
-          type,
-          componentId,
-        }),
-      });
+      const response = await fetch(
+        mediaServiceUrl + "/api/media/convert-audio",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            trackId: req.params.id,
+            type,
+            componentId,
+            format,
+          }),
+        }
+      );
 
       const data = await response.json();
       res.json(data);
@@ -644,12 +651,13 @@ router.post(
   }
 );
 
-// Get track WAV conversion status
+// Get track audio file conversion status
 router.get(
-  "/:id/wav-status",
+  "/:id/audio-conversion-status",
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
+      const { format } = req.query;
       const mediaServiceUrl = config.services.mediaServiceUrl;
 
       if (!mediaServiceUrl) {
@@ -657,7 +665,7 @@ router.get(
       }
 
       const response = await fetch(
-        `${mediaServiceUrl}/api/media/wav-status/${req.params.id}`
+        `${mediaServiceUrl}/api/media/audio-conversion-status/${req.params.id}?format=${format}`
       );
       const data = await response.json();
       res.json(data);
@@ -667,9 +675,9 @@ router.get(
   }
 );
 
-// Get component WAV conversion status
+// Get component audio file conversion status
 router.get(
-  "/:id/component/:componentId/wav-status",
+  "/:id/component/:componentId/audio-conversion-status",
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
@@ -680,7 +688,7 @@ router.get(
       }
 
       const response = await fetch(
-        `${mediaServiceUrl}/api/media/component/${req.params.componentId}/wav-status`
+        `${mediaServiceUrl}/api/media/component/${req.params.componentId}/audio-conversion-status`
       );
       const data = await response.json();
       res.json(data);

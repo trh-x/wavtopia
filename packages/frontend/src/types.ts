@@ -3,4 +3,6 @@ export type {
   PaginatedResponse,
   PaginationParams,
   User,
+  Component,
+  TrackShare,
 } from "@wavtopia/core-storage";

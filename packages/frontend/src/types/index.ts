@@ -1,3 +1,5 @@
+// TODO: These types should come from core-storage.
+
 export interface User {
   id: string;
   username: string;

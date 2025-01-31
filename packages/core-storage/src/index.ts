@@ -22,11 +22,13 @@ export {
   FeatureFlag,
   Notification,
   NotificationType,
-  WavConversionStatus,
+  AudioFileConversionStatus,
 } from ".prisma/client";
 
 export {
   type Track,
+  type Component,
+  type TrackShare,
   type PaginatedResponse,
   type PaginationParams,
   encodeCursor,
