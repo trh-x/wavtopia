@@ -78,6 +78,7 @@ model TrackShare {
 
 model Component {
   id           String   @id @default(uuid())
+  index        Int
   name         String
   type         String
   wavUrl       String?  @map("wav_url")
@@ -92,6 +93,7 @@ model Component {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  @@unique([trackId, index])
   @@map("components")
 }
 

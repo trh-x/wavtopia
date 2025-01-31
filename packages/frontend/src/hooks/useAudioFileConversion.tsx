@@ -1,24 +1,23 @@
 import { useState, useEffect } from "react";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { useAuthToken } from "./useAuthToken";
-
-// TODO: DRY this with useFlacConversion
+import { Track, Component } from "@/types";
 
 type ConversionType = "full" | "component";
 type ConversionStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
 type ConversionFormat = "wav" | "flac";
 
 interface UseWavConversionProps {
-  trackId: string;
+  track: Track;
   type: ConversionType;
-  componentId?: string;
+  component?: Component;
   format: ConversionFormat;
 }
 
 export function useAudioFileConversion({
-  trackId,
+  track,
   type,
-  componentId,
+  component,
   format,
 }: UseWavConversionProps) {
   const [status, setStatus] = useState<ConversionStatus>("NOT_STARTED");
@@ -27,10 +26,12 @@ export function useAudioFileConversion({
   const { getToken } = useAuthToken();
 
   const formatName = format === "wav" ? "WAV" : "FLAC";
+  const name = component ? component.name : track.title;
 
   // Poll for status updates when conversion is in progress
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
+    let currentController = new AbortController();
 
     if (isConverting) {
       const checkStatus = async () => {
@@ -38,14 +39,20 @@ export function useAudioFileConversion({
           const token = getToken();
           if (!token) return;
 
-          const statusUrl = componentId
-            ? `/api/track/${trackId}/component/${componentId}/audio-conversion-status`
-            : `/api/track/${trackId}/audio-conversion-status`;
+          const statusUrl = component
+            ? `/api/track/${track.id}/component/${component.id}/audio-conversion-status`
+            : `/api/track/${track.id}/audio-conversion-status`;
 
-          const response = await fetch(statusUrl, {
+          // Abort any pending requests before making a new one
+          currentController.abort();
+          // Create a new controller for this request
+          currentController = new AbortController();
+
+          const response = await fetch(`${statusUrl}?format=${format}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
+            signal: currentController.signal,
           });
           const data = await response.json();
 
@@ -58,7 +65,7 @@ export function useAudioFileConversion({
               addNotification({
                 type: "success",
                 title: `${formatName} Conversion Complete`,
-                message: `Your ${formatName} file is ready for download.`,
+                message: `${name} is ready for download in ${formatName} format.`,
               });
             } else if (data.data.conversionStatus === "FAILED") {
               setIsConverting(false);
@@ -66,15 +73,18 @@ export function useAudioFileConversion({
               addNotification({
                 type: "error",
                 title: `${formatName} Conversion Failed`,
-                message: `There was an error converting your file to ${formatName} format.`,
+                message: `There was an error converting ${name} to ${formatName} format.`,
               });
             }
           }
-        } catch (error) {
-          console.error(
-            `Error checking ${formatName} conversion status:`,
-            error
-          );
+        } catch (error: unknown) {
+          // Only log errors that aren't from aborting
+          if (error instanceof Error && error.name !== "AbortError") {
+            console.error(
+              `Error checking ${formatName} conversion status:`,
+              error
+            );
+          }
         }
       };
 
@@ -88,8 +98,17 @@ export function useAudioFileConversion({
       if (intervalId) {
         clearInterval(intervalId);
       }
+      currentController.abort(); // Clean up any pending requests when unmounting
     };
-  }, [trackId, isConverting, addNotification, getToken]);
+  }, [
+    isConverting,
+    track,
+    component,
+    format,
+    formatName,
+    getToken,
+    addNotification,
+  ]);
 
   const startConversion = async () => {
     try {
@@ -97,7 +116,7 @@ export function useAudioFileConversion({
       const token = getToken();
       if (!token) return;
 
-      const response = await fetch(`/api/track/${trackId}/convert-audio`, {
+      const response = await fetch(`/api/track/${track.id}/convert-audio`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -105,24 +124,26 @@ export function useAudioFileConversion({
         },
         body: JSON.stringify({
           type,
-          componentId,
+          component,
           format,
         }),
       });
 
       const data = await response.json();
 
+      const name = component ? component.name : track.title;
+
       if (data.status === "success") {
         addNotification({
           type: "info",
           title: `${formatName} Conversion Started`,
-          message: `Your file is being converted to ${formatName} format.`,
+          message: `${name} is being converted to ${formatName} format.`,
         });
       } else if (data.status === "in_progress") {
         addNotification({
           type: "info",
           title: `${formatName} Conversion In Progress`,
-          message: `Your file is already being converted to ${formatName} format.`,
+          message: `${name} is already being converted to ${formatName} format.`,
         });
       }
     } catch (error) {

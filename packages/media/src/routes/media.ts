@@ -127,7 +127,7 @@ router.post("/convert-audio", async (req, res, next) => {
 });
 
 // Get track audio file conversion status
-router.get("/audio-file-status/:trackId", async (req, res, next) => {
+router.get("/audio-conversion-status/:trackId", async (req, res, next) => {
   try {
     const { trackId } = req.params;
     const { format } = req.query;
@@ -160,7 +160,7 @@ router.get("/audio-file-status/:trackId", async (req, res, next) => {
 
 // Get component audio file conversion status
 router.get(
-  "/component/:componentId/audio-file-status",
+  "/component/:componentId/audio-conversion-status",
   async (req, res, next) => {
     try {
       const { componentId } = req.params;

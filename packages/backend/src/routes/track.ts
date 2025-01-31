@@ -657,6 +657,7 @@ router.get(
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
+      const { format } = req.query;
       const mediaServiceUrl = config.services.mediaServiceUrl;
 
       if (!mediaServiceUrl) {
@@ -664,7 +665,7 @@ router.get(
       }
 
       const response = await fetch(
-        `${mediaServiceUrl}/api/media/audio-conversion-status/${req.params.id}`
+        `${mediaServiceUrl}/api/media/audio-conversion-status/${req.params.id}?format=${format}`
       );
       const data = await response.json();
       res.json(data);

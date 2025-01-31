@@ -26,7 +26,7 @@ function AudioFileDownloadButton({
   return (
     <ConvertAudioFile
       {...downloadProps}
-      trackId={track.id}
+      track={track}
       type="full"
       format={format}
     />
@@ -57,11 +57,11 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         <DownloadLink href={`/api/track/${track.id}/original`}>
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
-        <AudioFileDownloadButton track={track} format="wav" />
-        <AudioFileDownloadButton track={track} format="flac" />
         <DownloadLink href={`/api/track/${track.id}/full.mp3`}>
           MP3
         </DownloadLink>
+        <AudioFileDownloadButton track={track} format="flac" />
+        <AudioFileDownloadButton track={track} format="wav" />
       </div>
     </div>
   );

@@ -72,6 +72,7 @@ async function processComponent(
 ): Promise<{
   name: string;
   type: string;
+  index: number;
   mp3Url: string;
   waveformData: number[];
   duration: number;
@@ -95,6 +96,7 @@ async function processComponent(
   return {
     name: component.name,
     type: component.type,
+    index,
     mp3Url,
     waveformData: waveformResult.peaks,
     duration: waveformResult.duration,
