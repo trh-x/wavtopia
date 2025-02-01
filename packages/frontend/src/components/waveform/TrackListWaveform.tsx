@@ -1,7 +1,7 @@
 import { useTrackListPlayback } from "@/contexts/TrackListPlaybackContext";
 import { WaveformDisplay } from "./WaveformDisplay";
 
-interface TrackListWaveformProps {
+export interface TrackListWaveformProps {
   waveformData: number[];
   audioUrl: string;
   duration?: number;

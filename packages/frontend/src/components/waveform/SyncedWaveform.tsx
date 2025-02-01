@@ -1,7 +1,7 @@
 import { useSyncedPlayback } from "@/contexts/SyncedPlaybackContext";
 import { WaveformDisplay } from "./WaveformDisplay";
 
-interface SyncedWaveformProps {
+export interface SyncedWaveformProps {
   waveformData: number[];
   audioUrl: string;
   duration?: number;
