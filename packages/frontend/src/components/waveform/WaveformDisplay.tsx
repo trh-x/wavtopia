@@ -102,6 +102,7 @@ export function WaveformDisplay({
 
   // Initialize WaveSurfer instance
   useEffect(() => {
+    console.log(">>> in useEffect", { audioUrl });
     if (!containerRef.current || !waveformData?.length) return;
 
     // Only create if we don't have an instance
@@ -161,19 +162,24 @@ export function WaveformDisplay({
       });
 
       wavesurferRef.current = wavesurfer;
+    }
 
-      return () => {
+    return () => {
+      // Only clean up if we are actually unmounting
+      if (!document.contains(containerRef.current!)) {
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.src = "";
           audioRef.current.load();
         }
 
-        unregisterWaveform(wavesurfer);
-        wavesurfer.destroy();
-        wavesurferRef.current = null;
-      };
-    }
+        if (wavesurferRef.current) {
+          unregisterWaveform(wavesurferRef.current!);
+          wavesurferRef.current.destroy();
+          wavesurferRef.current = null;
+        }
+      }
+    };
   }, []);
 
   // Update Audio element when props change
