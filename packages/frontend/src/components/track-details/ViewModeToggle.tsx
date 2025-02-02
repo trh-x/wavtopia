@@ -1,4 +1,4 @@
-import { styles } from "../../styles/common";
+import { Toggle } from "../ui/Toggle";
 
 export type ViewMode = "grid" | "list";
 
@@ -12,23 +12,13 @@ export function ViewModeToggle({
   onViewModeChange,
 }: ViewModeToggleProps) {
   return (
-    <div className="flex gap-2">
-      <button
-        onClick={() => onViewModeChange("grid")}
-        className={`${styles.button.base} ${
-          viewMode === "grid" ? styles.button.active : styles.button.inactive
-        }`}
-      >
-        Grid View
-      </button>
-      <button
-        onClick={() => onViewModeChange("list")}
-        className={`${styles.button.base} ${
-          viewMode === "list" ? styles.button.active : styles.button.inactive
-        }`}
-      >
-        List View
-      </button>
-    </div>
+    <Toggle
+      value={viewMode}
+      options={[
+        { value: "grid", label: "Grid" },
+        { value: "list", label: "List" },
+      ]}
+      onChange={onViewModeChange}
+    />
   );
 }

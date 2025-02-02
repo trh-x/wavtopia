@@ -1,20 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { useState } from "react";
-import { SyncedPlaybackProvider } from "../contexts/SyncedPlaybackContext";
-import { useAuthToken } from "../hooks/useAuthToken";
-import { TrackHeader } from "../components/track-details/TrackHeader";
-import { FullTrackSection } from "../components/track-details/FullTrackSection";
-import { ComponentsSection } from "../components/track-details/ComponentsSection";
-import { ViewMode } from "../components/track-details/ViewModeToggle";
-import { LoadingState } from "../components/ui/LoadingState";
-import { ErrorState } from "../components/ui/ErrorState";
-import { api } from "../api/client";
-import { TrackSharingControls } from "../components/track-details/TrackSharingControls";
+import { useAuthToken } from "../../hooks/useAuthToken";
+import { TrackHeader } from "../../components/track-details/TrackHeader";
+import { FullTrackSection } from "../../components/track-details/FullTrackSection";
+import { ComponentsSection } from "../../components/track-details/ComponentsSection";
+import { ViewMode } from "../../components/track-details/ViewModeToggle";
+import { LoadingState } from "../../components/ui/LoadingState";
+import { ErrorState } from "../../components/ui/ErrorState";
+import { api } from "../../api/client";
+import { TrackSharingControls } from "../../components/track-details/TrackSharingControls";
 import { useAuth } from "@/contexts/AuthContext";
+import { TrackDetailsPlaybackProvider } from "./contexts/PlaybackContext";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
+  // TODO: Move viewMode state to ComponentsSection if it's only used there
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { getToken } = useAuthToken();
   const { user } = useAuth();
@@ -46,7 +47,7 @@ export function TrackDetails() {
   }
 
   return (
-    <SyncedPlaybackProvider>
+    <TrackDetailsPlaybackProvider>
       <div>
         <TrackHeader
           title={track.title}
@@ -67,6 +68,6 @@ export function TrackDetails() {
           <TrackSharingControls track={track} token={token} />
         )}
       </div>
-    </SyncedPlaybackProvider>
+    </TrackDetailsPlaybackProvider>
   );
 }

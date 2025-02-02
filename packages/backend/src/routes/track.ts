@@ -260,7 +260,6 @@ router.get(
         format === "mp3" ? "audio/mpeg" : "audio/wav"
       );
       res.setHeader("Transfer-Encoding", "chunked");
-      res.setHeader("Cache-Control", "no-cache");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${track.title}.${format}"`

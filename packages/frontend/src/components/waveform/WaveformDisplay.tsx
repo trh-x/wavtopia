@@ -8,10 +8,12 @@ interface WaveformDisplayProps {
   waveformData: number[];
   audioUrl: string;
   duration?: number;
+  preloadMetadata?: boolean;
   height?: number;
   color?: string;
   progressColor?: string;
   isFullTrack?: boolean;
+  isStreamable?: boolean;
 }
 
 export function WaveformDisplay({
@@ -19,10 +21,12 @@ export function WaveformDisplay({
   waveformData,
   audioUrl,
   duration,
+  preloadMetadata = false,
   height = 128,
   color = "#1f2937",
   progressColor = "#4f46e5",
   isFullTrack = false,
+  isStreamable = false,
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -102,13 +106,16 @@ export function WaveformDisplay({
 
   // Initialize WaveSurfer instance
   useEffect(() => {
+    console.log(">>> in useEffect", { audioUrl });
     if (!containerRef.current || !waveformData?.length) return;
 
     // Only create if we don't have an instance
     if (!wavesurferRef.current) {
-      audioRef.current = new Audio(audioUrl);
-      audioRef.current.preload = isFullTrack ? "metadata" : "none";
-      audioRef.current.src = audioUrl;
+      if (isStreamable) {
+        audioRef.current = new Audio();
+        audioRef.current.preload = preloadMetadata ? "metadata" : "none";
+        audioRef.current.src = audioUrl;
+      }
 
       const params = {
         container: containerRef.current,
@@ -126,9 +133,13 @@ export function WaveformDisplay({
         peaks: [new Float32Array(waveformData)],
         duration,
         autoplay: false,
-        media: audioRef.current,
+        ...(isStreamable
+          ? { media: audioRef.current }
+          : {
+              url: audioUrl,
+              backend: "WebAudio" as const,
+            }),
       };
-
       const wavesurfer = WaveSurfer.create(params);
 
       wavesurfer.on("loading", () => {
@@ -161,28 +172,33 @@ export function WaveformDisplay({
       });
 
       wavesurferRef.current = wavesurfer;
+    }
 
-      return () => {
+    return () => {
+      // Only clean up if we are actually unmounting
+      if (!document.contains(containerRef.current!)) {
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.src = "";
           audioRef.current.load();
         }
 
-        unregisterWaveform(wavesurfer);
-        wavesurfer.destroy();
-        wavesurferRef.current = null;
-      };
-    }
+        if (wavesurferRef.current) {
+          unregisterWaveform(wavesurferRef.current!);
+          wavesurferRef.current.destroy();
+          wavesurferRef.current = null;
+        }
+      }
+    };
   }, []);
 
   // Update Audio element when props change
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.preload = isFullTrack ? "metadata" : "none";
+    if (audioRef.current && isStreamable) {
       audioRef.current.src = audioUrl;
+      audioRef.current.preload = preloadMetadata ? "metadata" : "none";
     }
-  }, [audioUrl, isFullTrack]);
+  }, [audioUrl, preloadMetadata, isStreamable]);
 
   // Update WaveSurfer options when props change
   useEffect(() => {

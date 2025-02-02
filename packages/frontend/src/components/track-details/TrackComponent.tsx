@@ -1,5 +1,5 @@
 import { Track, Component } from "@/types";
-import { SyncedWaveform } from "../waveform/SyncedWaveform";
+import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetailsWaveform";
 import { ComponentDownloadButtons } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
@@ -28,11 +28,10 @@ export function TrackComponent({
           >
             {component.name}
           </h3>
-          {isGridView && <p className={styles.text.label}>{component.type}</p>}
         </div>
         <ComponentDownloadButtons track={track} component={component} />
       </div>
-      <SyncedWaveform
+      <TrackDetailsWaveform
         waveformData={component.waveformData}
         duration={component.duration ?? undefined}
         height={isGridView ? 48 : 64}

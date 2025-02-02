@@ -1,4 +1,5 @@
 import { Track } from "@/types";
+import { PlayModeToggle } from "./PlayModeToggle";
 import { ViewModeToggle, ViewMode } from "./ViewModeToggle";
 import { TrackComponent } from "./TrackComponent";
 import { styles } from "../../styles/common";
@@ -18,10 +19,13 @@ export function ComponentsSection({
     <div className={styles.layout.stack}>
       <div className={styles.container.flexBetween}>
         <h2 className={styles.text.heading}>Components</h2>
-        <ViewModeToggle
-          viewMode={viewMode}
-          onViewModeChange={onViewModeChange}
-        />
+        <div className={styles.container.flexRow}>
+          <PlayModeToggle />
+          <ViewModeToggle
+            viewMode={viewMode}
+            onViewModeChange={onViewModeChange}
+          />
+        </div>
       </div>
 
       <div

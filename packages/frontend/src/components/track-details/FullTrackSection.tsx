@@ -1,9 +1,9 @@
 import { Track } from "@/types";
-import { SyncedWaveform } from "../waveform/SyncedWaveform";
 import { DownloadLink, ConvertAudioFile } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 import { TrackWaveformPlaceholder } from "../track-list/TrackList";
+import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetailsWaveform";
 
 interface AudioFileDownloadButtonProps {
   track: Track;
@@ -44,12 +44,13 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         {track.originalUrl?.startsWith("file://") ? (
           <TrackWaveformPlaceholder height={96} />
         ) : (
-          <SyncedWaveform
+          <TrackDetailsWaveform
             waveformData={track.waveformData}
             duration={track.duration ?? undefined}
             height={96}
             audioUrl={getAudioUrl(`/api/track/${track.id}/full.mp3`)}
-            isFullTrack={true}
+            isFullTrack
+            preloadMetadata // Irrelevant for synced playback where the full track is loaded
           />
         )}
       </div>
