@@ -115,8 +115,6 @@ export function WaveformDisplay({
         audioRef.current = new Audio();
         audioRef.current.preload = preloadMetadata ? "metadata" : "none";
         audioRef.current.src = audioUrl;
-      } else {
-        audioRef.current = new Audio(audioUrl);
       }
 
       const params = {
@@ -135,9 +133,13 @@ export function WaveformDisplay({
         peaks: [new Float32Array(waveformData)],
         duration,
         autoplay: false,
-        media: audioRef.current,
+        ...(isStreamable
+          ? { media: audioRef.current }
+          : {
+              url: audioUrl,
+              backend: "WebAudio" as const,
+            }),
       };
-
       const wavesurfer = WaveSurfer.create(params);
 
       wavesurfer.on("loading", () => {
@@ -188,18 +190,15 @@ export function WaveformDisplay({
         }
       }
     };
-  }, [isStreamable]);
+  }, []);
 
   // Update Audio element when props change
   useEffect(() => {
-    if (audioRef.current) {
+    if (audioRef.current && isStreamable) {
       audioRef.current.src = audioUrl;
-
-      if (!isStreamable) {
-        audioRef.current.preload = preloadMetadata ? "metadata" : "none";
-      }
+      audioRef.current.preload = preloadMetadata ? "metadata" : "none";
     }
-  }, [audioUrl, preloadMetadata]);
+  }, [audioUrl, preloadMetadata, isStreamable]);
 
   // Update WaveSurfer options when props change
   useEffect(() => {
