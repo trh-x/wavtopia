@@ -49,7 +49,8 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
             duration={track.duration ?? undefined}
             height={96}
             audioUrl={getAudioUrl(`/api/track/${track.id}/full.mp3`)}
-            isFullTrack={true}
+            isFullTrack
+            preloadMetadata // Irrelevant for synced playback where the full track is loaded
           />
         )}
       </div>

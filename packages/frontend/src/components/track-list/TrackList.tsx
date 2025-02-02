@@ -3,7 +3,7 @@ import { Track } from "@/types";
 import { LoadingState } from "../ui/LoadingState";
 import { ErrorState } from "../ui/ErrorState";
 import { useAuthToken } from "@/hooks/useAuthToken";
-import { TrackListWaveform } from "../waveform/TrackListWaveform";
+import { StreamableWaveform } from "../waveform/StreamableWaveform";
 import { TrackListPlaybackProvider } from "@/contexts/TrackListPlaybackContext";
 import { cn } from "@/utils/cn";
 import { Checkbox } from "../ui/Checkbox";
@@ -304,7 +304,7 @@ export function TrackList({
             {track.originalUrl?.startsWith("file://") ? (
               <TrackWaveformPlaceholder height={48} />
             ) : (
-              <TrackListWaveform
+              <StreamableWaveform
                 waveformData={track.waveformData}
                 duration={track.duration ?? undefined}
                 audioUrl={appendTokenToUrl(`/api/track/${track.id}/full.mp3`)}

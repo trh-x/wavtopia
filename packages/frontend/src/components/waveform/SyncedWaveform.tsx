@@ -32,6 +32,7 @@ export function SyncedWaveform({
       color={color}
       progressColor={progressColor}
       isFullTrack={isFullTrack}
+      isStreamable={false}
     />
   );
 }

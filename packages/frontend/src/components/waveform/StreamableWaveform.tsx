@@ -1,23 +1,25 @@
 import { useTrackListPlayback } from "@/contexts/TrackListPlaybackContext";
 import { WaveformDisplay } from "./WaveformDisplay";
 
-export interface TrackListWaveformProps {
+export interface StreamableWaveformProps {
   waveformData: number[];
   audioUrl: string;
   duration?: number;
+  preloadMetadata?: boolean;
   height?: number;
   color?: string;
   progressColor?: string;
 }
 
-export function TrackListWaveform({
+export function StreamableWaveform({
   waveformData,
   audioUrl,
   duration,
+  preloadMetadata = false,
   height = 48,
   color = "#4b5563",
   progressColor = "#6366f1",
-}: TrackListWaveformProps) {
+}: StreamableWaveformProps) {
   const trackListContext = useTrackListPlayback();
 
   return (
@@ -30,6 +32,8 @@ export function TrackListWaveform({
       color={color}
       progressColor={progressColor}
       isFullTrack={true}
+      preloadMetadata={preloadMetadata}
+      isStreamable={true}
     />
   );
 }

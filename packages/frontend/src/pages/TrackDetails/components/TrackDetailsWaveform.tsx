@@ -1,7 +1,7 @@
 import {
-  TrackListWaveform,
-  TrackListWaveformProps,
-} from "@/components/waveform/TrackListWaveform";
+  StreamableWaveform,
+  StreamableWaveformProps,
+} from "@/components/waveform/StreamableWaveform";
 import {
   SyncedWaveform,
   SyncedWaveformProps,
@@ -9,7 +9,7 @@ import {
 import { PlaybackContext } from "../contexts/PlaybackContext";
 import { useContext } from "react";
 
-export type TrackDetailsWaveformProps = TrackListWaveformProps &
+export type TrackDetailsWaveformProps = StreamableWaveformProps &
   SyncedWaveformProps;
 
 export function TrackDetailsWaveform({
@@ -28,7 +28,7 @@ export function TrackDetailsWaveform({
   }
 
   return playbackContext.playMode === "preview" ? (
-    <TrackListWaveform
+    <StreamableWaveform
       waveformData={waveformData}
       audioUrl={audioUrl}
       duration={duration}

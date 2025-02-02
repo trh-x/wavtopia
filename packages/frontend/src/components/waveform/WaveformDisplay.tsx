@@ -8,10 +8,12 @@ interface WaveformDisplayProps {
   waveformData: number[];
   audioUrl: string;
   duration?: number;
+  preloadMetadata?: boolean;
   height?: number;
   color?: string;
   progressColor?: string;
   isFullTrack?: boolean;
+  isStreamable?: boolean;
 }
 
 export function WaveformDisplay({
@@ -19,10 +21,12 @@ export function WaveformDisplay({
   waveformData,
   audioUrl,
   duration,
+  preloadMetadata = false,
   height = 128,
   color = "#1f2937",
   progressColor = "#4f46e5",
   isFullTrack = false,
+  isStreamable = false,
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -107,9 +111,13 @@ export function WaveformDisplay({
 
     // Only create if we don't have an instance
     if (!wavesurferRef.current) {
-      audioRef.current = new Audio(audioUrl);
-      audioRef.current.preload = isFullTrack ? "metadata" : "none";
-      audioRef.current.src = audioUrl;
+      if (isStreamable) {
+        audioRef.current = new Audio();
+        audioRef.current.preload = preloadMetadata ? "metadata" : "none";
+        audioRef.current.src = audioUrl;
+      } else {
+        audioRef.current = new Audio(audioUrl);
+      }
 
       const params = {
         container: containerRef.current,
@@ -180,15 +188,18 @@ export function WaveformDisplay({
         }
       }
     };
-  }, []);
+  }, [isStreamable]);
 
   // Update Audio element when props change
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.preload = isFullTrack ? "metadata" : "none";
       audioRef.current.src = audioUrl;
+
+      if (!isStreamable) {
+        audioRef.current.preload = preloadMetadata ? "metadata" : "none";
+      }
     }
-  }, [audioUrl, isFullTrack]);
+  }, [audioUrl, preloadMetadata]);
 
   // Update WaveSurfer options when props change
   useEffect(() => {
