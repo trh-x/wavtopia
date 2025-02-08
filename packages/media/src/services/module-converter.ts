@@ -36,7 +36,7 @@ export async function convertXMToWAV(
 
       // First, convert the full track
       const { stderr: fullTrackStderr } = await execAsync(
-        `"${config.tools.exportToWavPath}" "${xmPath}" --output "${join(
+        `"${config.tools.exportToWavPath}" "${xmPath}" -output "${join(
           tempDir,
           fullTrackOutput
         )}"`
@@ -53,10 +53,10 @@ export async function convertXMToWAV(
 
       // Then convert individual components
       const { stderr: componentsStderr } = await execAsync(
-        `"${config.tools.exportToWavPath}" "${xmPath}" --output "${join(
+        `"${config.tools.exportToWavPath}" "${xmPath}" -output "${join(
           tempDir,
           componentsBaseName
-        )}" --multi-track`
+        )}" -multi-track`
       );
 
       if (componentsStderr) {
