@@ -6,6 +6,7 @@
 !scripts/**
 !package.json
 !pnpm-*.yaml
+!.npmrc
 
 # Exclude deploy script so changes to it don't trigger a rebuild
 !scripts/deploy.sh
