@@ -4,6 +4,8 @@
 ARCH=$(uname -m)
 if [ "$ARCH" = "x86_64" ]; then
     ARCH="amd64"
+elif [ "$ARCH" = "aarch64" ]; then
+    ARCH="arm64"
 fi
 
 echo "Detected architecture: $ARCH"
