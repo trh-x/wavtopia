@@ -22,7 +22,6 @@ ENV PNPM_HOME="/pnpm" \
 # Copy workspace files first
 COPY pnpm-workspace.yaml package.json ./
 COPY pnpm-lock*.yaml ./
-COPY .npmrc ./
 
 # Copy all packages
 COPY packages ./packages
