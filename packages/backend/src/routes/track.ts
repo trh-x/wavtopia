@@ -120,23 +120,9 @@ const authenticateTrackAccess: RequestHandler = async (
       return next(new AppError(404, "Track not found"));
     }
 
-    // Only allow access to certain fields for public tracks when user is not authenticated
+    // Omit some fields for public tracks when user is not authenticated
     if (reqTrack.isPublic && !req.user) {
-      const publicTrack = {
-        id: reqTrack.id,
-        title: reqTrack.title,
-        artist: reqTrack.artist,
-        coverArt: reqTrack.coverArt,
-        isPublic: reqTrack.isPublic,
-        fullTrackWavUrl: reqTrack.fullTrackWavUrl,
-        fullTrackMp3Url: reqTrack.fullTrackMp3Url,
-        originalFormat: reqTrack.originalFormat,
-        waveformData: reqTrack.waveformData,
-        components: reqTrack.components,
-        user: reqTrack.user,
-        createdAt: reqTrack.createdAt,
-        updatedAt: reqTrack.updatedAt,
-      };
+      const { sharedWith, ...publicTrack } = reqTrack;
       (req as any).track = publicTrack; // TODO: Fix this `any`
     } else {
       (req as any).track = reqTrack; // TODO: Fix this `any`
