@@ -7,7 +7,7 @@ import { api } from "@/api/client";
 interface UploadFormData {
   title: string;
   artist: string;
-  originalFormat: string;
+  originalFormat: string | null;
   original: File | null;
   coverArt: File | null;
 }
@@ -21,7 +21,7 @@ export function UploadTrack() {
       initialValues: {
         title: "",
         artist: "",
-        originalFormat: "xm",
+        originalFormat: null,
         original: null,
         coverArt: null,
       },
@@ -55,8 +55,14 @@ export function UploadTrack() {
   ) => {
     const file = e.target.files?.[0] || null;
     if (file && field === "original") {
-      const format = file.name.split(".").pop()?.toLowerCase() || "xm";
-      handleChange("originalFormat", format);
+      const format = file.name.split(".").pop()?.toLowerCase();
+      if (format === "it") {
+        handleChange("originalFormat", "it");
+      } else if (format === "mod") {
+        handleChange("originalFormat", "mod");
+      } else {
+        handleChange("originalFormat", "xm");
+      }
     }
     handleChange(field, file);
   };
@@ -89,9 +95,9 @@ export function UploadTrack() {
           <FormInput
             id="original"
             type="file"
-            label="Original Track File (.xm or .XM)"
+            label="Original Track File (.xm, .it, .mod)"
             required
-            accept=".xm,.XM"
+            accept=".xm,.it,.mod"
             onChange={(e) => handleFileChange(e, "original")}
           />
 

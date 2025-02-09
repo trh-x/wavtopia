@@ -8,6 +8,7 @@ export const ServerConfigSchema = z.object({
 
 export const ToolsConfigSchema = z.object({
   milkyCliPath: z.string().default("/usr/local/bin/milkycli"),
+  schismTrackerPath: z.string().default("/usr/local/bin/schismtracker"),
 });
 
 export const SharedConfigSchema = z.object({
@@ -26,6 +27,7 @@ function loadConfig(): SharedConfig {
     },
     tools: {
       milkyCliPath: process.env.MILKYCLI_PATH,
+      schismTrackerPath: process.env.SCHISMTRACKER_PATH,
     },
   });
 }

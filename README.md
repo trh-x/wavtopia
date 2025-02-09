@@ -7,10 +7,10 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 ## Features
 
 - **Track Management**: Upload, manage, and share your music tracks
-- **Audio Conversion**: Automatic conversion of .xm files to WAV format
+- **Audio Conversion**: Automatic conversion of .xm, .it, and .mod files to WAV format
 - **Component Extraction**: Split tracks into individual instrument components
 - **Multi-format Downloads**:
-  - Download the original tracker file (.xm)
+  - Download the original tracker file (.xm, .it, .mod)
   - Download the full track as WAV
   - Download individual instrument components as WAV
 - **Real-time Playback**: Play and preview tracks directly in the browser
@@ -36,6 +36,7 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 - libxmp
 - MinIO (for local development) or S3-compatible storage
 - milkycli utility (see below)
+- schismtracker application (see below)
 
 ### `milkycli` Installation
 
@@ -58,6 +59,10 @@ git add packages/media/deps/milkytracker && git commit
 The media service's Dockerfile will automatically build and install the `milkycli` utility during container build.
 
 Note: This is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
+
+### `schismtracker` Installation
+
+TODO: Add instructions for installing schismtracker
 
 ### Installation Steps
 
@@ -227,7 +232,7 @@ The backend provides the following main endpoints:
 - `GET /api/track/:id` - Get track details
 - `PATCH /api/track/:id` - Update track details
 - `DELETE /api/track/:id` - Delete a track
-- `GET /api/track/:id/original` - Download original .xm file
+- `GET /api/track/:id/original` - Download file in original format
 - `GET /api/track/:id/full` - Download full track WAV
 - `GET /api/track/:id/component/:componentId` - Download component WAV
 
@@ -250,7 +255,7 @@ The backend provides the following main endpoints:
 
 2. **File upload fails**
 
-   - Check that your file is in .xm format
+   - Check that your file is in a supported format (xm, it, mod)
    - Ensure the file size is under 50MB
    - Verify MinIO is running and accessible
 

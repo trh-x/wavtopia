@@ -49,13 +49,13 @@ export function DropZone({
         type="file"
         className="hidden"
         multiple
-        accept=".xm,image/*"
+        accept=".xm,.it,.mod,image/*"
         onChange={handleFileSelect}
         disabled={disabled}
       />
       <div className="space-y-2">
         <p className="text-lg font-medium">
-          Drop track files (.xm) and cover art here
+          Drop track files (.xm, .it, .mod) and cover art here
         </p>
         <p className="text-sm text-gray-500">or click to select files</p>
       </div>

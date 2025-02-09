@@ -11,7 +11,7 @@ import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, getObject } from "../services/storage";
 import { z } from "zod";
-import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
+import { deleteLocalFile, Prisma, SourceFormat } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import { config } from "../config";
 import { deleteTrack, deleteMultipleTracks } from "../services/track";
@@ -338,13 +338,26 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       console.log("Cover art URL:", coverArtUrl);
     }
 
+    const originalFormat = {
+      xm: SourceFormat.XM,
+      it: SourceFormat.IT,
+      mod: SourceFormat.MOD,
+    }[data.originalFormat];
+
+    if (!originalFormat) {
+      throw new AppError(
+        400,
+        `Invalid original format: ${data.originalFormat}`
+      );
+    }
+
     console.log("Creating database record...");
     try {
       const track = await prisma.track.create({
         data: {
           title: data.title,
           artist: data.artist,
-          originalFormat: data.originalFormat,
+          originalFormat,
           originalUrl: originalFileUrl,
           coverArt: coverArtUrl,
           metadata: data.metadata as Prisma.InputJsonValue,
@@ -436,12 +449,20 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
       coverArtUrl = await uploadFile(files.coverArt[0], "covers/");
     }
 
+    const originalFormat = data.originalFormat
+      ? {
+          xm: SourceFormat.XM,
+          it: SourceFormat.IT,
+          mod: SourceFormat.MOD,
+        }[data.originalFormat]
+      : undefined;
+
     const track = await prisma.track.update({
       where: { id: req.params.id },
       data: {
         title: data.title,
         artist: data.artist,
-        originalFormat: data.originalFormat,
+        originalFormat,
         coverArt: coverArtUrl,
         metadata: data.metadata as Prisma.InputJsonValue,
       },

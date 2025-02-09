@@ -84,6 +84,8 @@ This document provides tips and common solutions for debugging issues in the Wav
      "Starting track upload process..."
      "Uploading original file..."
      "Converting XM to WAV..."
+     "Converting IT to WAV..."
+     "Converting MOD to WAV..."
      "Generating waveform data..."
      "Converting to MP3..."
      ```

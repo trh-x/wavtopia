@@ -1,7 +1,11 @@
 import { Job } from "bull";
-import { convertXMToWAV } from "../module-converter";
+import { convertModuleToWAV } from "../module-converter";
 import { convertAudioToFormat } from "../audio-file-converter";
-import { AudioFileConversionStatus, StorageFile } from "@wavtopia/core-storage";
+import {
+  AudioFileConversionStatus,
+  SourceFormat,
+  StorageFile,
+} from "@wavtopia/core-storage";
 import { uploadFile, getObject } from "../storage";
 import {
   createQueue,
@@ -115,11 +119,14 @@ audioFileConversionQueue.process(async (job: Job<AudioFileConversionJob>) => {
       if (
         !(
           track[sourceUrlProperty] ||
-          (track.originalFormat === "xm" && track.originalUrl)
+          ((track.originalFormat === SourceFormat.XM ||
+            track.originalFormat === SourceFormat.IT ||
+            track.originalFormat === SourceFormat.MOD) &&
+            track.originalUrl)
         )
       ) {
         throw new Error(
-          `Track ${trackId} has no FLAC or original source XM file URL`
+          `Track ${trackId} has no FLAC or original source ${track.originalFormat} file URL`
         );
       }
 
@@ -164,12 +171,15 @@ audioFileConversionQueue.process(async (job: Job<AudioFileConversionJob>) => {
       if (
         !(
           component[sourceUrlProperty] ||
-          (track.originalFormat === "xm" && track.originalUrl)
+          ((track.originalFormat === SourceFormat.XM ||
+            track.originalFormat === SourceFormat.IT ||
+            track.originalFormat === SourceFormat.MOD) &&
+            track.originalUrl)
         )
       ) {
         const sourceFormat = format === "wav" ? "FLAC" : "WAV";
         throw new Error(
-          `Component ${componentId} has no ${sourceFormat} or full track original source XM file URL`
+          `Component ${componentId} has no ${sourceFormat} or full track original source ${track.originalFormat} file URL`
         );
       }
 
@@ -254,7 +264,7 @@ export const queueAudioFileConversion = async (
   return job.id;
 };
 
-// Utility function to convert to WAV from either FLAC or XM source
+// Utility function to convert to WAV from either FLAC or module source
 async function convertToFormat(
   track: {
     originalUrl: string | null;
@@ -274,13 +284,21 @@ async function convertToFormat(
     );
     const sourceBuffer = await downloadFileToBuffer(sourceUrl);
     return convertAudioToFormat(sourceBuffer, format);
-  } else if (track.originalFormat === "xm" && track.originalUrl) {
+  } else if (
+    (track.originalFormat === SourceFormat.XM ||
+      track.originalFormat === SourceFormat.IT ||
+      track.originalFormat === SourceFormat.MOD) &&
+    track.originalUrl
+  ) {
     console.log(
-      `No ${sourceFormat} file found, converting from XM to ${format}`
+      `No ${sourceFormat} file found, converting from ${track.originalFormat} to ${format}`
     );
     const sourceBuffer = await downloadFileToBuffer(track.originalUrl);
 
-    const converted = await convertXMToWAV(sourceBuffer);
+    const converted = await convertModuleToWAV(
+      sourceBuffer,
+      track.originalFormat
+    );
 
     let wavBuffer: Buffer;
     if (typeof componentIndex === "number") {

@@ -18,6 +18,7 @@ export {
   Prisma,
   User,
   Role,
+  SourceFormat,
   InviteCode,
   FeatureFlag,
   Notification,

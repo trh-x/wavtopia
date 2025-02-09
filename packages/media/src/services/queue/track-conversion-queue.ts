@@ -1,5 +1,5 @@
 import { Job } from "bull";
-import { convertXMToWAV } from "../module-converter";
+import { convertModuleToWAV } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
 import { StorageFile } from "@wavtopia/core-storage";
@@ -182,12 +182,13 @@ trackConversionQueue.process(async (job: Job<TrackConversionJob>) => {
       console.log("Cover art uploaded:", coverArtUrl);
     }
 
-    // Convert XM to WAV
-    console.log("Converting XM to WAV...");
-    const { fullTrackWavBuffer, components } = await convertXMToWAV(
-      originalFile.buffer
+    // Convert module to WAV
+    console.log("Converting module to WAV...");
+    const { fullTrackWavBuffer, components } = await convertModuleToWAV(
+      originalFile.buffer,
+      track.originalFormat
     );
-    console.log("XM conversion complete. Components:", components.length);
+    console.log("Module conversion complete. Components:", components.length);
 
     const {
       mp3Url: fullTrackMp3Url,
