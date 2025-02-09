@@ -22,14 +22,14 @@ RUN apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Build export-to-wav utility
+# Build milkycli utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker
 
 # Build MilkyTracker
 RUN cd deps/milkytracker && \
     cmake -B build -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build build --target export-to-wav && \
-    cp build/src/tools/export-to-wav/export-to-wav /usr/local/bin/ && \
+    cmake --build build --target milkycli && \
+    cp build/src/tools/milkycli/milkycli /usr/local/bin/ && \
     cd ../.. && \
     rm -rf deps/milkytracker
 

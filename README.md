@@ -35,11 +35,11 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 - FFmpeg
 - libxmp
 - MinIO (for local development) or S3-compatible storage
-- export-to-wav utility (see below)
+- milkycli utility (see below)
 
-### export-to-wav Installation
+### `milkycli` Installation
 
-The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. This utility is included as a git submodule from [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372).
+The project requires the `milkycli` utility from MilkyTracker for converting XM files to WAV format. This utility is included as a git submodule from [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372).
 
 When cloning the repository, make sure to initialize the submodules:
 
@@ -55,7 +55,7 @@ git submodule update --remote
 git add packages/media/deps/milkytracker && git commit
 ```
 
-The media service's Dockerfile will automatically build and install the `export-to-wav` utility during container build.
+The media service's Dockerfile will automatically build and install the `milkycli` utility during container build.
 
 Note: This is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
 
@@ -272,7 +272,7 @@ MINIO_PORT="9000"
 MINIO_ROOT_USER="minioadmin"
 MINIO_ROOT_PASSWORD="minioadmin"
 MINIO_BUCKET="wavtopia"
-EXPORT_TO_WAV_PATH="/usr/local/bin/export-to-wav"
+MILKYCLI_PATH="/usr/local/bin/milkycli"
 
 # packages/frontend/.env
 VITE_API_URL="http://localhost:3002"
