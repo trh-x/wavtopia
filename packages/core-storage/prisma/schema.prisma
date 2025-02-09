@@ -34,6 +34,7 @@ enum Role {
 enum SourceFormat {
   XM  @map("xm")  // FastTracker2
   IT  @map("it")  // Impulse Tracker
+  MOD @map("mod") // ProTracker/NoiseTracker
 }
 
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
