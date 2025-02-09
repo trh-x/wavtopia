@@ -34,6 +34,9 @@ export function WaveformDisplay({
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isAudioReady, setIsAudioReady] = useState(false);
+
+  const isWaveformReady = isReady && (isStreamable || isAudioReady);
 
   const {
     registerWaveform,
@@ -104,6 +107,8 @@ export function WaveformDisplay({
     );
   };
 
+  let cleanupCanPlay: () => void;
+
   // Initialize WaveSurfer instance
   useEffect(() => {
     console.log(">>> in useEffect", { audioUrl });
@@ -113,8 +118,8 @@ export function WaveformDisplay({
     if (!wavesurferRef.current) {
       if (isStreamable) {
         audioRef.current = new Audio();
-        audioRef.current.preload = preloadMetadata ? "metadata" : "none";
         audioRef.current.src = audioUrl;
+        audioRef.current.preload = preloadMetadata ? "metadata" : "none";
       }
 
       const params = {
@@ -142,9 +147,13 @@ export function WaveformDisplay({
       };
       const wavesurfer = WaveSurfer.create(params);
 
-      wavesurfer.on("loading", () => {
-        setIsLoading(true);
-      });
+      if (!isStreamable) {
+        // TODO: It would be nice to extend wavesurfer to emit progress events so we can show a progress bar
+        // See https://github.com/katspaugh/wavesurfer.js/blob/f56ea150c03f0d01f3e260208347606aceb00ce5/src/webaudio.ts#L65-L85
+        cleanupCanPlay = (wavesurfer as any).onMediaEvent("canplay", () => {
+          setIsAudioReady(true);
+        });
+      }
 
       wavesurfer.on("ready", () => {
         setIsLoading(false);
@@ -188,6 +197,10 @@ export function WaveformDisplay({
           wavesurferRef.current.destroy();
           wavesurferRef.current = null;
         }
+
+        if (cleanupCanPlay) {
+          cleanupCanPlay();
+        }
       }
     };
   }, []);
@@ -217,12 +230,22 @@ export function WaveformDisplay({
     const currentWavesurfer = wavesurferRef.current;
     if (!currentWavesurfer || !waveformData?.length) return;
 
+    // if (cleanupCanPlay) {
+    //   cleanupCanPlay();
+    // }
+
+    // if (isStreamable) {
+    //   cleanupCanPlay = (wavesurferRef.current as any).onMediaEvent("canplay", () => {
+    //     setIsAudioReady(true);
+    //   });
+    // }
+
     const peaks = new Float32Array(waveformData);
     currentWavesurfer.setOptions({ peaks: [peaks] });
   }, [waveformData]);
 
   const handlePlayPause = async () => {
-    if (!wavesurferRef.current || !isReady) return;
+    if (!wavesurferRef.current || !isWaveformReady) return;
 
     try {
       if (isPlaying && !isMuted(wavesurferRef.current)) {
@@ -236,7 +259,7 @@ export function WaveformDisplay({
   };
 
   const handleSolo = async () => {
-    if (!wavesurferRef.current || !isReady) return;
+    if (!wavesurferRef.current || !isWaveformReady) return;
     soloComponent(wavesurferRef.current);
   };
 
@@ -245,7 +268,7 @@ export function WaveformDisplay({
       <div className="flex gap-2">
         <button
           onClick={handlePlayPause}
-          disabled={isLoading || !isReady}
+          disabled={isLoading || !isWaveformReady}
           className={`
             flex-shrink-0
             p-2.5 rounded-full 
@@ -253,7 +276,7 @@ export function WaveformDisplay({
             transition-all duration-200
             border
             ${
-              isLoading || !isReady
+              isLoading || !isWaveformReady
                 ? "cursor-not-allowed opacity-50 border-gray-200"
                 : ""
             }
@@ -341,7 +364,7 @@ export function WaveformDisplay({
         {isFullTrack && (
           <button
             onClick={handleStopButton}
-            disabled={isLoading || !isReady}
+            disabled={isLoading || !isWaveformReady}
             className={`
               flex-shrink-0
               p-2.5 rounded-full 
@@ -349,7 +372,7 @@ export function WaveformDisplay({
               transition-all duration-200
               border
               ${
-                isLoading || !isReady
+                isLoading || !isWaveformReady
                   ? "cursor-not-allowed opacity-50 border-gray-200"
                   : "bg-red-50 hover:bg-red-100 border-red-200"
               }
@@ -369,7 +392,7 @@ export function WaveformDisplay({
         {!isFullTrack && (
           <button
             onClick={handleSolo}
-            disabled={isLoading || !isReady}
+            disabled={isLoading || !isWaveformReady}
             className={`
               flex-shrink-0
               p-2.5 rounded-full 
@@ -377,7 +400,7 @@ export function WaveformDisplay({
               transition-all duration-200
               border
               ${
-                isLoading || !isReady
+                isLoading || !isWaveformReady
                   ? "cursor-not-allowed opacity-50 border-gray-200"
                   : ""
               }
@@ -416,7 +439,7 @@ export function WaveformDisplay({
               ? "opacity-60" // Muted state
               : "" // Playing state
             : "opacity-70" // Stopped state
-        } ${!isLoading && isReady ? "cursor-pointer" : ""}`}
+        } ${!isLoading && isWaveformReady ? "cursor-pointer" : ""}`}
         style={{ minHeight: `${height}px` }}
       />
     </div>
