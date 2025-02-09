@@ -27,14 +27,28 @@ async function convertFullTrack(
   tempDir: string,
   fullTrackOutput: string
 ): Promise<{ stdout: string; stderr: string }> {
-  // TODO: Covnert it and mod formats
-  const { stdout, stderr } = await execAsync(
-    `"${config.tools.milkyCliPath}" "${modulePath}" -output "${join(
-      tempDir,
-      fullTrackOutput
-    )}"`
-  );
-  return { stdout, stderr };
+  // TODO: Try libxmp for mod files
+  if (moduleFormat === SourceFormat.XM || moduleFormat === SourceFormat.MOD) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.milkyCliPath}" "${modulePath}" -output "${join(
+        tempDir,
+        fullTrackOutput
+      )}"`
+    );
+    return { stdout, stderr };
+  }
+
+  if (moduleFormat === SourceFormat.IT) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.schismTrackerPath}" --headless --diskwrite="${join(
+        tempDir,
+        fullTrackOutput
+      )}" "${modulePath}"`
+    );
+    return { stdout, stderr };
+  }
+
+  throw new AppError(500, `Unsupported module format: ${moduleFormat}`);
 }
 
 async function convertComponents(
@@ -43,14 +57,28 @@ async function convertComponents(
   tempDir: string,
   componentsBaseName: string
 ): Promise<{ stdout: string; stderr: string }> {
-  // TODO: Convert it and mod formats
-  const { stdout, stderr } = await execAsync(
-    `"${config.tools.milkyCliPath}" "${modulePath}" -output "${join(
-      tempDir,
-      componentsBaseName
-    )}" -multi-track`
-  );
-  return { stdout, stderr };
+  // TODO: Try libxmp for mod files
+  if (moduleFormat === SourceFormat.XM || moduleFormat === SourceFormat.MOD) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.milkyCliPath}" "${modulePath}" -output "${join(
+        tempDir,
+        componentsBaseName
+      )}" -multi-track`
+    );
+    return { stdout, stderr };
+  }
+
+  if (moduleFormat === SourceFormat.IT) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.schismTrackerPath}" --headless --diskwrite="${join(
+        tempDir,
+        componentsBaseName.replace(".wav", "_%c.wav")
+      )}" "${modulePath}"`
+    );
+    return { stdout, stderr };
+  }
+
+  throw new AppError(500, `Unsupported module format: ${moduleFormat}`);
 }
 
 export async function convertModuleToWAV(
