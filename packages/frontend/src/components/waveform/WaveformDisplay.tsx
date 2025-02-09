@@ -37,6 +37,7 @@ export function WaveformDisplay({
   const [isAudioReady, setIsAudioReady] = useState(false);
 
   const isWaveformReady = isReady && (isStreamable || isAudioReady);
+  const isWaveformLoading = isLoading || (!isStreamable && !isAudioReady);
 
   const {
     registerWaveform,
@@ -111,7 +112,6 @@ export function WaveformDisplay({
 
   // Initialize WaveSurfer instance
   useEffect(() => {
-    console.log(">>> in useEffect", { audioUrl });
     if (!containerRef.current || !waveformData?.length) return;
 
     // Only create if we don't have an instance
@@ -268,7 +268,7 @@ export function WaveformDisplay({
       <div className="flex gap-2">
         <button
           onClick={handlePlayPause}
-          disabled={isLoading || !isWaveformReady}
+          disabled={isWaveformLoading || !isWaveformReady}
           className={`
             flex-shrink-0
             p-2.5 rounded-full 
@@ -276,7 +276,7 @@ export function WaveformDisplay({
             transition-all duration-200
             border
             ${
-              isLoading || !isWaveformReady
+              isWaveformLoading || !isWaveformReady
                 ? "cursor-not-allowed opacity-50 border-gray-200"
                 : ""
             }
@@ -289,7 +289,7 @@ export function WaveformDisplay({
             }
           `}
         >
-          {isLoading ? (
+          {isWaveformLoading ? (
             <svg
               className="w-5 h-5 animate-spin text-gray-600"
               viewBox="0 0 24 24"
@@ -364,7 +364,7 @@ export function WaveformDisplay({
         {isFullTrack && (
           <button
             onClick={handleStopButton}
-            disabled={isLoading || !isWaveformReady}
+            disabled={isWaveformLoading || !isWaveformReady}
             className={`
               flex-shrink-0
               p-2.5 rounded-full 
@@ -372,7 +372,7 @@ export function WaveformDisplay({
               transition-all duration-200
               border
               ${
-                isLoading || !isWaveformReady
+                isWaveformLoading || !isWaveformReady
                   ? "cursor-not-allowed opacity-50 border-gray-200"
                   : "bg-red-50 hover:bg-red-100 border-red-200"
               }
@@ -392,7 +392,7 @@ export function WaveformDisplay({
         {!isFullTrack && (
           <button
             onClick={handleSolo}
-            disabled={isLoading || !isWaveformReady}
+            disabled={isWaveformLoading || !isWaveformReady}
             className={`
               flex-shrink-0
               p-2.5 rounded-full 
@@ -400,7 +400,7 @@ export function WaveformDisplay({
               transition-all duration-200
               border
               ${
-                isLoading || !isWaveformReady
+                isWaveformLoading || !isWaveformReady
                   ? "cursor-not-allowed opacity-50 border-gray-200"
                   : ""
               }
@@ -439,7 +439,7 @@ export function WaveformDisplay({
               ? "opacity-60" // Muted state
               : "" // Playing state
             : "opacity-70" // Stopped state
-        } ${!isLoading && isWaveformReady ? "cursor-pointer" : ""}`}
+        } ${!isWaveformLoading && isWaveformReady ? "cursor-pointer" : ""}`}
         style={{ minHeight: `${height}px` }}
       />
     </div>
