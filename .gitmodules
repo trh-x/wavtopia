@@ -2,3 +2,6 @@
 	path = packages/media/deps/milkytracker
 	url = https://github.com/trh-x/MilkyTracker.git
 	branch = trh/export-to-wav
+[submodule "packages/media/deps/schismtracker"]
+	path = packages/media/deps/schismtracker
+	url = https://github.com/schismtracker/schismtracker.git
