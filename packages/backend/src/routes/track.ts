@@ -23,6 +23,7 @@ const router = Router();
 const trackSchema = z.object({
   title: z.string().min(1),
   artist: z.string().min(1),
+  // TODO: originalFormat: z.nativeEnum(SourceFormat),
   originalFormat: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
   isPublic: z.boolean().optional(),
