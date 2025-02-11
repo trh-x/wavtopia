@@ -13,14 +13,36 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
     lame \
+    # MilkyTracker dependencies
     build-essential \
     cmake \
     libsdl2-dev \
     libjack-dev \
     librtmidi-dev \
     zlib1g-dev \
+    # Schism Tracker dependencies
+    automake \
+    autoconf-archive \
+    libtool \
+    libflac-dev \
+    perl \
+    pkgconf \
+    libutf8proc-dev \
+    # Clean up
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Build and install Schism Tracker from source
+COPY packages/media/deps/schismtracker ./deps/schismtracker
+RUN cd deps/schismtracker && \
+    autoreconf -i && \
+    mkdir -p build && \
+    cd build && \
+    ../configure && \
+    make && \
+    cp schismtracker /usr/local/bin/ && \
+    cd ../.. && \
+    rm -rf deps/schismtracker
 
 # Build milkycli utility
 COPY packages/media/deps/milkytracker ./deps/milkytracker

@@ -51,18 +51,32 @@ git clone --recursive https://github.com/your-repo/wavtopia.git
 # If you've already cloned the repository:
 git submodule update --init --recursive
 
-# Pulling MilkyTracker changes into this repo:
+# Pulling dependency changes into this repo:
 git submodule update --remote
-git add packages/media/deps/milkytracker && git commit
+git add packages/media/deps/milkytracker packages/media/deps/schismtracker && git commit
 ```
 
-The media service's Dockerfile will automatically build and install the `milkycli` utility during container build.
+The media service's Dockerfile will automatically build and install both the `milkycli` utility and Schism Tracker during container build.
 
-Note: This is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
+Note: MilkyTracker submodule is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
 
 ### `schismtracker` Installation
 
-TODO: Add instructions for installing schismtracker
+Schism Tracker is used for additional module file format support and conversion. The media service's Docker image builds Schism Tracker from source to support multiple architectures.
+
+For local development, you can install it:
+
+```bash
+# Build from source (same as Docker)
+git clone https://github.com/schismtracker/schismtracker.git
+cd schismtracker
+git checkout 20250208
+autoreconf -i
+mkdir -p build && cd build
+../configure
+make
+sudo cp schismtracker /usr/local/bin/
+```
 
 ### Installation Steps
 
