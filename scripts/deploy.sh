@@ -48,12 +48,9 @@ while [[ "$#" -gt 0 ]]; do
             ;;
         -d|--debug) 
             DEBUG=true
-            shift
             ;;
         build-workspace|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
             COMMAND="$1"
-            shift
-            break
             ;;
         *)
             echo "Unknown parameter: $1"
