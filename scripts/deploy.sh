@@ -42,13 +42,33 @@ debug_log() {
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        -h|--help) show_help; exit 0 ;;
-        -d|--debug) DEBUG=true; shift ;;
-        build-*|up-*|down*|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod) COMMAND="$1" ;;
-        *) echo "Unknown parameter: $1"; exit 1 ;;
+        -h|--help) 
+            show_help
+            exit 0 
+            ;;
+        -d|--debug) 
+            DEBUG=true
+            shift
+            ;;
+        build-workspace|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
+            COMMAND="$1"
+            shift
+            break
+            ;;
+        *)
+            echo "Unknown parameter: $1"
+            exit 1
+            ;;
     esac
     shift
 done
+
+# Check if a command was specified
+if [ -z "$COMMAND" ]; then
+    echo "No command specified"
+    show_help
+    exit 1
+fi
 
 # Function to cleanup SSH tunnel
 cleanup_tunnel() {
