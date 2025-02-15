@@ -38,7 +38,7 @@ RUN cd deps/schismtracker && \
     autoreconf -i && \
     mkdir -p build && \
     cd build && \
-    ../configure && \
+    ../configure --with-alsa=no && \
     make && \
     cp schismtracker /usr/local/bin/ && \
     cd ../.. && \
@@ -62,7 +62,19 @@ COPY --from=prod-build /app/media-service .
 
 # Create directories for file processing
 RUN mkdir -p /tmp/uploads /tmp/converted && \
-    chmod 775 /tmp/uploads /tmp/converted
+    chmod 775 /tmp/uploads /tmp/converted && \
+    # Create XDG runtime directory
+    mkdir -p /run/user/1000 && \
+    chmod 700 /run/user/1000 && \
+    # Create schismtracker config directory
+    mkdir -p /root/.config/schism
+
+# Copy schismtracker config
+COPY packages/media/config/schism/config /root/.config/schism/config
+
+# Set environment variables
+ENV XDG_RUNTIME_DIR=/run/user/1000
+ENV SDL_AUDIODRIVER=disk
 
 # Copy env file for the media service
 COPY packages/media/.env.docker .env

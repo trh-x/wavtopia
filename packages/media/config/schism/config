@@ -1,0 +1,12 @@
+[Audio]
+driver=disk
+bits=16
+channels=2
+# Specify 44100 as the sample rate, matching the default for MilkyTracker. SchismTracker defaults to 48000.
+sample_rate=44100
+buffer_size=1024
+
+[Mixer Settings]
+channel_limit=128
+interpolation_mode=1
+surround_effect=1 
