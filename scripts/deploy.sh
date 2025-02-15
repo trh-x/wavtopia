@@ -13,6 +13,7 @@ Usage: $0 [options] command
 
 Commands:
   build-workspace  Build the base workspace image
+  build-tools      Build the tools image
   build-media      Build the media service
   build-backend    Build the backend service
   build-services   Build all backend services (media and backend)
@@ -49,7 +50,7 @@ while [[ "$#" -gt 0 ]]; do
         -d|--debug) 
             DEBUG=true
             ;;
-        build-workspace|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
+        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
             COMMAND="$1"
             ;;
         *)
@@ -281,6 +282,18 @@ build_service() {
     rm "$temp_file"
 }
 
+# Function to build tools image (used by other build commands)
+build_tools() {
+    debug_log "Building tools image..."
+    docker compose --profile build build tools
+}
+
+# Function to build workspace (used by other build commands)
+build_workspace() {
+    debug_log "Building workspace..."
+    docker compose --profile build build workspace
+}
+
 # Function to build media service (used by other build commands)
 build_media() {
     build_service "media"
@@ -289,11 +302,6 @@ build_media() {
 # Function to build backend service
 build_backend() {
     build_service "backend"
-}
-
-# Function to build workspace (used by other build commands)
-build_workspace() {
-    docker compose --profile build build workspace
 }
 
 # Function to deploy to production
@@ -326,20 +334,22 @@ deploy_prod() {
     docker context use default
     debug_log "Switched to default context"
     
-    # Build workspace first since other images depend on it
+    # Build workspace first since all services depend on it
     debug_log "Starting workspace build"
     build_workspace
+
+    # Build tools next as the media service depends on it
+    debug_log "Starting tools build"
+    build_tools
 
     # Build and push services
     debug_log "Starting media service build"
     build_media
-
     local media_image_id="$new_docker_image_id"
     debug_log "Media image built with ID: $media_image_id"
 
     debug_log "Starting backend service build"
     build_backend
-
     local backend_image_id="$new_docker_image_id"
     debug_log "Backend image built with ID: $backend_image_id"
 
@@ -347,6 +357,8 @@ deploy_prod() {
     debug_log "Tagging and pushing images to registry at $REGISTRY"
     docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
     docker tag "${backend_image_id}" "${REGISTRY}/wavtopia-backend:latest"
+    
+    echo "Pushing images to registry..."
     docker push "${REGISTRY}/wavtopia-media:latest"
     docker push "${REGISTRY}/wavtopia-backend:latest"
 
@@ -408,8 +420,12 @@ case $COMMAND in
     "build-workspace")
         build_workspace
         ;;
+    "build-tools")
+        build_tools
+        ;;
     "build-media")
         build_workspace
+        build_tools
         build_media
         ;;
     "build-backend")
@@ -418,6 +434,7 @@ case $COMMAND in
         ;;
     "build-services")
         build_workspace
+        build_tools
         build_media
         build_backend
         ;;
@@ -426,6 +443,7 @@ case $COMMAND in
         ;;
     "up-prod")
         build_workspace
+        build_tools
         build_media
         build_backend
         docker compose --profile production up -d
