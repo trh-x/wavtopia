@@ -61,7 +61,6 @@ services:
   workspace-apt-base:
     profiles:
       - build
-      - production
     build:
       context: .
       dockerfile: Dockerfile.apt-base
