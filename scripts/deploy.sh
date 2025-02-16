@@ -5,31 +5,34 @@ set -e
 REGISTRY_PORT="5000"
 COMMAND=""
 DEBUG=false
+DOCKER_VOLUMES_BASE=""
 
 # Help message
 show_help() {
     cat <<EOT
-Usage: $0 [options] command
+Usage: $0 [options] command [args]
 
 Commands:
-  build-workspace  Build the base workspace image
-  build-tools      Build the tools image
-  build-media      Build the media service
-  build-backend    Build the backend service
-  build-services   Build all backend services (media and backend)
-  up-dev           Start development services
-  up-prod          Start production services
-  down             Stop all services
-  down-volumes     Stop all services and remove volumes
-  clean            Remove all containers, volumes, and unused images
-  setup-remote     Configure remote deployment
-  deploy-prod      Deploy to production server
-  test-registry    Test connection to registry through SSH tunnel
-  bootstrap-prod   Bootstrap the production database with an admin user
+  build-workspace     Build the base workspace image
+  build-tools         Build the tools image
+  build-media         Build the media service
+  build-backend       Build the backend service
+  build-services      Build all backend services (media and backend)
+  up-dev              Start development services
+  up-prod            Start production services (requires --volumes-base path)
+  down               Stop all services
+  down-volumes       Stop all services and remove volumes
+  clean              Remove all containers, volumes, and unused images
+  setup-remote       Configure remote deployment
+  deploy-prod        Deploy to production server (requires --volumes-base path)
+  verify-prod-volumes Verify production volume directories exist (requires --volumes-base path)
+  test-registry      Test connection to registry through SSH tunnel
+  bootstrap-prod     Bootstrap the production database with an admin user
 
 Options:
-  -h, --help       Show this help message
-  -d, --debug      Enable debug/verbose output
+  -h, --help                Show this help message
+  -d, --debug              Enable debug/verbose output
+  --volumes-base <path>    Base path for Docker volumes (required for production commands)
 EOT
 }
 
@@ -50,7 +53,11 @@ while [[ "$#" -gt 0 ]]; do
         -d|--debug) 
             DEBUG=true
             ;;
-        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
+        --volumes-base)
+            shift
+            DOCKER_VOLUMES_BASE="$1"
+            ;;
+        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod|verify-prod-volumes)
             COMMAND="$1"
             ;;
         *)
@@ -65,6 +72,13 @@ done
 if [ -z "$COMMAND" ]; then
     echo "No command specified"
     show_help
+    exit 1
+fi
+
+# Validate required parameters for specific commands
+if { [ "$COMMAND" = "deploy-prod" ] || [ "$COMMAND" = "up-prod" ] || [ "$COMMAND" = "verify-prod-volumes" ]; } && [ -z "$DOCKER_VOLUMES_BASE" ]; then
+    echo "Error: $COMMAND command requires --volumes-base parameter"
+    echo "Example: $0 --volumes-base /path/to/volumes $COMMAND"
     exit 1
 fi
 
@@ -314,11 +328,15 @@ build_backend() {
 deploy_prod() {
     echo "Deploying to production server..."
     debug_log "Starting deployment process"
+    debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
     
     if ! docker --context production info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
     fi
+
+    # Verify required volume directories exist
+    verify_prod_volumes
 
     # Get the remote host from the current context
     REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
@@ -392,8 +410,8 @@ deploy_prod() {
     
     # Deploy services first to ensure database is running
     debug_log "Starting production services"
-    docker compose --profile production pull
-    docker compose --profile production up -d
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production pull
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
     
     # Wait a moment for the database to be ready
     echo "Waiting for database to be ready..."
@@ -402,7 +420,7 @@ deploy_prod() {
     # Run database migrations in production
     echo "Running database migrations..."
     debug_log "Executing database migrations"
-    docker compose --profile production run --rm \
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
       backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run migrate:deploy"
     
     # Switch back to default context
@@ -421,12 +439,63 @@ bootstrap_prod() {
 
     # Run bootstrap command in production context
     docker context use production
-    docker compose --profile production run --rm \
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
       backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap"
     
     # Switch back to default context
     docker context use default
     echo "Production database bootstrapped successfully!"
+}
+
+# Function to verify production volume directories
+verify_prod_volumes() {
+    echo "Verifying production volume directories..."
+    debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
+    
+    if ! docker --context production info >/dev/null 2>&1; then
+        echo "Cannot connect to production server. Please run setup-remote first."
+        exit 1
+    fi
+
+    # Get the remote host from the current context
+    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    debug_log "Remote host: $REMOTE_HOST"
+
+    # List of required directories (without base path)
+    local required_dirs=(
+        "wavtopia_postgres_data/_data"
+        "wavtopia_minio_data/_data"
+        "wavtopia_redis_data/_data"
+        "wavtopia_temp_files/_data"
+    )
+    
+    echo "Checking directories..."
+    # Use find to check for _data directories
+    local output
+    output=$(ssh "$REMOTE_HOST" "find ${DOCKER_VOLUMES_BASE} -type d -name '_data' 2>&1") || true
+    debug_log "find output: $output"
+    
+    # Find missing directories by checking the find output
+    local missing=()
+    for dir in "${required_dirs[@]}"; do
+        if ! echo "$output" | grep -q "${DOCKER_VOLUMES_BASE}/${dir}$"; then
+            missing+=("$dir")
+        fi
+    done
+
+    # If any directories are missing, show error
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "Error: The following required directories are missing:"
+        for dir in "${missing[@]}"; do
+            echo "  - ${DOCKER_VOLUMES_BASE}/${dir}"
+        done
+        echo "Please create these directories on the production server before proceeding."
+        echo "You can create them with:"
+        echo "  ssh $REMOTE_HOST 'mkdir -p ${DOCKER_VOLUMES_BASE}/{$(IFS=,; echo "${missing[*]}")}'"
+        exit 1
+    fi
+
+    echo "All required volume directories exist!"
 }
 
 # Main command execution
@@ -460,7 +529,7 @@ case $COMMAND in
         build_tools
         build_media
         build_backend
-        docker compose --profile production up -d
+        DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
         ;;
     "down")
         docker compose down
@@ -481,6 +550,9 @@ case $COMMAND in
         ;;
     "test-registry")
         test_registry
+        ;;
+    "verify-prod-volumes")
+        verify_prod_volumes
         ;;
     "bootstrap-prod")
         bootstrap_prod

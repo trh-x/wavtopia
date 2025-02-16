@@ -29,7 +29,7 @@ COPY packages ./packages
 COPY packages/core-storage/.env.docker packages/core-storage/.env
 
 # Copy scripts
-COPY scripts ./scripts
+COPY scripts/apply-arch-lockfile.sh ./scripts/
 
 # Install all dependencies
 RUN pnpm arch-install --frozen-lockfile
