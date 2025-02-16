@@ -311,7 +311,7 @@ build_tools() {
 # Function to build workspace (used by other build commands)
 build_workspace() {
     debug_log "Building workspace..."
-    docker compose --profile build build workspace
+    docker compose --profile build build workspace-apt-base workspace
 }
 
 # Function to build media service (used by other build commands)
