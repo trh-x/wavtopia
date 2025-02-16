@@ -69,7 +69,6 @@ services:
   workspace:
     profiles:
       - build
-      - production
     build:
       context: .
       dockerfile: Dockerfile
