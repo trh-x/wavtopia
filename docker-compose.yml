@@ -45,6 +45,14 @@ services:
     networks:
       - wavtopia-net
 
+  tools:
+    profiles:
+      - build
+    build:
+      context: packages/media
+      dockerfile: Dockerfile.tools
+    image: ${REGISTRY_PREFIX:-}wavtopia-tools
+
   workspace:
     profiles:
       - build
@@ -58,8 +66,8 @@ services:
     profiles:
       - production
     build:
-      context: .
-      dockerfile: packages/media/Dockerfile
+      context: packages/media
+      dockerfile: Dockerfile
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
     image: ${REGISTRY_PREFIX:-}wavtopia-media
@@ -71,8 +79,6 @@ services:
     networks:
       - wavtopia-net
     depends_on:
-      workspace:
-        condition: service_completed_successfully
       minio:
         condition: service_started
       redis:

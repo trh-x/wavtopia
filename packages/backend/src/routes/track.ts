@@ -11,7 +11,7 @@ import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, getObject } from "../services/storage";
 import { z } from "zod";
-import { deleteLocalFile, Prisma } from "@wavtopia/core-storage";
+import { deleteLocalFile, Prisma, SourceFormat } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import { config } from "../config";
 import { deleteTrack, deleteMultipleTracks } from "../services/track";
@@ -23,6 +23,7 @@ const router = Router();
 const trackSchema = z.object({
   title: z.string().min(1),
   artist: z.string().min(1),
+  // TODO: originalFormat: z.nativeEnum(SourceFormat),
   originalFormat: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
   isPublic: z.boolean().optional(),
@@ -120,23 +121,9 @@ const authenticateTrackAccess: RequestHandler = async (
       return next(new AppError(404, "Track not found"));
     }
 
-    // Only allow access to certain fields for public tracks when user is not authenticated
+    // Omit some fields for public tracks when user is not authenticated
     if (reqTrack.isPublic && !req.user) {
-      const publicTrack = {
-        id: reqTrack.id,
-        title: reqTrack.title,
-        artist: reqTrack.artist,
-        coverArt: reqTrack.coverArt,
-        isPublic: reqTrack.isPublic,
-        fullTrackWavUrl: reqTrack.fullTrackWavUrl,
-        fullTrackMp3Url: reqTrack.fullTrackMp3Url,
-        originalFormat: reqTrack.originalFormat,
-        waveformData: reqTrack.waveformData,
-        components: reqTrack.components,
-        user: reqTrack.user,
-        createdAt: reqTrack.createdAt,
-        updatedAt: reqTrack.updatedAt,
-      };
+      const { sharedWith, ...publicTrack } = reqTrack;
       (req as any).track = publicTrack; // TODO: Fix this `any`
     } else {
       (req as any).track = reqTrack; // TODO: Fix this `any`
@@ -352,13 +339,26 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
       console.log("Cover art URL:", coverArtUrl);
     }
 
+    const originalFormat = {
+      xm: SourceFormat.XM,
+      it: SourceFormat.IT,
+      mod: SourceFormat.MOD,
+    }[data.originalFormat];
+
+    if (!originalFormat) {
+      throw new AppError(
+        400,
+        `Invalid original format: ${data.originalFormat}`
+      );
+    }
+
     console.log("Creating database record...");
     try {
       const track = await prisma.track.create({
         data: {
           title: data.title,
           artist: data.artist,
-          originalFormat: data.originalFormat,
+          originalFormat,
           originalUrl: originalFileUrl,
           coverArt: coverArtUrl,
           metadata: data.metadata as Prisma.InputJsonValue,
@@ -450,12 +450,20 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
       coverArtUrl = await uploadFile(files.coverArt[0], "covers/");
     }
 
+    const originalFormat = data.originalFormat
+      ? {
+          xm: SourceFormat.XM,
+          it: SourceFormat.IT,
+          mod: SourceFormat.MOD,
+        }[data.originalFormat]
+      : undefined;
+
     const track = await prisma.track.update({
       where: { id: req.params.id },
       data: {
         title: data.title,
         artist: data.artist,
-        originalFormat: data.originalFormat,
+        originalFormat,
         coverArt: coverArtUrl,
         metadata: data.metadata as Prisma.InputJsonValue,
       },

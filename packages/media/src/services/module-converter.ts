@@ -5,6 +5,7 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { AppError } from "../middleware/errorHandler";
 import { config } from "../config";
+import { SourceFormat } from "@wavtopia/core-storage";
 
 const execAsync = promisify(exec);
 
@@ -20,26 +21,89 @@ interface ConversionResult {
   components: ConvertedComponent[];
 }
 
-export async function convertXMToWAV(
-  xmBuffer: Buffer
+async function convertFullTrack(
+  moduleFormat: SourceFormat,
+  modulePath: string,
+  tempDir: string,
+  fullTrackOutput: string
+): Promise<{ stdout: string; stderr: string }> {
+  // TODO: Try libxmp for mod files
+  if (moduleFormat === SourceFormat.XM || moduleFormat === SourceFormat.MOD) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.milkyCliPath}" "${modulePath}" -output "${join(
+        tempDir,
+        fullTrackOutput
+      )}"`
+    );
+    return { stdout, stderr };
+  }
+
+  if (moduleFormat === SourceFormat.IT) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.schismTrackerPath}" --headless --diskwrite="${join(
+        tempDir,
+        fullTrackOutput
+      )}" "${modulePath}"`
+    );
+    return { stdout, stderr };
+  }
+
+  throw new AppError(500, `Unsupported module format: ${moduleFormat}`);
+}
+
+async function convertComponents(
+  moduleFormat: SourceFormat,
+  modulePath: string,
+  tempDir: string,
+  componentsBaseName: string
+): Promise<{ stdout: string; stderr: string }> {
+  // TODO: Try libxmp for mod files
+  if (moduleFormat === SourceFormat.XM || moduleFormat === SourceFormat.MOD) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.milkyCliPath}" "${modulePath}" -output "${join(
+        tempDir,
+        componentsBaseName
+      )}" -multi-track`
+    );
+    return { stdout, stderr };
+  }
+
+  if (moduleFormat === SourceFormat.IT) {
+    const { stdout, stderr } = await execAsync(
+      `"${config.tools.schismTrackerPath}" --headless --diskwrite="${join(
+        tempDir,
+        componentsBaseName.replace(".wav", "_%c.wav")
+      )}" "${modulePath}"`
+    );
+    return { stdout, stderr };
+  }
+
+  throw new AppError(500, `Unsupported module format: ${moduleFormat}`);
+}
+
+export async function convertModuleToWAV(
+  moduleBuffer: Buffer,
+  moduleFormat: SourceFormat
 ): Promise<ConversionResult> {
   try {
     // Create temporary directory
+
+    // Create temporary directory
     const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-"));
-    const xmPath = join(tempDir, "input.xm");
+    const modulePath = join(tempDir, `input.${moduleFormat}`);
     const fullTrackOutput = "full_track.wav";
     const componentsBaseName = "output.wav"; // Base name for component files (will become output_01.wav, etc.)
 
     try {
-      // Write XM file to temp directory
-      await writeFile(xmPath, xmBuffer);
+      // Write module file to temp directory
+      await writeFile(modulePath, moduleBuffer);
 
       // First, convert the full track
-      const { stderr: fullTrackStderr } = await execAsync(
-        `"${config.tools.exportToWavPath}" "${xmPath}" -output "${join(
-          tempDir,
-          fullTrackOutput
-        )}"`
+      const { stderr: fullTrackStderr } = await convertFullTrack(
+        moduleFormat,
+        modulePath,
+        tempDir,
+        fullTrackOutput
       );
 
       if (fullTrackStderr) {
@@ -52,11 +116,11 @@ export async function convertXMToWAV(
       );
 
       // Then convert individual components
-      const { stderr: componentsStderr } = await execAsync(
-        `"${config.tools.exportToWavPath}" "${xmPath}" -output "${join(
-          tempDir,
-          componentsBaseName
-        )}" -multi-track`
+      const { stderr: componentsStderr } = await convertComponents(
+        moduleFormat,
+        modulePath,
+        tempDir,
+        componentsBaseName
       );
 
       if (componentsStderr) {
@@ -95,8 +159,8 @@ export async function convertXMToWAV(
       await rm(tempDir, { recursive: true, force: true });
     }
   } catch (error) {
-    console.error("Error converting XM to WAV:", error);
-    throw new AppError(500, "Failed to convert XM to WAV components");
+    console.error("Error converting module to WAV:", error);
+    throw new AppError(500, "Failed to convert module to WAV components");
   }
 }
 

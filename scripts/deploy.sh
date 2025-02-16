@@ -4,6 +4,7 @@ set -e
 # Default values
 REGISTRY_PORT="5000"
 COMMAND=""
+DEBUG=false
 
 # Help message
 show_help() {
@@ -12,6 +13,7 @@ Usage: $0 [options] command
 
 Commands:
   build-workspace  Build the base workspace image
+  build-tools      Build the tools image
   build-media      Build the media service
   build-backend    Build the backend service
   build-services   Build all backend services (media and backend)
@@ -27,18 +29,44 @@ Commands:
 
 Options:
   -h, --help       Show this help message
+  -d, --debug      Enable debug/verbose output
 EOT
+}
+
+# Debug logging function
+debug_log() {
+    if [ "$DEBUG" = true ]; then
+        echo "[DEBUG] $1"
+    fi
 }
 
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        -h|--help) show_help; exit 0 ;;
-        build-*|up-*|down*|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod) COMMAND="$1" ;;
-        *) echo "Unknown parameter: $1"; exit 1 ;;
+        -h|--help) 
+            show_help
+            exit 0 
+            ;;
+        -d|--debug) 
+            DEBUG=true
+            ;;
+        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
+            COMMAND="$1"
+            ;;
+        *)
+            echo "Unknown parameter: $1"
+            exit 1
+            ;;
     esac
     shift
 done
+
+# Check if a command was specified
+if [ -z "$COMMAND" ]; then
+    echo "No command specified"
+    show_help
+    exit 1
+fi
 
 # Function to cleanup SSH tunnel
 cleanup_tunnel() {
@@ -225,17 +253,51 @@ build_service() {
     local service_name="$1"
     local temp_file=$(mktemp)
     
+    debug_log "Building service: $service_name"
+    debug_log "Using temporary file: $temp_file"
+    
+    # Add --progress=plain when debug is enabled
+    local build_args=""
+    if [ "$DEBUG" = true ]; then
+        build_args="--progress=plain"
+        debug_log "Using build args: $build_args"
+    fi
+    
     # Build and capture the image ID
-    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build "$service_name" 2>&1 | while read -r line; do
-        echo "$line"
+    debug_log "Starting build for $service_name..."
+    COMPOSE_DOCKER_CLI_BUILD=1 docker compose --profile build build $build_args "$service_name" 2>&1 | while read -r line; do
+        if [ "$DEBUG" = true ]; then
+            echo "[BUILD] $line"
+        else
+            echo "$line"
+        fi
         if [[ $line =~ "writing image sha256:" ]]; then
             echo "$line" | sed -n 's/.*sha256:\([a-f0-9]*\).*/sha256:\1/p' > "$temp_file"
-            echo "${service_name} image ID: $(cat "$temp_file")"
+            debug_log "${service_name} image ID: $(cat "$temp_file")"
         fi
     done
 
     new_docker_image_id=$(cat "$temp_file")
+    debug_log "Build complete. Image ID: $new_docker_image_id"
     rm "$temp_file"
+    
+    # Check if build was successful
+    if [ -z "$new_docker_image_id" ]; then
+        echo "Error: Failed to build $service_name"
+        exit 1
+    fi
+}
+
+# Function to build tools image (used by other build commands)
+build_tools() {
+    debug_log "Building tools image..."
+    docker compose --profile build build tools
+}
+
+# Function to build workspace (used by other build commands)
+build_workspace() {
+    debug_log "Building workspace..."
+    docker compose --profile build build workspace
 }
 
 # Function to build media service (used by other build commands)
@@ -248,14 +310,11 @@ build_backend() {
     build_service "backend"
 }
 
-# Function to build workspace (used by other build commands)
-build_workspace() {
-    docker compose --profile build build workspace
-}
-
 # Function to deploy to production
 deploy_prod() {
     echo "Deploying to production server..."
+    debug_log "Starting deployment process"
+    
     if ! docker --context production info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
@@ -265,44 +324,66 @@ deploy_prod() {
     REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     REMOTE_USER=$(echo "$REMOTE_HOST" | cut -d'@' -f1)
     REMOTE_HOSTNAME=$(echo "$REMOTE_HOST" | cut -d'@' -f2)
+    debug_log "Remote host details: User=$REMOTE_USER, Hostname=$REMOTE_HOSTNAME"
     
     # Get actual registry port before setting up tunnel
     REGISTRY_PORT=$(get_registry_port)
-    echo "Detected registry port: ${REGISTRY_PORT}"
+    debug_log "Detected registry port: ${REGISTRY_PORT}"
     REGISTRY="localhost:${REGISTRY_PORT}"
 
     # Set up SSH tunnel
+    debug_log "Setting up SSH tunnel to $REMOTE_HOST"
     setup_tunnel "$REMOTE_HOST"
 
     # Build and tag images locally
     echo "Building images locally..."
     docker context use default
+    debug_log "Switched to default context"
     
-    # Build workspace first since other images depend on it
+    # Build workspace first since all services depend on it
+    debug_log "Starting workspace build"
     build_workspace
 
+    # Build tools next as the media service depends on it
+    debug_log "Starting tools build"
+    build_tools
+
     # Build and push services
+    debug_log "Starting media service build"
     build_media
-
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to build media service"
+        exit 1
+    fi
     local media_image_id="$new_docker_image_id"
+    debug_log "Media image built with ID: $media_image_id"
 
+    debug_log "Starting backend service build"
     build_backend
-
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to build backend service"
+        exit 1
+    fi
     local backend_image_id="$new_docker_image_id"
+    debug_log "Backend image built with ID: $backend_image_id"
 
     # Tag and push using image IDs to ensure we use the correct images
+    debug_log "Tagging and pushing images to registry at $REGISTRY"
     docker tag "${media_image_id}" "${REGISTRY}/wavtopia-media:latest"
     docker tag "${backend_image_id}" "${REGISTRY}/wavtopia-backend:latest"
+    
+    echo "Pushing images to registry..."
     docker push "${REGISTRY}/wavtopia-media:latest"
     docker push "${REGISTRY}/wavtopia-backend:latest"
 
     # Switch to production context and deploy
     echo "Deploying services..."
     docker context use production
+    debug_log "Switched to production context"
     
     # Use localhost for registry when deploying since we're on the remote host
     export REGISTRY_PREFIX="localhost:${REGISTRY_PORT}/"
-    echo "Using registry at ${REGISTRY_PREFIX}"
+    debug_log "Using registry prefix: ${REGISTRY_PREFIX}"
     
     # Pull latest images
     echo "Pulling latest images..."
@@ -310,6 +391,7 @@ deploy_prod() {
     docker pull "${REGISTRY_PREFIX}wavtopia-backend:latest"
     
     # Deploy services first to ensure database is running
+    debug_log "Starting production services"
     docker compose --profile production pull
     docker compose --profile production up -d
     
@@ -319,11 +401,13 @@ deploy_prod() {
     
     # Run database migrations in production
     echo "Running database migrations..."
+    debug_log "Executing database migrations"
     docker compose --profile production run --rm \
       backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run migrate:deploy"
     
     # Switch back to default context
     docker context use default
+    debug_log "Switched back to default context"
     echo "Services deployed! Don't forget to update the frontend too if there are any changes."
 }
 
@@ -350,8 +434,12 @@ case $COMMAND in
     "build-workspace")
         build_workspace
         ;;
+    "build-tools")
+        build_tools
+        ;;
     "build-media")
         build_workspace
+        build_tools
         build_media
         ;;
     "build-backend")
@@ -360,6 +448,7 @@ case $COMMAND in
         ;;
     "build-services")
         build_workspace
+        build_tools
         build_media
         build_backend
         ;;
@@ -368,6 +457,7 @@ case $COMMAND in
         ;;
     "up-prod")
         build_workspace
+        build_tools
         build_media
         build_backend
         docker compose --profile production up -d

@@ -38,7 +38,10 @@ export function processFiles(
     const ext = file.name.split(".").pop()?.toLowerCase();
     const baseName = file.name.substring(0, file.name.lastIndexOf("."));
 
-    if (ext === "xm" && !existingPaths.has(file.name)) {
+    if (
+      (ext === "xm" || ext === "it" || ext === "mod") &&
+      !existingPaths.has(file.name)
+    ) {
       trackFiles.set(baseName, file);
     } else if (
       file.type.startsWith("image/") &&

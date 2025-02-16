@@ -1,5 +1,10 @@
 # Get the workspace image name from build args
 ARG WORKSPACE_IMAGE
+
+# Build the tools image first
+FROM wavtopia-tools AS tools
+
+# Use workspace image for building the service
 FROM ${WORKSPACE_IMAGE} AS prod-build
 
 # Create deployment for media service
@@ -8,30 +13,21 @@ RUN pnpm --filter @wavtopia/media --prod deploy media-service
 # Create the final image
 FROM node:18-slim
 
-# Install FFmpeg and build dependencies
+# Install runtime dependencies only
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
     lame \
-    build-essential \
-    cmake \
-    libsdl2-dev \
-    libjack-dev \
-    librtmidi-dev \
-    zlib1g-dev \
+    # Schism Tracker dependencies
+    libjack0 \
+    libutf8proc2 \
+    # Clean up
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Build export-to-wav utility
-COPY packages/media/deps/milkytracker ./deps/milkytracker
-
-# Build MilkyTracker
-RUN cd deps/milkytracker && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build build --target export-to-wav && \
-    cp build/src/tools/export-to-wav/export-to-wav /usr/local/bin/ && \
-    cd ../.. && \
-    rm -rf deps/milkytracker
+# Copy the compiled tools from the tools image
+COPY --from=tools /usr/local/bin/schismtracker /usr/local/bin/
+COPY --from=tools /usr/local/bin/milkycli /usr/local/bin/
 
 WORKDIR /app
 
@@ -40,10 +36,22 @@ COPY --from=prod-build /app/media-service .
 
 # Create directories for file processing
 RUN mkdir -p /tmp/uploads /tmp/converted && \
-    chmod 775 /tmp/uploads /tmp/converted
+    chmod 775 /tmp/uploads /tmp/converted && \
+    # Create XDG runtime directory for schismtracker
+    mkdir -p /run/user/1000 && \
+    chmod 700 /run/user/1000 && \
+    # Create schismtracker config directory
+    mkdir -p /root/.config/schism
+
+# Copy schismtracker config
+COPY config/schism/config /root/.config/schism/config
+
+# Set environment variables for schismtracker
+ENV XDG_RUNTIME_DIR=/run/user/1000
+ENV SDL_AUDIODRIVER=disk
 
 # Copy env file for the media service
-COPY packages/media/.env.docker .env
+COPY .env.docker .env
 
 ENV NODE_ENV=production
 

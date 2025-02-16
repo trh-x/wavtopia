@@ -7,10 +7,10 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 ## Features
 
 - **Track Management**: Upload, manage, and share your music tracks
-- **Audio Conversion**: Automatic conversion of .xm files to WAV format
+- **Audio Conversion**: Automatic conversion of .xm, .it, and .mod files to WAV format
 - **Component Extraction**: Split tracks into individual instrument components
 - **Multi-format Downloads**:
-  - Download the original tracker file (.xm)
+  - Download the original tracker file (.xm, .it, .mod)
   - Download the full track as WAV
   - Download individual instrument components as WAV
 - **Real-time Playback**: Play and preview tracks directly in the browser
@@ -35,11 +35,12 @@ A modern web platform for sharing and downloading multi-track music files. Wavto
 - FFmpeg
 - libxmp
 - MinIO (for local development) or S3-compatible storage
-- export-to-wav utility (see below)
+- milkycli utility (see below)
+- schismtracker application (see below)
 
-### export-to-wav Installation
+### `milkycli` Installation
 
-The project requires the `export-to-wav` utility from MilkyTracker for converting XM files to WAV format. This utility is included as a git submodule from [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372).
+The project requires the `milkycli` utility from MilkyTracker for converting XM files to WAV format. This utility is included as a git submodule from [this open pull request](https://github.com/milkytracker/MilkyTracker/pull/372).
 
 When cloning the repository, make sure to initialize the submodules:
 
@@ -50,14 +51,32 @@ git clone --recursive https://github.com/your-repo/wavtopia.git
 # If you've already cloned the repository:
 git submodule update --init --recursive
 
-# Pulling MilkyTracker changes into this repo:
+# Pulling dependency changes into this repo:
 git submodule update --remote
-git add packages/media/deps/milkytracker && git commit
+git add packages/media/deps/milkytracker packages/media/deps/schismtracker && git commit
 ```
 
-The media service's Dockerfile will automatically build and install the `export-to-wav` utility during container build.
+The media service's Dockerfile will automatically build and install both the `milkycli` utility and Schism Tracker during container build.
 
-Note: This is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
+Note: MilkyTracker submodule is a temporary requirement until [PR #372](https://github.com/milkytracker/MilkyTracker/pull/372) is merged into MilkyTracker's main branch.
+
+### `schismtracker` Installation
+
+Schism Tracker is used for additional module file format support and conversion. The media service's Docker image builds Schism Tracker from source to support multiple architectures.
+
+For local development, you can install it:
+
+```bash
+# Build from source (same as Docker)
+git clone https://github.com/schismtracker/schismtracker.git
+cd schismtracker
+git checkout 20250208
+autoreconf -i
+mkdir -p build && cd build
+../configure
+make
+sudo cp schismtracker /usr/local/bin/
+```
 
 ### Installation Steps
 
@@ -227,7 +246,7 @@ The backend provides the following main endpoints:
 - `GET /api/track/:id` - Get track details
 - `PATCH /api/track/:id` - Update track details
 - `DELETE /api/track/:id` - Delete a track
-- `GET /api/track/:id/original` - Download original .xm file
+- `GET /api/track/:id/original` - Download file in original format
 - `GET /api/track/:id/full` - Download full track WAV
 - `GET /api/track/:id/component/:componentId` - Download component WAV
 
@@ -250,7 +269,7 @@ The backend provides the following main endpoints:
 
 2. **File upload fails**
 
-   - Check that your file is in .xm format
+   - Check that your file is in a supported format (xm, it, mod)
    - Ensure the file size is under 50MB
    - Verify MinIO is running and accessible
 
@@ -272,7 +291,7 @@ MINIO_PORT="9000"
 MINIO_ROOT_USER="minioadmin"
 MINIO_ROOT_PASSWORD="minioadmin"
 MINIO_BUCKET="wavtopia"
-EXPORT_TO_WAV_PATH="/usr/local/bin/export-to-wav"
+MILKYCLI_PATH="/usr/local/bin/milkycli"
 
 # packages/frontend/.env
 VITE_API_URL="http://localhost:3002"

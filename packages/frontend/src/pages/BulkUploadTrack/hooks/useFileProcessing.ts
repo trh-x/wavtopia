@@ -128,6 +128,12 @@ export function useFileProcessing(getToken: () => string | null) {
         `Uploading track ${i + 1}/${pendingUploads.length}: ${match.title}`
       );
 
+      const originalFormat = match.track.name.split(".").pop()?.toLowerCase();
+      if (!originalFormat) {
+        console.error(`No original format found for ${match.title}`);
+        continue;
+      }
+
       try {
         const formData = new FormData();
         formData.append(
@@ -135,7 +141,7 @@ export function useFileProcessing(getToken: () => string | null) {
           JSON.stringify({
             title: match.title,
             artist: state.defaultArtist.trim() || "Unknown Artist",
-            originalFormat: "xm",
+            originalFormat,
           })
         );
 

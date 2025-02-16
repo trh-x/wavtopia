@@ -22,14 +22,21 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Accept .xm files (case-insensitive) and images for cover art
+    // Accept .xm, .it, and .mod files (case-insensitive) and images for cover art
     if (
       file.originalname.toLowerCase().endsWith(".xm") ||
+      file.originalname.toLowerCase().endsWith(".it") ||
+      file.originalname.toLowerCase().endsWith(".mod") ||
       file.mimetype.startsWith("image/")
     ) {
       cb(null, true);
     } else {
-      cb(new AppError(400, "Only .xm files and images are allowed"));
+      cb(
+        new AppError(
+          400,
+          "Only .xm, .it, and .mod files and images are allowed"
+        )
+      );
     }
   },
 });

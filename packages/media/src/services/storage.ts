@@ -58,6 +58,10 @@ function getMimeType(filename: string): string {
       return "audio/wav";
     case "xm":
       return "audio/x-xm";
+    case "it":
+      return "audio/x-it";
+    case "mod":
+      return "audio/x-mod";
     case "flac":
       return "audio/flac";
     case "jpg":

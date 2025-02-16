@@ -31,13 +31,19 @@ enum Role {
   ADMIN
 }
 
+enum SourceFormat {
+  XM  @map("xm")  // FastTracker2
+  IT  @map("it")  // Impulse Tracker
+  MOD @map("mod") // ProTracker/NoiseTracker
+}
+
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
 // the exception of originalUrl, which is a file:// URL until the track is converted).
 model Track {
   id               String       @id @default(uuid())
   title            String
   artist           String
-  originalFormat   String       @map("original_format") // TODO: Define enum for formats
+  originalFormat   SourceFormat @map("original_format")
   originalUrl      String       @map("original_url")
   fullTrackWavUrl  String?      @map("full_track_wav_url")
   fullTrackMp3Url  String?      @map("full_track_mp3_url")

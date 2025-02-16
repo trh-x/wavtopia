@@ -7,7 +7,8 @@ export const ServerConfigSchema = z.object({
 });
 
 export const ToolsConfigSchema = z.object({
-  exportToWavPath: z.string().default("/usr/local/bin/export-to-wav"),
+  milkyCliPath: z.string().default("/usr/local/bin/milkycli"),
+  schismTrackerPath: z.string().default("/usr/local/bin/schismtracker"),
 });
 
 export const SharedConfigSchema = z.object({
@@ -25,7 +26,8 @@ function loadConfig(): SharedConfig {
       jwtSecret: process.env.JWT_SECRET || "your-secret-key",
     },
     tools: {
-      exportToWavPath: process.env.EXPORT_TO_WAV_PATH,
+      milkyCliPath: process.env.MILKYCLI_PATH,
+      schismTrackerPath: process.env.SCHISMTRACKER_PATH,
     },
   });
 }

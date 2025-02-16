@@ -28,7 +28,7 @@ const audioFileConversionOptionsSchema = z.object({
   format: z.enum(["wav", "flac"]),
 });
 
-// Convert XM file to MP3/FLAC format
+// Convert track module file to MP3/FLAC format
 router.post("/convert-module", async (req, res, next) => {
   try {
     // Parse conversion options
