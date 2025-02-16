@@ -469,13 +469,13 @@ verify_prod_volumes() {
     echo "Checking directories..."
     # Use ls to check each directory and capture both stdout and stderr
     local output
-    output=$(ssh "$REMOTE_HOST" "cd ${DOCKER_VOLUMES_BASE} 2>/dev/null && ls -d ${required_dirs[*]} 2>&1") || true
+    output=$(ssh "$REMOTE_HOST" "cd ${DOCKER_VOLUMES_BASE} 2>/dev/null && ls -1 2>&1") || true
     debug_log "ls output: $output"
     
-    # Find missing directories by checking for "No such file" messages
+    # Find missing directories by checking the ls output
     local missing=()
     for dir in "${required_dirs[@]}"; do
-        if [[ ! "$output" == *"$dir"* ]] || [[ "$output" == *"No such file"* ]]; then
+        if ! echo "$output" | grep -q "^${dir}$"; then
             missing+=("$dir")
         fi
     done
