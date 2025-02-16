@@ -51,8 +51,6 @@ services:
     build:
       context: packages/media
       dockerfile: Dockerfile.tools
-      args:
-        - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
     image: ${REGISTRY_PREFIX:-}wavtopia-tools
 
   workspace:
