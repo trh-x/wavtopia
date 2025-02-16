@@ -265,7 +265,7 @@ build_service() {
     
     # Build and capture the image ID
     debug_log "Starting build for $service_name..."
-    COMPOSE_DOCKER_CLI_BUILD=1 docker compose build $build_args "$service_name" 2>&1 | while read -r line; do
+    COMPOSE_DOCKER_CLI_BUILD=1 docker compose --profile build build $build_args "$service_name" 2>&1 | while read -r line; do
         if [ "$DEBUG" = true ]; then
             echo "[BUILD] $line"
         else
@@ -280,6 +280,12 @@ build_service() {
     new_docker_image_id=$(cat "$temp_file")
     debug_log "Build complete. Image ID: $new_docker_image_id"
     rm "$temp_file"
+    
+    # Check if build was successful
+    if [ -z "$new_docker_image_id" ]; then
+        echo "Error: Failed to build $service_name"
+        exit 1
+    fi
 }
 
 # Function to build tools image (used by other build commands)
@@ -345,11 +351,19 @@ deploy_prod() {
     # Build and push services
     debug_log "Starting media service build"
     build_media
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to build media service"
+        exit 1
+    fi
     local media_image_id="$new_docker_image_id"
     debug_log "Media image built with ID: $media_image_id"
 
     debug_log "Starting backend service build"
     build_backend
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to build backend service"
+        exit 1
+    fi
     local backend_image_id="$new_docker_image_id"
     debug_log "Backend image built with ID: $backend_image_id"
 
