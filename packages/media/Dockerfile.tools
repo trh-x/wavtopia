@@ -1,4 +1,5 @@
-FROM apt-base
+ARG WORKSPACE_IMAGE
+FROM ${WORKSPACE_IMAGE} AS apt-base
 
 # Install build dependencies
 RUN apt-get install -y --no-install-recommends \

@@ -11,7 +11,7 @@ FROM ${WORKSPACE_IMAGE} AS prod-build
 RUN pnpm --filter @wavtopia/media --prod deploy media-service
 
 # Create the final image
-FROM apt-base
+FROM ${WORKSPACE_IMAGE} AS apt-base
 
 # Install runtime dependencies only
 RUN apt-get install -y --no-install-recommends \
