@@ -491,7 +491,7 @@ verify_prod_volumes() {
         done
         echo "Please create these directories on the production server before proceeding."
         echo "You can create them with:"
-        echo "  ssh $REMOTE_HOST 'mkdir -p ${DOCKER_VOLUMES_BASE}/{$(IFS=,; echo "${missing[*]}")}}'"
+        echo "  ssh $REMOTE_HOST 'mkdir -p ${DOCKER_VOLUMES_BASE}/{$(IFS=,; echo "${missing[*]}")}'"
         exit 1
     fi
 
