@@ -62,8 +62,9 @@ services:
       dockerfile: Dockerfile
     image: ${REGISTRY_PREFIX:-}wavtopia-workspace
     depends_on:
-      tools:
-        condition: service_completed_successfully
+      - condition: service_completed_successfully
+        service: tools
+        required: false
 
   media:
     profiles:
@@ -83,8 +84,6 @@ services:
       - wavtopia-net
     depends_on:
       workspace:
-        condition: service_completed_successfully
-      tools:
         condition: service_completed_successfully
       minio:
         condition: service_started
