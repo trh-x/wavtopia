@@ -458,22 +458,25 @@ verify_prod_volumes() {
     REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     debug_log "Remote host: $REMOTE_HOST"
 
-    # Check all required directories with a single ls command
-    local paths=(
-        "${DOCKER_VOLUMES_BASE}/wavtopia_postgres_data"
-        "${DOCKER_VOLUMES_BASE}/wavtopia_minio_data"
-        "${DOCKER_VOLUMES_BASE}/wavtopia_redis_data"
-        "${DOCKER_VOLUMES_BASE}/wavtopia_temp_files"
+    # List of required directories (without base path)
+    local required_dirs=(
+        "wavtopia_postgres_data"
+        "wavtopia_minio_data"
+        "wavtopia_redis_data"
+        "wavtopia_temp_files"
     )
     
     echo "Checking directories..."
-    local output=$(ssh "$REMOTE_HOST" "ls -d ${paths[*]} 2>&1 || true")
+    # Use ls to check each directory and capture both stdout and stderr
+    local output
+    output=$(ssh "$REMOTE_HOST" "cd ${DOCKER_VOLUMES_BASE} 2>/dev/null && ls -d ${required_dirs[*]} 2>&1") || true
+    debug_log "ls output: $output"
     
-    # Find missing directories by comparing ls output with required paths
+    # Find missing directories by checking for "No such file" messages
     local missing=()
-    for path in "${paths[@]}"; do
-        if [[ ! $output == *"$path"* ]]; then
-            missing+=("$(basename "$path")")
+    for dir in "${required_dirs[@]}"; do
+        if [[ ! "$output" == *"$dir"* ]] || [[ "$output" == *"No such file"* ]]; then
+            missing+=("$dir")
         fi
     done
 
