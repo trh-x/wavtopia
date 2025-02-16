@@ -335,6 +335,9 @@ deploy_prod() {
         exit 1
     fi
 
+    # Verify required volume directories exist
+    verify_prod_volumes
+
     # Get the remote host from the current context
     REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     REMOTE_USER=$(echo "$REMOTE_HOST" | cut -d'@' -f1)
