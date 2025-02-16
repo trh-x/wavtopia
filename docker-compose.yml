@@ -48,7 +48,6 @@ services:
   tools:
     profiles:
       - build
-      - production
     build:
       context: packages/media
       dockerfile: Dockerfile.tools
