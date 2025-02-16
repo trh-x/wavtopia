@@ -79,10 +79,6 @@ services:
     networks:
       - wavtopia-net
     depends_on:
-      workspace:
-        condition: service_completed_successfully
-      tools:
-        condition: service_completed_successfully
       minio:
         condition: service_started
       redis:
