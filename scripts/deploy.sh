@@ -13,25 +13,26 @@ show_help() {
 Usage: $0 [options] command [args]
 
 Commands:
-  build-workspace  Build the base workspace image
-  build-tools      Build the tools image
-  build-media      Build the media service
-  build-backend    Build the backend service
-  build-services   Build all backend services (media and backend)
-  up-dev           Start development services
-  up-prod          Start production services
-  down             Stop all services
-  down-volumes     Stop all services and remove volumes
-  clean            Remove all containers, volumes, and unused images
-  setup-remote     Configure remote deployment
-  deploy-prod      Deploy to production server (requires --volumes-base path)
-  test-registry    Test connection to registry through SSH tunnel
-  bootstrap-prod   Bootstrap the production database with an admin user
+  build-workspace     Build the base workspace image
+  build-tools         Build the tools image
+  build-media         Build the media service
+  build-backend       Build the backend service
+  build-services      Build all backend services (media and backend)
+  up-dev              Start development services
+  up-prod            Start production services (requires --volumes-base path)
+  down               Stop all services
+  down-volumes       Stop all services and remove volumes
+  clean              Remove all containers, volumes, and unused images
+  setup-remote       Configure remote deployment
+  deploy-prod        Deploy to production server (requires --volumes-base path)
+  verify-prod-volumes Verify production volume directories exist (requires --volumes-base path)
+  test-registry      Test connection to registry through SSH tunnel
+  bootstrap-prod     Bootstrap the production database with an admin user
 
 Options:
   -h, --help                Show this help message
   -d, --debug              Enable debug/verbose output
-  --volumes-base <path>    Base path for Docker volumes (required for deploy-prod)
+  --volumes-base <path>    Base path for Docker volumes (required for production commands)
 EOT
 }
 
@@ -56,7 +57,7 @@ while [[ "$#" -gt 0 ]]; do
             shift
             DOCKER_VOLUMES_BASE="$1"
             ;;
-        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
+        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod|verify-prod-volumes)
             COMMAND="$1"
             ;;
         *)
@@ -75,7 +76,7 @@ if [ -z "$COMMAND" ]; then
 fi
 
 # Validate required parameters for specific commands
-if { [ "$COMMAND" = "deploy-prod" ] || [ "$COMMAND" = "up-prod" ]; } && [ -z "$DOCKER_VOLUMES_BASE" ]; then
+if { [ "$COMMAND" = "deploy-prod" ] || [ "$COMMAND" = "up-prod" ] || [ "$COMMAND" = "verify-prod-volumes" ]; } && [ -z "$DOCKER_VOLUMES_BASE" ]; then
     echo "Error: $COMMAND command requires --volumes-base parameter"
     echo "Example: $0 --volumes-base /path/to/volumes $COMMAND"
     exit 1
@@ -443,6 +444,54 @@ bootstrap_prod() {
     echo "Production database bootstrapped successfully!"
 }
 
+# Function to verify production volume directories
+verify_prod_volumes() {
+    echo "Verifying production volume directories..."
+    debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
+    
+    if ! docker --context production info >/dev/null 2>&1; then
+        echo "Cannot connect to production server. Please run setup-remote first."
+        exit 1
+    fi
+
+    # Get the remote host from the current context
+    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    debug_log "Remote host: $REMOTE_HOST"
+
+    # Check all required directories with a single ls command
+    local paths=(
+        "${DOCKER_VOLUMES_BASE}/wavtopia_postgres_data"
+        "${DOCKER_VOLUMES_BASE}/wavtopia_minio_data"
+        "${DOCKER_VOLUMES_BASE}/wavtopia_redis_data"
+        "${DOCKER_VOLUMES_BASE}/wavtopia_temp_files"
+    )
+    
+    echo "Checking directories..."
+    local output=$(ssh "$REMOTE_HOST" "ls -d ${paths[*]} 2>&1 || true")
+    
+    # Find missing directories by comparing ls output with required paths
+    local missing=()
+    for path in "${paths[@]}"; do
+        if [[ ! $output == *"$path"* ]]; then
+            missing+=("$(basename "$path")")
+        fi
+    done
+
+    # If any directories are missing, show error
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo "Error: The following required directories are missing:"
+        for dir in "${missing[@]}"; do
+            echo "  - ${DOCKER_VOLUMES_BASE}/${dir}"
+        done
+        echo "Please create these directories on the production server before proceeding."
+        echo "You can create them with:"
+        echo "  ssh $REMOTE_HOST 'mkdir -p ${DOCKER_VOLUMES_BASE}/{$(IFS=,; echo "${missing[*]}")}}'"
+        exit 1
+    fi
+
+    echo "All required volume directories exist!"
+}
+
 # Main command execution
 case $COMMAND in
     "build-workspace")
@@ -495,6 +544,9 @@ case $COMMAND in
         ;;
     "test-registry")
         test_registry
+        ;;
+    "verify-prod-volumes")
+        verify_prod_volumes
         ;;
     "bootstrap-prod")
         bootstrap_prod
