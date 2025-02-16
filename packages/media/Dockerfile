@@ -11,11 +11,10 @@ FROM ${WORKSPACE_IMAGE} AS prod-build
 RUN pnpm --filter @wavtopia/media --prod deploy media-service
 
 # Create the final image
-FROM node:18-slim
+FROM apt-base
 
 # Install runtime dependencies only
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     ffmpeg \
     lame \
     # Schism Tracker dependencies

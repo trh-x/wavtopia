@@ -6,12 +6,11 @@ FROM ${WORKSPACE_IMAGE} AS prod-build
 RUN pnpm --filter @wavtopia/backend --prod deploy backend-service
 
 # Create the final image
-FROM node:18-slim
+FROM apt-base
 
 # Install system dependencies - just openssl for now, to ensure it's aligned with the media service
 # where openssl is installed as a by-product of the build process. The prisma client needs it.
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get install -y --no-install-recommends \
     openssl \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*

@@ -1,8 +1,7 @@
-FROM node:18-slim
+FROM apt-base
 
 # Install build dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     # MilkyTracker dependencies
     build-essential \
     cmake \
