@@ -75,9 +75,9 @@ if [ -z "$COMMAND" ]; then
 fi
 
 # Validate required parameters for specific commands
-if [ "$COMMAND" = "deploy-prod" ] && [ -z "$DOCKER_VOLUMES_BASE" ]; then
-    echo "Error: deploy-prod command requires --volumes-base parameter"
-    echo "Example: $0 --volumes-base /path/to/volumes deploy-prod"
+if { [ "$COMMAND" = "deploy-prod" ] || [ "$COMMAND" = "up-prod" ]; } && [ -z "$DOCKER_VOLUMES_BASE" ]; then
+    echo "Error: $COMMAND command requires --volumes-base parameter"
+    echo "Example: $0 --volumes-base /path/to/volumes $COMMAND"
     exit 1
 fi
 
@@ -406,8 +406,8 @@ deploy_prod() {
     
     # Deploy services first to ensure database is running
     debug_log "Starting production services"
-    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose --profile production pull
-    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose --profile production up -d
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production pull
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
     
     # Wait a moment for the database to be ready
     echo "Waiting for database to be ready..."
@@ -416,7 +416,7 @@ deploy_prod() {
     # Run database migrations in production
     echo "Running database migrations..."
     debug_log "Executing database migrations"
-    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose --profile production run --rm \
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
       backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run migrate:deploy"
     
     # Switch back to default context
@@ -435,7 +435,7 @@ bootstrap_prod() {
 
     # Run bootstrap command in production context
     docker context use production
-    docker compose --profile production run --rm \
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
       backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap"
     
     # Switch back to default context
@@ -474,7 +474,7 @@ case $COMMAND in
         build_tools
         build_media
         build_backend
-        docker compose --profile production up -d
+        DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
         ;;
     "down")
         docker compose down
