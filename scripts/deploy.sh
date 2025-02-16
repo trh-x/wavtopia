@@ -463,10 +463,10 @@ verify_prod_volumes() {
 
     # List of required directories (without base path)
     local required_dirs=(
-        "wavtopia_postgres_data"
-        "wavtopia_minio_data"
-        "wavtopia_redis_data"
-        "wavtopia_temp_files"
+        "wavtopia_postgres_data/_data"
+        "wavtopia_minio_data/_data"
+        "wavtopia_redis_data/_data"
+        "wavtopia_temp_files/_data"
     )
     
     echo "Checking directories..."

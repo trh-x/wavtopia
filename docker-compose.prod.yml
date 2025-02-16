@@ -6,25 +6,25 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ${DOCKER_VOLUMES_BASE}/wavtopia_postgres_data
+      device: ${DOCKER_VOLUMES_BASE}/wavtopia_postgres_data/_data
 
   minio_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${DOCKER_VOLUMES_BASE}/wavtopia_minio_data
+      device: ${DOCKER_VOLUMES_BASE}/wavtopia_minio_data/_data
 
   redis_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${DOCKER_VOLUMES_BASE}/wavtopia_redis_data
+      device: ${DOCKER_VOLUMES_BASE}/wavtopia_redis_data/_data
 
   temp_files:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${DOCKER_VOLUMES_BASE}/wavtopia_temp_files
+      device: ${DOCKER_VOLUMES_BASE}/wavtopia_temp_files/_data
