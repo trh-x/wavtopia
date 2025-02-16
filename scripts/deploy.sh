@@ -5,11 +5,12 @@ set -e
 REGISTRY_PORT="5000"
 COMMAND=""
 DEBUG=false
+DOCKER_VOLUMES_BASE=""
 
 # Help message
 show_help() {
     cat <<EOT
-Usage: $0 [options] command
+Usage: $0 [options] command [args]
 
 Commands:
   build-workspace  Build the base workspace image
@@ -23,13 +24,14 @@ Commands:
   down-volumes     Stop all services and remove volumes
   clean            Remove all containers, volumes, and unused images
   setup-remote     Configure remote deployment
-  deploy-prod      Deploy to production server
+  deploy-prod      Deploy to production server (requires --volumes-base path)
   test-registry    Test connection to registry through SSH tunnel
   bootstrap-prod   Bootstrap the production database with an admin user
 
 Options:
-  -h, --help       Show this help message
-  -d, --debug      Enable debug/verbose output
+  -h, --help                Show this help message
+  -d, --debug              Enable debug/verbose output
+  --volumes-base <path>    Base path for Docker volumes (required for deploy-prod)
 EOT
 }
 
@@ -50,6 +52,10 @@ while [[ "$#" -gt 0 ]]; do
         -d|--debug) 
             DEBUG=true
             ;;
+        --volumes-base)
+            shift
+            DOCKER_VOLUMES_BASE="$1"
+            ;;
         build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod)
             COMMAND="$1"
             ;;
@@ -65,6 +71,13 @@ done
 if [ -z "$COMMAND" ]; then
     echo "No command specified"
     show_help
+    exit 1
+fi
+
+# Validate required parameters for specific commands
+if [ "$COMMAND" = "deploy-prod" ] && [ -z "$DOCKER_VOLUMES_BASE" ]; then
+    echo "Error: deploy-prod command requires --volumes-base parameter"
+    echo "Example: $0 --volumes-base /path/to/volumes deploy-prod"
     exit 1
 fi
 
@@ -314,6 +327,7 @@ build_backend() {
 deploy_prod() {
     echo "Deploying to production server..."
     debug_log "Starting deployment process"
+    debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
     
     if ! docker --context production info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
@@ -392,8 +406,8 @@ deploy_prod() {
     
     # Deploy services first to ensure database is running
     debug_log "Starting production services"
-    docker compose --profile production pull
-    docker compose --profile production up -d
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose --profile production pull
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose --profile production up -d
     
     # Wait a moment for the database to be ready
     echo "Waiting for database to be ready..."
@@ -402,7 +416,7 @@ deploy_prod() {
     # Run database migrations in production
     echo "Running database migrations..."
     debug_log "Executing database migrations"
-    docker compose --profile production run --rm \
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose --profile production run --rm \
       backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run migrate:deploy"
     
     # Switch back to default context
