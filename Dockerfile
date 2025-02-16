@@ -1,11 +1,11 @@
-FROM node:18-slim AS base
+ARG WORKSPACE_APT_IMAGE
+FROM ${WORKSPACE_APT_IMAGE}
 
 SHELL ["/bin/sh", "-c"]
 
 # Install system dependencies - just openssl for now, to ensure it's aligned with the media service
 # where openssl is installed as a by-product of the build process. The prisma client needs it.
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get install -y --no-install-recommends \
     openssl \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*

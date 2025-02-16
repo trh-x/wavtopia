@@ -51,16 +51,33 @@ services:
     build:
       context: packages/media
       dockerfile: Dockerfile.tools
+      args:
+        - WORKSPACE_APT_IMAGE=${REGISTRY_PREFIX:-}wavtopia-apt-base
     image: ${REGISTRY_PREFIX:-}wavtopia-tools
+    depends_on:
+      workspace-apt-base:
+        condition: service_completed_successfully
+
+  workspace-apt-base:
+    profiles:
+      - build
+    build:
+      context: .
+      dockerfile: Dockerfile.apt-base
+    image: ${REGISTRY_PREFIX:-}wavtopia-apt-base
 
   workspace:
     profiles:
       - build
-      - production
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - WORKSPACE_APT_IMAGE=${REGISTRY_PREFIX:-}wavtopia-apt-base
     image: ${REGISTRY_PREFIX:-}wavtopia-workspace
+    depends_on:
+      workspace-apt-base:
+        condition: service_completed_successfully
 
   media:
     profiles:
@@ -70,6 +87,7 @@ services:
       dockerfile: Dockerfile
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
+        - WORKSPACE_APT_IMAGE=${REGISTRY_PREFIX:-}wavtopia-apt-base
     image: ${REGISTRY_PREFIX:-}wavtopia-media
     ports:
       - "3001:3001"
@@ -94,6 +112,7 @@ services:
       dockerfile: packages/backend/Dockerfile
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
+        - WORKSPACE_APT_IMAGE=${REGISTRY_PREFIX:-}wavtopia-apt-base
     image: ${REGISTRY_PREFIX:-}wavtopia-backend
     ports:
       - "3002:3002"
@@ -103,8 +122,6 @@ services:
     networks:
       - wavtopia-net
     depends_on:
-      workspace:
-        condition: service_completed_successfully
       minio:
         condition: service_started
       redis:

@@ -1,21 +1,21 @@
-# Get the workspace image name from build args
+# Get the workspace image names from build args
 ARG WORKSPACE_IMAGE
+ARG WORKSPACE_APT_IMAGE
 
 # Build the tools image first
 FROM wavtopia-tools AS tools
 
-# Use workspace image for building the service
+# Use workspace image for building
 FROM ${WORKSPACE_IMAGE} AS prod-build
 
 # Create deployment for media service
 RUN pnpm --filter @wavtopia/media --prod deploy media-service
 
 # Create the final image
-FROM node:18-slim
+FROM ${WORKSPACE_APT_IMAGE}
 
 # Install runtime dependencies only
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     ffmpeg \
     lame \
     # Schism Tracker dependencies

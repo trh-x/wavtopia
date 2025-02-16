@@ -1,0 +1,4 @@
+FROM node:18-slim
+
+# Run apt-get update once for all downstream images
+RUN apt-get update 
