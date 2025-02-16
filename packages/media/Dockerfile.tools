@@ -1,5 +1,6 @@
-ARG WORKSPACE_IMAGE
-FROM ${WORKSPACE_IMAGE} AS apt-base
+# Get the workspace image name from build args
+ARG WORKSPACE_APT_IMAGE
+FROM ${WORKSPACE_APT_IMAGE}
 
 # Install build dependencies
 RUN apt-get install -y --no-install-recommends \

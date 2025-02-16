@@ -1,9 +1,5 @@
-FROM node:18-slim AS apt-base
-
-# Run apt-get update once for all downstream images
-RUN apt-get update
-
-FROM apt-base AS base
+ARG WORKSPACE_APT_IMAGE
+FROM ${WORKSPACE_APT_IMAGE}
 
 SHELL ["/bin/sh", "-c"]
 
