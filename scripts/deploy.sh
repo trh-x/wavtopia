@@ -470,15 +470,15 @@ verify_prod_volumes() {
     )
     
     echo "Checking directories..."
-    # Use ls to check each directory and capture both stdout and stderr
+    # Use find to check for _data directories
     local output
-    output=$(ssh "$REMOTE_HOST" "cd ${DOCKER_VOLUMES_BASE} 2>/dev/null && ls -1 2>&1") || true
-    debug_log "ls output: $output"
+    output=$(ssh "$REMOTE_HOST" "find ${DOCKER_VOLUMES_BASE} -type d -name '_data' 2>&1") || true
+    debug_log "find output: $output"
     
-    # Find missing directories by checking the ls output
+    # Find missing directories by checking the find output
     local missing=()
     for dir in "${required_dirs[@]}"; do
-        if ! echo "$output" | grep -q "^${dir}$"; then
+        if ! echo "$output" | grep -q "${DOCKER_VOLUMES_BASE}/${dir}$"; then
             missing+=("$dir")
         fi
     done
