@@ -81,7 +81,9 @@ async function processComponent(
     `Processing component ${index + 1}/${totalCount}: ${component.name}`
   );
 
-  const mp3Buffer = await convertWAVToMP3(component.buffer);
+  // TODO: Make this configurable
+  const kbps = 192;
+  const mp3Buffer = await convertWAVToMP3(component.buffer, kbps);
   const componentName = `${originalName}_${component.name.replace(
     /[^a-z0-9]/gi,
     "_"
@@ -119,7 +121,10 @@ async function processFullTrack(
 
   // Convert full track to MP3
   console.log("Converting full track to MP3...");
-  const mp3Buffer = await convertWAVToMP3(buffer);
+
+  // TODO: Make this configurable
+  const kbps = 320;
+  const mp3Buffer = await convertWAVToMP3(buffer, kbps);
   console.log("Full track MP3 conversion complete");
 
   // Upload MP3 file
