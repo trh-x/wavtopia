@@ -107,6 +107,29 @@ router.post("/convert-audio", async (req, res, next) => {
       });
     }
 
+    // Check for existing jobs in the queue
+    const activeJobs = await audioFileConversionQueue.getJobs([
+      "active",
+      "waiting",
+    ]);
+    const existingJob = activeJobs.find(
+      (job) =>
+        job.data.trackId === options.trackId &&
+        job.data.type === options.type &&
+        job.data.format === options.format &&
+        job.data.componentId === options.componentId
+    );
+
+    if (existingJob) {
+      const state = await existingJob.getState();
+      return res.json({
+        status: "in_progress",
+        message: `${options.format} conversion job is already ${
+          state === "waiting" ? "queued" : state
+        }`,
+      });
+    }
+
     const jobId = await queueAudioFileConversion(
       options.trackId,
       options.type,
@@ -118,7 +141,7 @@ router.post("/convert-audio", async (req, res, next) => {
       status: "success",
       data: {
         jobId,
-        message: "WAV conversion has been queued",
+        message: `${options.format} conversion has been queued`,
       },
     });
   } catch (error) {
