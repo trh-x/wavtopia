@@ -178,6 +178,28 @@ router.get(
   }
 );
 
+// Utility function to update last requested timestamp
+async function updateLastRequestedAt(
+  type: "full" | "component",
+  id: string,
+  format: "wav" | "flac"
+): Promise<void> {
+  const timestampField =
+    format === "wav" ? "wavLastRequestedAt" : "flacLastRequestedAt";
+
+  if (type === "full") {
+    await prisma.track.update({
+      where: { id },
+      data: { [timestampField]: new Date() },
+    });
+  } else {
+    await prisma.component.update({
+      where: { id },
+      data: { [timestampField]: new Date() },
+    });
+  }
+}
+
 // Get track component file (before auth middleware)
 router.get(
   "/:id/component/:componentId.:format",
@@ -199,8 +221,10 @@ router.get(
         filePath = component.mp3Url;
       } else if (format === "wav") {
         filePath = component.wavUrl;
+        await updateLastRequestedAt("component", component.id, "wav");
       } else if (format === "flac") {
         filePath = component.flacUrl;
+        await updateLastRequestedAt("component", component.id, "flac");
       } else {
         throw new AppError(400, "Invalid format");
       }
@@ -233,8 +257,10 @@ router.get(
         filePath = track.fullTrackMp3Url;
       } else if (format === "wav") {
         filePath = track.fullTrackWavUrl;
+        await updateLastRequestedAt("full", track.id, "wav");
       } else if (format === "flac") {
         filePath = track.fullTrackFlacUrl;
+        await updateLastRequestedAt("full", track.id, "flac");
       } else {
         throw new AppError(400, "Invalid format");
       }

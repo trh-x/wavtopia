@@ -66,6 +66,7 @@ async function updateAudioFileConversionStatus(
 ): Promise<void> {
   const conversionStatusProperty =
     format === "wav" ? "wavConversionStatus" : "flacConversionStatus";
+  const createdAtProperty = format === "wav" ? "wavCreatedAt" : "flacCreatedAt";
 
   if (type === "full") {
     const audioFileUrlProperty =
@@ -76,6 +77,9 @@ async function updateAudioFileConversionStatus(
       data: {
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
+        ...(status === AudioFileConversionStatus.COMPLETED && {
+          [createdAtProperty]: new Date(),
+        }),
       },
     });
   } else {
@@ -86,6 +90,9 @@ async function updateAudioFileConversionStatus(
       data: {
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
+        ...(status === AudioFileConversionStatus.COMPLETED && {
+          [createdAtProperty]: new Date(),
+        }),
       },
     });
   }
