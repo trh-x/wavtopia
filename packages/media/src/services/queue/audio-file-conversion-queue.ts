@@ -273,7 +273,7 @@ export const queueAudioFileConversion = async (
   componentId?: string
 ) => {
   const job = await audioFileConversionQueue.add(
-    "convert",
+    "convert-audio-file",
     {
       trackId,
       type,

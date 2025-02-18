@@ -265,7 +265,7 @@ export async function cleanup(): Promise<void> {
 // Add job to queue
 export const queueTrackConversion = async (trackId: string) => {
   const job = await trackConversionQueue.add(
-    "convert",
+    "convert-track",
     { trackId },
     standardJobOptions
   );
