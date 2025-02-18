@@ -1,10 +1,11 @@
-import { Job } from "bull";
+import { Job, Worker } from "bullmq";
 import { convertModuleToWAV } from "../module-converter";
 import { convertAudioToFormat } from "../audio-file-converter";
 import {
   AudioFileConversionStatus,
   SourceFormat,
   StorageFile,
+  config,
 } from "@wavtopia/core-storage";
 import { uploadFile, getObject } from "../storage";
 import {
@@ -66,6 +67,7 @@ async function updateAudioFileConversionStatus(
 ): Promise<void> {
   const conversionStatusProperty =
     format === "wav" ? "wavConversionStatus" : "flacConversionStatus";
+  const createdAtProperty = format === "wav" ? "wavCreatedAt" : "flacCreatedAt";
 
   if (type === "full") {
     const audioFileUrlProperty =
@@ -76,6 +78,9 @@ async function updateAudioFileConversionStatus(
       data: {
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
+        ...(status === AudioFileConversionStatus.COMPLETED && {
+          [createdAtProperty]: new Date(),
+        }),
       },
     });
   } else {
@@ -86,13 +91,15 @@ async function updateAudioFileConversionStatus(
       data: {
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
+        ...(status === AudioFileConversionStatus.COMPLETED && {
+          [createdAtProperty]: new Date(),
+        }),
       },
     });
   }
 }
 
-// Process WAV conversion jobs
-audioFileConversionQueue.process(async (job: Job<AudioFileConversionJob>) => {
+async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
   const { trackId, type, componentId, format } = job.data;
 
   console.log(
@@ -242,7 +249,21 @@ audioFileConversionQueue.process(async (job: Job<AudioFileConversionJob>) => {
 
     throw error;
   }
-});
+}
+
+// Process audio file conversion jobs
+export const worker = new Worker<AudioFileConversionJob>(
+  "audio-file-conversion",
+  audioFileConversionProcessor,
+  {
+    connection: config.redis,
+  }
+);
+
+// Cleanup function for graceful shutdown
+export async function cleanup(): Promise<void> {
+  await worker.close();
+}
 
 // Add audio file conversion job to queue
 export const queueAudioFileConversion = async (
@@ -252,6 +273,7 @@ export const queueAudioFileConversion = async (
   componentId?: string
 ) => {
   const job = await audioFileConversionQueue.add(
+    "convert",
     {
       trackId,
       type,

@@ -1,8 +1,8 @@
-import { Job } from "bull";
+import { Job, Worker } from "bullmq";
 import { convertModuleToWAV } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
-import { StorageFile } from "@wavtopia/core-storage";
+import { StorageFile, config } from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../../services/storage";
 import {
   createQueue,
@@ -81,7 +81,9 @@ async function processComponent(
     `Processing component ${index + 1}/${totalCount}: ${component.name}`
   );
 
-  const mp3Buffer = await convertWAVToMP3(component.buffer);
+  // TODO: Make this configurable
+  const kbps = 192;
+  const mp3Buffer = await convertWAVToMP3(component.buffer, kbps);
   const componentName = `${originalName}_${component.name.replace(
     /[^a-z0-9]/gi,
     "_"
@@ -119,7 +121,10 @@ async function processFullTrack(
 
   // Convert full track to MP3
   console.log("Converting full track to MP3...");
-  const mp3Buffer = await convertWAVToMP3(buffer);
+
+  // TODO: Make this configurable
+  const kbps = 320;
+  const mp3Buffer = await convertWAVToMP3(buffer, kbps);
   console.log("Full track MP3 conversion complete");
 
   // Upload MP3 file
@@ -138,8 +143,7 @@ async function processFullTrack(
   };
 }
 
-// Process jobs
-trackConversionQueue.process(async (job: Job<TrackConversionJob>) => {
+async function trackConversionProcessor(job: Job<TrackConversionJob>) {
   console.log(
     `Processing conversion job ${job.id} for track: ${job.data.trackId}`
   );
@@ -242,11 +246,29 @@ trackConversionQueue.process(async (job: Job<TrackConversionJob>) => {
     console.error(`Error processing job ${job.id}:`, error);
     throw error;
   }
-});
+}
+
+// Process track conversion jobs
+export const worker = new Worker<TrackConversionJob>(
+  "audio-conversion",
+  trackConversionProcessor,
+  {
+    connection: config.redis,
+  }
+);
+
+// Cleanup function for graceful shutdown
+export async function cleanup(): Promise<void> {
+  await worker.close();
+}
 
 // Add job to queue
 export const queueTrackConversion = async (trackId: string) => {
-  const job = await trackConversionQueue.add({ trackId }, standardJobOptions);
+  const job = await trackConversionQueue.add(
+    "convert",
+    { trackId },
+    standardJobOptions
+  );
 
   return job.id;
 };

@@ -33,14 +33,16 @@ export function ComponentsSection({
           viewMode === "grid" ? styles.layout.grid : styles.layout.stack
         }
       >
-        {track.components.map((component) => (
-          <TrackComponent
-            key={component.id}
-            component={component}
-            track={track}
-            isGridView={viewMode === "grid"}
-          />
-        ))}
+        {track.components
+          .sort((a, b) => a.index - b.index)
+          .map((component) => (
+            <TrackComponent
+              key={component.id}
+              component={component}
+              track={track}
+              isGridView={viewMode === "grid"}
+            />
+          ))}
       </div>
     </div>
   );

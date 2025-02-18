@@ -40,27 +40,31 @@ enum SourceFormat {
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
 // the exception of originalUrl, which is a file:// URL until the track is converted).
 model Track {
-  id               String       @id @default(uuid())
-  title            String
-  artist           String
-  originalFormat   SourceFormat @map("original_format")
-  originalUrl      String       @map("original_url")
-  fullTrackWavUrl  String?      @map("full_track_wav_url")
-  fullTrackMp3Url  String?      @map("full_track_mp3_url")
-  fullTrackFlacUrl String?      @map("full_track_flac_url")
-  waveformData     Float[]      @map("waveform_data")
-  duration         Float?       @map("duration")
-  coverArt         String?      @map("cover_art")
-  metadata         Json?
-  isPublic         Boolean      @default(false) @map("is_public")
-  components       Component[]
-  userId           String       @map("user_id")
-  user             User         @relation(fields: [userId], references: [id])
-  sharedWith       TrackShare[] @relation("SharedTracks")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
-  flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
+  id                    String                     @id @default(uuid())
+  title                 String
+  artist                String
+  originalFormat        SourceFormat               @map("original_format")
+  originalUrl           String                     @map("original_url")
+  fullTrackWavUrl       String?                    @map("full_track_wav_url")
+  fullTrackMp3Url       String?                    @map("full_track_mp3_url")
+  fullTrackFlacUrl      String?                    @map("full_track_flac_url")
+  waveformData          Float[]                    @map("waveform_data")
+  duration              Float?                     @map("duration")
+  coverArt              String?                    @map("cover_art")
+  metadata              Json?
+  isPublic              Boolean                    @default(false) @map("is_public")
+  components            Component[]
+  userId                String                     @map("user_id")
+  user                  User                       @relation(fields: [userId], references: [id])
+  sharedWith            TrackShare[]               @relation("SharedTracks")
+  createdAt             DateTime                   @default(now()) @map("created_at")
+  updatedAt             DateTime                   @updatedAt @map("updated_at")
+  wavConversionStatus   AudioFileConversionStatus  @default(NOT_STARTED) @map("wav_conversion_status")
+  flacConversionStatus  AudioFileConversionStatus  @default(NOT_STARTED) @map("flac_conversion_status")
+  wavCreatedAt          DateTime?                  @map("wav_created_at")
+  wavLastRequestedAt    DateTime?                  @map("wav_last_requested_at")
+  flacCreatedAt         DateTime?                  @map("flac_created_at")
+  flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
 
   @@index([createdAt, id])
   @@index([title, id])
@@ -83,21 +87,25 @@ model TrackShare {
 }
 
 model Component {
-  id           String   @id @default(uuid())
-  index        Int
-  name         String
-  type         String
-  wavUrl       String?  @map("wav_url")
-  mp3Url       String   @map("mp3_url")
-  flacUrl      String?  @map("flac_url")
-  waveformData Float[]  @map("waveform_data")
-  duration     Float?   @map("duration")
-  trackId      String   @map("track_id")
-  track        Track    @relation(fields: [trackId], references: [id])
-  wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
-  flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                    String                     @id @default(uuid())
+  index                 Int
+  name                  String
+  type                  String
+  wavUrl                String?                    @map("wav_url")
+  mp3Url                String                     @map("mp3_url")
+  flacUrl               String?                    @map("flac_url")
+  waveformData          Float[]                    @map("waveform_data")
+  duration              Float?                     @map("duration")
+  trackId               String                     @map("track_id")
+  track                 Track                      @relation(fields: [trackId], references: [id])
+  wavConversionStatus   AudioFileConversionStatus  @default(NOT_STARTED) @map("wav_conversion_status")
+  flacConversionStatus  AudioFileConversionStatus  @default(NOT_STARTED) @map("flac_conversion_status")
+  wavCreatedAt          DateTime?                  @map("wav_created_at")
+  wavLastRequestedAt    DateTime?                  @map("wav_last_requested_at")
+  flacCreatedAt         DateTime?                  @map("flac_created_at")
+  flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
+  createdAt             DateTime                   @default(now()) @map("created_at")
+  updatedAt             DateTime                   @updatedAt @map("updated_at")
 
   @@unique([trackId, index])
   @@map("components")

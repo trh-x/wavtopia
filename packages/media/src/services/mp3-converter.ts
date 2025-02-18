@@ -7,7 +7,10 @@ import { AppError } from "../middleware/errorHandler";
 
 const execAsync = promisify(exec);
 
-export async function convertWAVToMP3(wavBuffer: Buffer): Promise<Buffer> {
+export async function convertWAVToMP3(
+  wavBuffer: Buffer,
+  kbps: number
+): Promise<Buffer> {
   try {
     // Create temporary directory
     const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-mp3-"));
@@ -25,7 +28,7 @@ export async function convertWAVToMP3(wavBuffer: Buffer): Promise<Buffer> {
       // This is crucial for accurate seeking in the browser's audio player.
       // TODO: Find a better solution that doesn't require piping through 'cat'.
       const { stderr } = await execAsync(
-        `ffmpeg -i "${wavPath}" -f wav - | lame -b 320 --cbr --noreplaygain --pad-id3v2 - | cat > "${mp3Path}"`
+        `ffmpeg -i "${wavPath}" -f wav - | lame -b ${kbps} --cbr --noreplaygain --pad-id3v2 - | cat > "${mp3Path}"`
       );
 
       if (stderr) {
