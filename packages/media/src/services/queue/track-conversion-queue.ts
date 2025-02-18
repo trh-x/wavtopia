@@ -1,8 +1,8 @@
-import { Job } from "bull";
+import { Job, Worker } from "bullmq";
 import { convertModuleToWAV } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
-import { StorageFile } from "@wavtopia/core-storage";
+import { StorageFile, config } from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../../services/storage";
 import {
   createQueue,
@@ -143,8 +143,7 @@ async function processFullTrack(
   };
 }
 
-// Process jobs
-trackConversionQueue.process(async (job: Job<TrackConversionJob>) => {
+async function trackConversionProcessor(job: Job<TrackConversionJob>) {
   console.log(
     `Processing conversion job ${job.id} for track: ${job.data.trackId}`
   );
@@ -247,11 +246,24 @@ trackConversionQueue.process(async (job: Job<TrackConversionJob>) => {
     console.error(`Error processing job ${job.id}:`, error);
     throw error;
   }
-});
+}
+
+// Process track conversion jobs
+const worker = new Worker<TrackConversionJob>(
+  "audio-conversion",
+  trackConversionProcessor,
+  {
+    connection: config.redis,
+  }
+);
 
 // Add job to queue
 export const queueTrackConversion = async (trackId: string) => {
-  const job = await trackConversionQueue.add({ trackId }, standardJobOptions);
+  const job = await trackConversionQueue.add(
+    "convert",
+    { trackId },
+    standardJobOptions
+  );
 
   return job.id;
 };

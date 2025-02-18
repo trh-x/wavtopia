@@ -1,4 +1,4 @@
-import Queue, { Job } from "bull";
+import { Queue, Job, QueueEvents } from "bullmq";
 import { PrismaService, config } from "@wavtopia/core-storage";
 
 export const prisma = new PrismaService(config.database).db;
@@ -13,22 +13,23 @@ export const standardJobOptions = {
 };
 
 // Utility function to create a queue with standard configuration
-export function createQueue<T>(name: string): Queue.Queue<T> {
+export function createQueue<T>(name: string): Queue<T> {
   return new Queue<T>(name, {
-    redis: config.redis,
+    connection: config.redis,
   });
 }
 
 // Utility function to set up queue monitoring
-export function setupQueueMonitoring<T>(
-  queue: Queue.Queue<T>,
-  name: string
-): void {
-  queue.on("completed", (job: Job<T>) => {
-    console.log(`${name} job ${job.id} completed successfully`);
+export function setupQueueMonitoring<T>(queue: Queue<T>, name: string): void {
+  const queueEvents = new QueueEvents(queue.name, {
+    connection: config.redis,
   });
 
-  queue.on("failed", (job: Job<T>, error: Error) => {
-    console.error(`${name} job ${job.id} failed:`, error);
+  queueEvents.on("completed", ({ jobId }) => {
+    console.log(`${name} job ${jobId} completed successfully`);
+  });
+
+  queueEvents.on("failed", ({ jobId, failedReason }) => {
+    console.error(`${name} job ${jobId} failed:`, failedReason);
   });
 }
