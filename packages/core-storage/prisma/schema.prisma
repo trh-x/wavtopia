@@ -61,6 +61,10 @@ model Track {
   updatedAt        DateTime     @updatedAt @map("updated_at")
   wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
   flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
+  wavCreatedAt DateTime? @map("wav_created_at")
+  wavLastRequestedAt DateTime? @map("wav_last_requested_at")
+  flacCreatedAt DateTime? @map("flac_created_at")
+  flacLastRequestedAt DateTime? @map("flac_last_requested_at")
 
   @@index([createdAt, id])
   @@index([title, id])
@@ -96,6 +100,10 @@ model Component {
   track        Track    @relation(fields: [trackId], references: [id])
   wavConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("wav_conversion_status")
   flacConversionStatus AudioFileConversionStatus @default(NOT_STARTED) @map("flac_conversion_status")
+  wavCreatedAt DateTime? @map("wav_created_at")
+  wavLastRequestedAt DateTime? @map("wav_last_requested_at")
+  flacCreatedAt DateTime? @map("flac_created_at")
+  flacLastRequestedAt DateTime? @map("flac_last_requested_at")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
