@@ -249,13 +249,18 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
 }
 
 // Process track conversion jobs
-const worker = new Worker<TrackConversionJob>(
+export const worker = new Worker<TrackConversionJob>(
   "audio-conversion",
   trackConversionProcessor,
   {
     connection: config.redis,
   }
 );
+
+// Cleanup function for graceful shutdown
+export async function cleanup(): Promise<void> {
+  await worker.close();
+}
 
 // Add job to queue
 export const queueTrackConversion = async (trackId: string) => {

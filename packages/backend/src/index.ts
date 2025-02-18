@@ -13,10 +13,8 @@ import { notificationRoutes } from "./routes/notifications";
 
 const app = express();
 
-// Increase the request size limit
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
+// Middleware
+app.use(express.json());
 app.use(cors());
 
 // Health check endpoint
@@ -34,6 +32,38 @@ app.use("/api/notifications", notificationRoutes);
 // Error handling
 app.use(errorHandler);
 
+let server: ReturnType<typeof app.listen>;
+
+async function shutdown() {
+  console.log("Shutting down backend service...");
+
+  try {
+    // Close server first to stop accepting new requests
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      console.log("Server closed");
+    }
+
+    // Disconnect from database
+    await prismaService.disconnect();
+    console.log("Database disconnected");
+
+    process.exit(0);
+  } catch (error) {
+    console.error("Error during shutdown:", error);
+    process.exit(1);
+  }
+}
+
+// Handle shutdown signals
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
+
 async function main() {
   try {
     // Initialize storage
@@ -44,7 +74,7 @@ async function main() {
     await prismaService.connect();
     console.log("Connected to database");
 
-    const server = app.listen(config.server.port, () => {
+    server = app.listen(config.server.port, () => {
       console.log(`Server running at http://localhost:${config.server.port}`);
     });
 
@@ -56,10 +86,6 @@ async function main() {
   }
 }
 
-main()
-  .catch(console.error)
-  .finally(async () => {
-    await prismaService.disconnect();
-  });
+main().catch(console.error);
 
 export { app };

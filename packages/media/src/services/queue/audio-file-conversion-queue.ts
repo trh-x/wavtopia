@@ -252,13 +252,18 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
 }
 
 // Process audio file conversion jobs
-const worker = new Worker<AudioFileConversionJob>(
+export const worker = new Worker<AudioFileConversionJob>(
   "audio-file-conversion",
   audioFileConversionProcessor,
   {
     connection: config.redis,
   }
 );
+
+// Cleanup function for graceful shutdown
+export async function cleanup(): Promise<void> {
+  await worker.close();
+}
 
 // Add audio file conversion job to queue
 export const queueAudioFileConversion = async (
