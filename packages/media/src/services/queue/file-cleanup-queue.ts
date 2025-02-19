@@ -1,5 +1,5 @@
 import { Job, Worker } from "bullmq";
-import { SourceFormat, StorageFile, config } from "@wavtopia/core-storage";
+import { Prisma, SourceFormat, config } from "@wavtopia/core-storage";
 import { deleteFile } from "../storage";
 import {
   createQueue,
@@ -20,6 +20,20 @@ interface FileCleanupJob {
     value: number;
     unit: "days" | "hours" | "minutes" | "seconds";
   };
+}
+
+class FileCleanupError extends Error {
+  constructor(message: string, public cause?: unknown) {
+    super(message);
+    this.name = "FileCleanupError";
+  }
+}
+
+interface CleanupFailure {
+  fileUrl: string;
+  error: Error;
+  type: "track-wav" | "track-flac" | "component-wav" | "component-flac";
+  entityId: string;
 }
 
 function getThresholdDate(timeframe?: FileCleanupJob["timeframe"]): Date {
@@ -51,6 +65,32 @@ function getThresholdDate(timeframe?: FileCleanupJob["timeframe"]): Date {
   return now;
 }
 
+async function retryableDeleteFile(
+  fileUrl: string,
+  maxRetries = 3
+): Promise<void> {
+  let lastError: Error | undefined;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await deleteFile(fileUrl);
+      return;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
+        console.log(
+          `Retry ${attempt}/${maxRetries} for ${fileUrl} after ${delay}ms`
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw new FileCleanupError(
+    `Failed to delete file after ${maxRetries} attempts: ${fileUrl}`,
+    lastError
+  );
+}
+
 async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
   console.log(`Processing cleanup job ${job.id}`);
 
@@ -69,6 +109,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
     fullTrackFlac: 0,
     componentWav: 0,
     componentFlac: 0,
+    failures: [] as CleanupFailure[],
   };
 
   try {
@@ -131,92 +172,146 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
     console.log(`Processing batch of ${tracksToProcess.length} tracks`);
 
     for (const track of tracksToProcess) {
-      await prisma.$transaction(async (tx) => {
-        // Process full track files
-        if (
-          track.fullTrackWavUrl &&
-          track.wavLastRequestedAt &&
-          track.wavLastRequestedAt < thresholdDate
-        ) {
-          await deleteFile(track.fullTrackWavUrl);
-          await tx.track.update({
-            where: { id: track.id },
-            data: {
-              fullTrackWavUrl: null,
-              wavLastRequestedAt: null,
-              wavCreatedAt: null,
-            },
-          });
-          summary.fullTrackWav++;
-        }
-
-        if (
-          track.fullTrackFlacUrl &&
-          track.flacLastRequestedAt &&
-          track.flacLastRequestedAt < thresholdDate
-        ) {
-          await deleteFile(track.fullTrackFlacUrl);
-          await tx.track.update({
-            where: { id: track.id },
-            data: {
-              fullTrackFlacUrl: null,
-              flacLastRequestedAt: null,
-              flacCreatedAt: null,
-            },
-          });
-          summary.fullTrackFlac++;
-        }
-
-        // Process component files
-        const componentUpdates = [];
-        for (const component of track.components) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          // Process full track files
           if (
-            component.wavUrl &&
-            component.wavLastRequestedAt &&
-            component.wavLastRequestedAt < thresholdDate
+            track.fullTrackWavUrl &&
+            track.wavLastRequestedAt &&
+            track.wavLastRequestedAt < thresholdDate
           ) {
-            await deleteFile(component.wavUrl);
-            componentUpdates.push(
-              tx.component.update({
-                where: { id: component.id },
+            try {
+              await retryableDeleteFile(track.fullTrackWavUrl);
+              await tx.track.update({
+                where: { id: track.id },
                 data: {
-                  wavUrl: null,
+                  fullTrackWavUrl: null,
                   wavLastRequestedAt: null,
                   wavCreatedAt: null,
                 },
-              })
-            );
-            summary.componentWav++;
+              });
+              summary.fullTrackWav++;
+            } catch (error) {
+              summary.failures.push({
+                fileUrl: track.fullTrackWavUrl,
+                error:
+                  error instanceof Error ? error : new Error(String(error)),
+                type: "track-wav",
+                entityId: track.id,
+              });
+            }
           }
 
           if (
-            component.flacUrl &&
-            component.flacLastRequestedAt &&
-            component.flacLastRequestedAt < thresholdDate
+            track.fullTrackFlacUrl &&
+            track.flacLastRequestedAt &&
+            track.flacLastRequestedAt < thresholdDate
           ) {
-            await deleteFile(component.flacUrl);
-            componentUpdates.push(
-              tx.component.update({
-                where: { id: component.id },
+            try {
+              await retryableDeleteFile(track.fullTrackFlacUrl);
+              await tx.track.update({
+                where: { id: track.id },
                 data: {
-                  flacUrl: null,
+                  fullTrackFlacUrl: null,
                   flacLastRequestedAt: null,
                   flacCreatedAt: null,
                 },
-              })
-            );
-            summary.componentFlac++;
+              });
+              summary.fullTrackFlac++;
+            } catch (error) {
+              summary.failures.push({
+                fileUrl: track.fullTrackFlacUrl,
+                error:
+                  error instanceof Error ? error : new Error(String(error)),
+                type: "track-flac",
+                entityId: track.id,
+              });
+            }
           }
-        }
 
-        // Execute all component updates in parallel within the transaction
-        if (componentUpdates.length > 0) {
-          await Promise.all(componentUpdates);
+          // Process component files
+          const componentUpdates = [];
+          for (const component of track.components) {
+            if (
+              component.wavUrl &&
+              component.wavLastRequestedAt &&
+              component.wavLastRequestedAt < thresholdDate
+            ) {
+              try {
+                await retryableDeleteFile(component.wavUrl);
+                componentUpdates.push(
+                  tx.component.update({
+                    where: { id: component.id },
+                    data: {
+                      wavUrl: null,
+                      wavLastRequestedAt: null,
+                      wavCreatedAt: null,
+                    },
+                  })
+                );
+                summary.componentWav++;
+              } catch (error) {
+                summary.failures.push({
+                  fileUrl: component.wavUrl,
+                  error:
+                    error instanceof Error ? error : new Error(String(error)),
+                  type: "component-wav",
+                  entityId: component.id,
+                });
+              }
+            }
+
+            if (
+              component.flacUrl &&
+              component.flacLastRequestedAt &&
+              component.flacLastRequestedAt < thresholdDate
+            ) {
+              try {
+                await retryableDeleteFile(component.flacUrl);
+                componentUpdates.push(
+                  tx.component.update({
+                    where: { id: component.id },
+                    data: {
+                      flacUrl: null,
+                      flacLastRequestedAt: null,
+                      flacCreatedAt: null,
+                    },
+                  })
+                );
+                summary.componentFlac++;
+              } catch (error) {
+                summary.failures.push({
+                  fileUrl: component.flacUrl,
+                  error:
+                    error instanceof Error ? error : new Error(String(error)),
+                  type: "component-flac",
+                  entityId: component.id,
+                });
+              }
+            }
+          }
+
+          // Execute all component updates in parallel within the transaction
+          if (componentUpdates.length > 0) {
+            await Promise.all(componentUpdates);
+          }
+        });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          console.error(`Database error processing track ${track.id}:`, error);
+          // Continue with next track
+        } else {
+          throw error; // Re-throw unexpected errors
         }
-      });
+      }
     }
 
-    const totalFiles = Object.values(summary).reduce((a, b) => a + b, 0);
+    const totalFiles =
+      summary.fullTrackWav +
+      summary.fullTrackFlac +
+      summary.componentWav +
+      summary.componentFlac;
+
     console.log("\nCleanup Summary:");
     console.log("---------------");
     console.log(`Full Track WAV files removed: ${summary.fullTrackWav}`);
@@ -226,21 +321,38 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
     console.log("---------------");
     console.log(`Total files removed: ${totalFiles}`);
 
+    if (summary.failures.length > 0) {
+      console.log("\nFailures:");
+      console.log("---------------");
+      for (const failure of summary.failures) {
+        console.error(
+          `Failed to clean up ${failure.type} file (${failure.fileUrl}) for entity ${failure.entityId}:`,
+          failure.error
+        );
+      }
+      console.log(`Total failures: ${summary.failures.length}`);
+    }
+
     // If there are more tracks to process, queue another job
     if (hasMoreTracks) {
+      const delayMinutes = 1;
       console.log(
-        "More tracks to process, queueing next batch to cleanup in 1 minute..."
+        `More tracks to process, queueing next batch with a ${delayMinutes} minute delay (using same timeframe threshold)...`
       );
       await fileCleanupQueue.add(
         "scheduled-cleanup",
-        {
-          type: "scheduled-cleanup",
-          timeframe: job.data.timeframe,
-        },
+        job.data, // Reuse the exact same job data to maintain consistency
         {
           ...standardJobOptions,
-          delay: 60000, // Wait 1 minute before processing next batch
+          delay: delayMinutes * 60000,
         }
+      );
+    }
+
+    // If there were any failures, throw an error but include the summary
+    if (summary.failures.length > 0) {
+      throw new FileCleanupError(
+        `Cleanup completed with ${summary.failures.length} failures. Successfully removed ${totalFiles} files.`
       );
     }
 
