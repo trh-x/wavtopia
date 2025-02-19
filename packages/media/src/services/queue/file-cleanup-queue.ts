@@ -36,6 +36,13 @@ interface CleanupFailure {
   entityId: string;
 }
 
+interface DeletionOperation {
+  fileUrl: string;
+  type: "track-wav" | "track-flac" | "component-wav" | "component-flac";
+  entityId: string;
+  updateFn: () => Promise<any>;
+}
+
 function getThresholdDate(timeframe?: FileCleanupJob["timeframe"]): Date {
   const now = new Date();
 
@@ -174,72 +181,65 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
     for (const track of tracksToProcess) {
       try {
         await prisma.$transaction(async (tx) => {
-          // Process full track files
+          // Prepare all deletion operations
+          const deletionOps: DeletionOperation[] = [];
+
+          // Add track WAV deletion if needed
           if (
             track.fullTrackWavUrl &&
             track.wavLastRequestedAt &&
             track.wavLastRequestedAt < thresholdDate
           ) {
-            try {
-              await retryableDeleteFile(track.fullTrackWavUrl);
-              await tx.track.update({
-                where: { id: track.id },
-                data: {
-                  fullTrackWavUrl: null,
-                  wavLastRequestedAt: null,
-                  wavCreatedAt: null,
-                },
-              });
-              summary.fullTrackWav++;
-            } catch (error) {
-              summary.failures.push({
-                fileUrl: track.fullTrackWavUrl,
-                error:
-                  error instanceof Error ? error : new Error(String(error)),
-                type: "track-wav",
-                entityId: track.id,
-              });
-            }
+            deletionOps.push({
+              fileUrl: track.fullTrackWavUrl,
+              type: "track-wav",
+              entityId: track.id,
+              updateFn: () =>
+                tx.track.update({
+                  where: { id: track.id },
+                  data: {
+                    fullTrackWavUrl: null,
+                    wavLastRequestedAt: null,
+                    wavCreatedAt: null,
+                  },
+                }),
+            });
           }
 
+          // Add track FLAC deletion if needed
           if (
             track.fullTrackFlacUrl &&
             track.flacLastRequestedAt &&
             track.flacLastRequestedAt < thresholdDate
           ) {
-            try {
-              await retryableDeleteFile(track.fullTrackFlacUrl);
-              await tx.track.update({
-                where: { id: track.id },
-                data: {
-                  fullTrackFlacUrl: null,
-                  flacLastRequestedAt: null,
-                  flacCreatedAt: null,
-                },
-              });
-              summary.fullTrackFlac++;
-            } catch (error) {
-              summary.failures.push({
-                fileUrl: track.fullTrackFlacUrl,
-                error:
-                  error instanceof Error ? error : new Error(String(error)),
-                type: "track-flac",
-                entityId: track.id,
-              });
-            }
+            deletionOps.push({
+              fileUrl: track.fullTrackFlacUrl,
+              type: "track-flac",
+              entityId: track.id,
+              updateFn: () =>
+                tx.track.update({
+                  where: { id: track.id },
+                  data: {
+                    fullTrackFlacUrl: null,
+                    flacLastRequestedAt: null,
+                    flacCreatedAt: null,
+                  },
+                }),
+            });
           }
 
-          // Process component files
-          const componentUpdates = [];
+          // Add component deletions if needed
           for (const component of track.components) {
             if (
               component.wavUrl &&
               component.wavLastRequestedAt &&
               component.wavLastRequestedAt < thresholdDate
             ) {
-              try {
-                await retryableDeleteFile(component.wavUrl);
-                componentUpdates.push(
+              deletionOps.push({
+                fileUrl: component.wavUrl,
+                type: "component-wav",
+                entityId: component.id,
+                updateFn: () =>
                   tx.component.update({
                     where: { id: component.id },
                     data: {
@@ -247,18 +247,8 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                       wavLastRequestedAt: null,
                       wavCreatedAt: null,
                     },
-                  })
-                );
-                summary.componentWav++;
-              } catch (error) {
-                summary.failures.push({
-                  fileUrl: component.wavUrl,
-                  error:
-                    error instanceof Error ? error : new Error(String(error)),
-                  type: "component-wav",
-                  entityId: component.id,
-                });
-              }
+                  }),
+              });
             }
 
             if (
@@ -266,9 +256,11 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
               component.flacLastRequestedAt &&
               component.flacLastRequestedAt < thresholdDate
             ) {
-              try {
-                await retryableDeleteFile(component.flacUrl);
-                componentUpdates.push(
+              deletionOps.push({
+                fileUrl: component.flacUrl,
+                type: "component-flac",
+                entityId: component.id,
+                updateFn: () =>
                   tx.component.update({
                     where: { id: component.id },
                     data: {
@@ -276,24 +268,54 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                       flacLastRequestedAt: null,
                       flacCreatedAt: null,
                     },
-                  })
-                );
-                summary.componentFlac++;
-              } catch (error) {
-                summary.failures.push({
-                  fileUrl: component.flacUrl,
-                  error:
-                    error instanceof Error ? error : new Error(String(error)),
-                  type: "component-flac",
-                  entityId: component.id,
-                });
-              }
+                  }),
+              });
             }
           }
 
-          // Execute all component updates in parallel within the transaction
-          if (componentUpdates.length > 0) {
-            await Promise.all(componentUpdates);
+          // Execute all deletions in batches
+          const DELETION_BATCH_SIZE = 3; // Process 3 files at a time
+          for (let i = 0; i < deletionOps.length; i += DELETION_BATCH_SIZE) {
+            const batch = deletionOps.slice(i, i + DELETION_BATCH_SIZE);
+            const results = await Promise.allSettled(
+              batch.map(async (op) => {
+                try {
+                  await retryableDeleteFile(op.fileUrl);
+                  await op.updateFn();
+                  // Update summary based on type
+                  switch (op.type) {
+                    case "track-wav":
+                      summary.fullTrackWav++;
+                      break;
+                    case "track-flac":
+                      summary.fullTrackFlac++;
+                      break;
+                    case "component-wav":
+                      summary.componentWav++;
+                      break;
+                    case "component-flac":
+                      summary.componentFlac++;
+                      break;
+                  }
+                } catch (error) {
+                  summary.failures.push({
+                    fileUrl: op.fileUrl,
+                    error:
+                      error instanceof Error ? error : new Error(String(error)),
+                    type: op.type,
+                    entityId: op.entityId,
+                  });
+                }
+              })
+            );
+
+            if (batch.length === DELETION_BATCH_SIZE) {
+              console.log(
+                `Processed batch of ${DELETION_BATCH_SIZE} deletions`
+              );
+            } else {
+              console.log(`Processed final batch of ${batch.length} deletions`);
+            }
           }
         });
       } catch (error) {
