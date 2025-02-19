@@ -27,8 +27,9 @@ export async function convertWAVToMP3(
       // Piping through 'cat' maintains clean stream writing, preserving the exact timing of the audio data.
       // This is crucial for accurate seeking in the browser's audio player.
       // TODO: Find a better solution that doesn't require piping through 'cat'.
+      // Note, to see more output in the logs, remove the -loglevel error flag
       const { stderr } = await execAsync(
-        `ffmpeg -i "${wavPath}" -f wav - | lame -b ${kbps} --cbr --noreplaygain --pad-id3v2 - | cat > "${mp3Path}"`
+        `ffmpeg -loglevel error -i "${wavPath}" -f wav - | lame -b ${kbps} --cbr --noreplaygain --pad-id3v2 - | cat > "${mp3Path}"`
       );
 
       if (stderr) {
