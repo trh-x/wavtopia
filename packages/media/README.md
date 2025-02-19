@@ -68,7 +68,7 @@ To manually trigger the cleanup:
 Options:
 
 - `-h, --host`: Host address (default: localhost)
-- `-p, --port`: Port number (default: 3000)
+- `-p, --port`: Port number (default: 3001)
 - `-t, --time`: Time value for cleanup threshold
 - `-u, --unit`: Time unit (days|hours|minutes|seconds) (default: days)
 - `--help`: Show help message
@@ -145,5 +145,5 @@ The service can be run using Docker:
 
 ```bash
 docker build -t wavtopia-media .
-docker run -p 3000:3000 wavtopia-media
+docker run -p 3001:3001 wavtopia-media
 ```

@@ -2,7 +2,7 @@
 
 # Default values
 HOST="localhost"
-PORT="3000"
+PORT="3001"
 TIMEFRAME_VALUE=""
 TIMEFRAME_UNIT="days"
 
@@ -13,7 +13,7 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  -h, --host      Host address (default: localhost)"
-    echo "  -p, --port      Port number (default: 3000)"
+    echo "  -p, --port      Port number (default: 3001)"
     echo "  -t, --time      Time value for cleanup threshold"
     echo "  -u, --unit      Time unit (days|hours|minutes|seconds) (default: days)"
     echo "  --help          Show this help message"
