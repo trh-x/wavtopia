@@ -4,13 +4,13 @@ import { router as mediaRouter } from "./routes/media";
 import { errorHandler } from "./middleware/errorHandler";
 import { initializeStorage } from "./services/storage";
 import { config } from "./config";
-import { cleanupAllWorkers } from "./services/queue";
+import { cleanupAllWorkers, initializeScheduledJobs } from "./services/queue";
 
 const app = express();
 
-// Initialize storage
-initializeStorage().catch((error) => {
-  console.error("Failed to initialize storage:", error);
+// Initialize storage and scheduled jobs
+Promise.all([initializeStorage(), initializeScheduledJobs()]).catch((error) => {
+  console.error("Failed to initialize services:", error);
   process.exit(1);
 });
 

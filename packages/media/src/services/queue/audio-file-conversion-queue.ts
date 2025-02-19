@@ -68,6 +68,10 @@ async function updateAudioFileConversionStatus(
   const conversionStatusProperty =
     format === "wav" ? "wavConversionStatus" : "flacConversionStatus";
   const createdAtProperty = format === "wav" ? "wavCreatedAt" : "flacCreatedAt";
+  const lastRequestedAtProperty =
+    format === "wav" ? "wavLastRequestedAt" : "flacLastRequestedAt";
+
+  const now = new Date();
 
   if (type === "full") {
     const audioFileUrlProperty =
@@ -79,7 +83,11 @@ async function updateAudioFileConversionStatus(
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
         ...(status === AudioFileConversionStatus.COMPLETED && {
-          [createdAtProperty]: new Date(),
+          [createdAtProperty]: now,
+          // Initialize last requested at to now for efficiency, so we don't
+          // have to check the creation date of the file as well when cleaning up
+          // old files.
+          [lastRequestedAtProperty]: now,
         }),
       },
     });
@@ -92,7 +100,8 @@ async function updateAudioFileConversionStatus(
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
         ...(status === AudioFileConversionStatus.COMPLETED && {
-          [createdAtProperty]: new Date(),
+          [createdAtProperty]: now,
+          [lastRequestedAtProperty]: now, // As above
         }),
       },
     });
