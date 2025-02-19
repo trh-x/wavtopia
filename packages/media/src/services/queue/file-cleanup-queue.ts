@@ -344,6 +344,10 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
         job.data, // Reuse the exact same job data to maintain consistency
         {
           ...standardJobOptions,
+          // Note, this means the next job will run a minute after the previous one but with
+          // the same relative time threshold, so more tracks may fall within the threshold\
+          // on the next run. This should be OK in real-world usage with a threshold measured
+          // in days.
           delay: delayMinutes * 60000,
         }
       );
