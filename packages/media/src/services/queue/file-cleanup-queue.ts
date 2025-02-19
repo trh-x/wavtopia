@@ -63,6 +63,14 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
     `Cleaning up files older than ${timeframeStr} (before ${thresholdDate.toISOString()})`
   );
 
+  // Initialize counters for summary
+  const summary = {
+    fullTrackWav: 0,
+    fullTrackFlac: 0,
+    componentWav: 0,
+    componentFlac: 0,
+  };
+
   try {
     // Find all tracks with WAV or FLAC files that haven't been accessed within threshold
     const tracksToClean = await prisma.track.findMany({
@@ -132,6 +140,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
             wavCreatedAt: null,
           },
         });
+        summary.fullTrackWav++;
       }
 
       if (
@@ -148,6 +157,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
             flacCreatedAt: null,
           },
         });
+        summary.fullTrackFlac++;
       }
 
       // Process component files
@@ -166,6 +176,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
               wavCreatedAt: null,
             },
           });
+          summary.componentWav++;
         }
 
         if (
@@ -182,11 +193,21 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
               flacCreatedAt: null,
             },
           });
+          summary.componentFlac++;
         }
       }
     }
 
-    console.log("Cleanup completed successfully");
+    const totalFiles = Object.values(summary).reduce((a, b) => a + b, 0);
+    console.log("\nCleanup Summary:");
+    console.log("---------------");
+    console.log(`Full Track WAV files removed: ${summary.fullTrackWav}`);
+    console.log(`Full Track FLAC files removed: ${summary.fullTrackFlac}`);
+    console.log(`Component WAV files removed: ${summary.componentWav}`);
+    console.log(`Component FLAC files removed: ${summary.componentFlac}`);
+    console.log("---------------");
+    console.log(`Total files removed: ${totalFiles}`);
+    console.log("\nCleanup completed successfully");
   } catch (error) {
     console.error("Error during file cleanup:", error);
     throw error;
