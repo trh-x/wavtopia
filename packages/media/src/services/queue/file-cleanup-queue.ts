@@ -16,16 +16,55 @@ setupQueueMonitoring(fileCleanupQueue, "File Cleanup");
 
 interface FileCleanupJob {
   type: "scheduled-cleanup";
+  timeframe?: {
+    value: number;
+    unit: "days" | "hours" | "minutes" | "seconds";
+  };
+}
+
+function getThresholdDate(timeframe?: FileCleanupJob["timeframe"]): Date {
+  const now = new Date();
+
+  if (!timeframe) {
+    // Default to 7 days
+    now.setDate(now.getDate() - 7);
+    return now;
+  }
+
+  const { value, unit } = timeframe;
+
+  switch (unit) {
+    case "days":
+      now.setDate(now.getDate() - value);
+      break;
+    case "hours":
+      now.setHours(now.getHours() - value);
+      break;
+    case "minutes":
+      now.setMinutes(now.getMinutes() - value);
+      break;
+    case "seconds":
+      now.setSeconds(now.getSeconds() - value);
+      break;
+  }
+
+  return now;
 }
 
 async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
   console.log(`Processing cleanup job ${job.id}`);
 
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const thresholdDate = getThresholdDate(job.data.timeframe);
+  const timeframeStr = job.data.timeframe
+    ? `${job.data.timeframe.value} ${job.data.timeframe.unit}`
+    : "7 days";
+
+  console.log(
+    `Cleaning up files older than ${timeframeStr} (before ${thresholdDate.toISOString()})`
+  );
 
   try {
-    // Find all tracks with WAV or FLAC files that haven't been accessed in over a week
+    // Find all tracks with WAV or FLAC files that haven't been accessed within threshold
     const tracksToClean = await prisma.track.findMany({
       where: {
         AND: [
@@ -41,11 +80,11 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                 OR: [
                   {
                     fullTrackWavUrl: { not: null },
-                    wavLastRequestedAt: { lt: oneWeekAgo },
+                    wavLastRequestedAt: { lt: thresholdDate },
                   },
                   {
                     fullTrackFlacUrl: { not: null },
-                    flacLastRequestedAt: { lt: oneWeekAgo },
+                    flacLastRequestedAt: { lt: thresholdDate },
                   },
                 ],
               },
@@ -56,11 +95,11 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                     OR: [
                       {
                         wavUrl: { not: null },
-                        wavLastRequestedAt: { lt: oneWeekAgo },
+                        wavLastRequestedAt: { lt: thresholdDate },
                       },
                       {
                         flacUrl: { not: null },
-                        flacLastRequestedAt: { lt: oneWeekAgo },
+                        flacLastRequestedAt: { lt: thresholdDate },
                       },
                     ],
                   },
@@ -82,7 +121,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
       if (
         track.fullTrackWavUrl &&
         track.wavLastRequestedAt &&
-        track.wavLastRequestedAt < oneWeekAgo
+        track.wavLastRequestedAt < thresholdDate
       ) {
         await deleteFile(track.fullTrackWavUrl);
         await prisma.track.update({
@@ -98,7 +137,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
       if (
         track.fullTrackFlacUrl &&
         track.flacLastRequestedAt &&
-        track.flacLastRequestedAt < oneWeekAgo
+        track.flacLastRequestedAt < thresholdDate
       ) {
         await deleteFile(track.fullTrackFlacUrl);
         await prisma.track.update({
@@ -116,7 +155,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
         if (
           component.wavUrl &&
           component.wavLastRequestedAt &&
-          component.wavLastRequestedAt < oneWeekAgo
+          component.wavLastRequestedAt < thresholdDate
         ) {
           await deleteFile(component.wavUrl);
           await prisma.component.update({
@@ -132,7 +171,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
         if (
           component.flacUrl &&
           component.flacLastRequestedAt &&
-          component.flacLastRequestedAt < oneWeekAgo
+          component.flacLastRequestedAt < thresholdDate
         ) {
           await deleteFile(component.flacUrl);
           await prisma.component.update({
@@ -172,7 +211,10 @@ export async function cleanup(): Promise<void> {
 export async function scheduleCleanupJob() {
   await fileCleanupQueue.add(
     "scheduled-cleanup",
-    { type: "scheduled-cleanup" },
+    {
+      type: "scheduled-cleanup",
+      timeframe: { value: 7, unit: "days" },
+    },
     {
       ...standardJobOptions,
       repeat: {
@@ -180,4 +222,20 @@ export async function scheduleCleanupJob() {
       },
     }
   );
+}
+
+// Function to run cleanup job on demand
+export async function runCleanupJobNow(timeframe?: {
+  value: number;
+  unit: "days" | "hours" | "minutes" | "seconds";
+}) {
+  const job = await fileCleanupQueue.add(
+    "scheduled-cleanup",
+    {
+      type: "scheduled-cleanup",
+      timeframe,
+    },
+    standardJobOptions
+  );
+  return job.id;
 }

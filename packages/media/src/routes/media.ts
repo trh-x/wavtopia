@@ -5,7 +5,9 @@ import {
   trackConversionQueue,
   queueAudioFileConversion,
   audioFileConversionQueue,
+  fileCleanupQueue,
 } from "../services/queue";
+import { runCleanupJobNow } from "../services/queue/file-cleanup-queue";
 import { z } from "zod";
 import {
   AudioFileConversionStatus,
@@ -212,3 +214,42 @@ router.get(
     }
   }
 );
+
+// Trigger file cleanup job on demand
+router.post("/trigger-cleanup", async (req, res, next) => {
+  try {
+    const { timeframe } = req.body;
+
+    // Validate timeframe if provided
+    if (timeframe !== undefined) {
+      const { value, unit } = timeframe;
+
+      if (typeof value !== "number" || value <= 0) {
+        throw new AppError(400, "timeframe.value must be a positive number");
+      }
+
+      if (!["days", "hours", "minutes", "seconds"].includes(unit)) {
+        throw new AppError(
+          400,
+          "timeframe.unit must be one of: days, hours, minutes, seconds"
+        );
+      }
+    }
+
+    const jobId = await runCleanupJobNow(timeframe);
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: `File cleanup job has been queued${
+          timeframe
+            ? ` (cleaning files older than ${timeframe.value} ${timeframe.unit})`
+            : ""
+        }`,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
