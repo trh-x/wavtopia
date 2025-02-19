@@ -72,7 +72,9 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
   };
 
   try {
-    // Find all tracks with WAV or FLAC files that haven't been accessed within threshold
+    const BATCH_SIZE = 50;
+
+    // Find tracks to clean up, get one more than batch size to check if more work remains
     const tracksToClean = await prisma.track.findMany({
       where: {
         AND: [
@@ -118,82 +120,100 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
       include: {
         components: true,
       },
+      take: BATCH_SIZE + 1,
+      orderBy: { id: "asc" },
     });
 
-    console.log(`Found ${tracksToClean.length} tracks to clean up`);
+    // Process only BATCH_SIZE tracks
+    const tracksToProcess = tracksToClean.slice(0, BATCH_SIZE);
+    const hasMoreTracks = tracksToClean.length > BATCH_SIZE;
 
-    for (const track of tracksToClean) {
-      // Process full track files
-      if (
-        track.fullTrackWavUrl &&
-        track.wavLastRequestedAt &&
-        track.wavLastRequestedAt < thresholdDate
-      ) {
-        await deleteFile(track.fullTrackWavUrl);
-        await prisma.track.update({
-          where: { id: track.id },
-          data: {
-            fullTrackWavUrl: null,
-            wavLastRequestedAt: null,
-            wavCreatedAt: null,
-          },
-        });
-        summary.fullTrackWav++;
-      }
+    console.log(`Processing batch of ${tracksToProcess.length} tracks`);
 
-      if (
-        track.fullTrackFlacUrl &&
-        track.flacLastRequestedAt &&
-        track.flacLastRequestedAt < thresholdDate
-      ) {
-        await deleteFile(track.fullTrackFlacUrl);
-        await prisma.track.update({
-          where: { id: track.id },
-          data: {
-            fullTrackFlacUrl: null,
-            flacLastRequestedAt: null,
-            flacCreatedAt: null,
-          },
-        });
-        summary.fullTrackFlac++;
-      }
-
-      // Process component files
-      for (const component of track.components) {
+    for (const track of tracksToProcess) {
+      await prisma.$transaction(async (tx) => {
+        // Process full track files
         if (
-          component.wavUrl &&
-          component.wavLastRequestedAt &&
-          component.wavLastRequestedAt < thresholdDate
+          track.fullTrackWavUrl &&
+          track.wavLastRequestedAt &&
+          track.wavLastRequestedAt < thresholdDate
         ) {
-          await deleteFile(component.wavUrl);
-          await prisma.component.update({
-            where: { id: component.id },
+          await deleteFile(track.fullTrackWavUrl);
+          await tx.track.update({
+            where: { id: track.id },
             data: {
-              wavUrl: null,
+              fullTrackWavUrl: null,
               wavLastRequestedAt: null,
               wavCreatedAt: null,
             },
           });
-          summary.componentWav++;
+          summary.fullTrackWav++;
         }
 
         if (
-          component.flacUrl &&
-          component.flacLastRequestedAt &&
-          component.flacLastRequestedAt < thresholdDate
+          track.fullTrackFlacUrl &&
+          track.flacLastRequestedAt &&
+          track.flacLastRequestedAt < thresholdDate
         ) {
-          await deleteFile(component.flacUrl);
-          await prisma.component.update({
-            where: { id: component.id },
+          await deleteFile(track.fullTrackFlacUrl);
+          await tx.track.update({
+            where: { id: track.id },
             data: {
-              flacUrl: null,
+              fullTrackFlacUrl: null,
               flacLastRequestedAt: null,
               flacCreatedAt: null,
             },
           });
-          summary.componentFlac++;
+          summary.fullTrackFlac++;
         }
-      }
+
+        // Process component files
+        const componentUpdates = [];
+        for (const component of track.components) {
+          if (
+            component.wavUrl &&
+            component.wavLastRequestedAt &&
+            component.wavLastRequestedAt < thresholdDate
+          ) {
+            await deleteFile(component.wavUrl);
+            componentUpdates.push(
+              tx.component.update({
+                where: { id: component.id },
+                data: {
+                  wavUrl: null,
+                  wavLastRequestedAt: null,
+                  wavCreatedAt: null,
+                },
+              })
+            );
+            summary.componentWav++;
+          }
+
+          if (
+            component.flacUrl &&
+            component.flacLastRequestedAt &&
+            component.flacLastRequestedAt < thresholdDate
+          ) {
+            await deleteFile(component.flacUrl);
+            componentUpdates.push(
+              tx.component.update({
+                where: { id: component.id },
+                data: {
+                  flacUrl: null,
+                  flacLastRequestedAt: null,
+                  flacCreatedAt: null,
+                },
+              })
+            );
+            summary.componentFlac++;
+          }
+        }
+
+        // Execute all component updates in parallel within the transaction
+        if (componentUpdates.length > 0) {
+          await Promise.all(componentUpdates);
+        }
+      });
     }
 
     const totalFiles = Object.values(summary).reduce((a, b) => a + b, 0);
@@ -205,6 +225,25 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
     console.log(`Component FLAC files removed: ${summary.componentFlac}`);
     console.log("---------------");
     console.log(`Total files removed: ${totalFiles}`);
+
+    // If there are more tracks to process, queue another job
+    if (hasMoreTracks) {
+      console.log(
+        "More tracks to process, queueing next batch to cleanup in 1 minute..."
+      );
+      await fileCleanupQueue.add(
+        "scheduled-cleanup",
+        {
+          type: "scheduled-cleanup",
+          timeframe: job.data.timeframe,
+        },
+        {
+          ...standardJobOptions,
+          delay: 60000, // Wait 1 minute before processing next batch
+        }
+      );
+    }
+
     console.log("\nCleanup completed successfully");
   } catch (error) {
     console.error("Error during file cleanup:", error);
