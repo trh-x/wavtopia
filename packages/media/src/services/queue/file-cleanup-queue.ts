@@ -83,33 +83,31 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
           },
           {
             OR: [
-              // Track has old WAV/FLAC files
+              // Track WAV file conditions
               {
-                OR: [
-                  {
-                    fullTrackWavUrl: { not: null },
-                    wavLastRequestedAt: { lt: thresholdDate },
-                  },
-                  {
-                    fullTrackFlacUrl: { not: null },
-                    flacLastRequestedAt: { lt: thresholdDate },
-                  },
-                ],
+                fullTrackWavUrl: { not: null },
+                wavLastRequestedAt: { lt: thresholdDate },
               },
-              // Track has components with old WAV/FLAC files
+              // Track FLAC file conditions
+              {
+                fullTrackFlacUrl: { not: null },
+                flacLastRequestedAt: { lt: thresholdDate },
+              },
+              // Component WAV file conditions
               {
                 components: {
                   some: {
-                    OR: [
-                      {
-                        wavUrl: { not: null },
-                        wavLastRequestedAt: { lt: thresholdDate },
-                      },
-                      {
-                        flacUrl: { not: null },
-                        flacLastRequestedAt: { lt: thresholdDate },
-                      },
-                    ],
+                    wavUrl: { not: null },
+                    wavLastRequestedAt: { lt: thresholdDate },
+                  },
+                },
+              },
+              // Component FLAC file conditions
+              {
+                components: {
+                  some: {
+                    flacUrl: { not: null },
+                    flacLastRequestedAt: { lt: thresholdDate },
                   },
                 },
               },
