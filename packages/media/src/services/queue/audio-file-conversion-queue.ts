@@ -207,15 +207,11 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
         format
       );
 
-      const componentIndex = track.components.findIndex(
-        (c) => c.id === componentId
-      );
-
       const audioBuffer = await convertToFormat(
         track,
         component[sourceUrlProperty],
         format,
-        componentIndex
+        component.index
       );
 
       // Upload WAV file

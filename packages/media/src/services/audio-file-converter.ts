@@ -34,8 +34,9 @@ async function convertWAVToFLAC(wavBuffer: Buffer): Promise<Buffer> {
       // Convert to FLAC using FFmpeg
       // -compression_level 5 provides a good balance between compression and speed
       // Range is 0-12, where 0 is fastest/largest, 12 is slowest/smallest
+      // Note, to see more output in the logs, remove the -loglevel error flag
       const { stderr } = await execAsync(
-        `ffmpeg -i "${wavPath}" -c:a flac -compression_level 5 "${flacPath}"`
+        `ffmpeg -loglevel error -i "${wavPath}" -c:a flac -compression_level 5 "${flacPath}"`
       );
 
       if (stderr) {
@@ -68,7 +69,7 @@ async function convertFLACToWAV(flacBuffer: Buffer): Promise<Buffer> {
 
       // Convert to WAV using FFmpeg
       const { stderr } = await execAsync(
-        `ffmpeg -i "${flacPath}" -c:a pcm_s16le "${wavPath}"`
+        `ffmpeg -loglevel error -i "${flacPath}" -c:a pcm_s16le "${wavPath}"`
       );
 
       if (stderr) {
