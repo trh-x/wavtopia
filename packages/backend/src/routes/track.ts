@@ -19,7 +19,6 @@ import {
 } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import { config } from "../config";
-import { deleteTrack, deleteMultipleTracks } from "../services/track";
 
 // Extend Request type to include user property
 const router = Router();
@@ -517,32 +516,6 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
     } else {
       next(error);
     }
-  }
-});
-
-// Delete multiple tracks and associated files
-router.delete("/batch", async (req, res, next) => {
-  try {
-    const { trackIds } = req.body;
-
-    if (!Array.isArray(trackIds) || trackIds.length === 0) {
-      throw new AppError(400, "trackIds must be a non-empty array");
-    }
-
-    await deleteMultipleTracks(trackIds, req.user!.id);
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Delete track and associated files
-router.delete("/:id", async (req, res, next) => {
-  try {
-    await deleteTrack(req.params.id, req.user!.id);
-    res.status(204).end();
-  } catch (error) {
-    next(error);
   }
 });
 
