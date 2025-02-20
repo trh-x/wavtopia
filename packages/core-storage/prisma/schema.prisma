@@ -72,13 +72,12 @@ model Track {
   flacCreatedAt         DateTime?                  @map("flac_created_at")
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
 
-  @@index([createdAt, id])
-  @@index([title, id])
-  @@index([artist, id])
-  @@index([duration, id])
+  @@index([status, createdAt, id])
+  @@index([status, title, id])
+  @@index([status, artist, id])
+  @@index([status, duration, id])
   @@index([originalFormat, wavLastRequestedAt])
   @@index([originalFormat, flacLastRequestedAt])
-  @@index([status, createdAt])
   @@map("tracks")
 }
 
