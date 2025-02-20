@@ -7,6 +7,7 @@ import {
   encodeCursor,
   decodeCursor,
   Prisma,
+  TrackStatus,
 } from "@wavtopia/core-storage";
 
 const router = Router();
@@ -73,6 +74,7 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
     where: {
       ...where,
       ...cursorCondition,
+      status: TrackStatus.ACTIVE,
     },
     include,
     orderBy,

@@ -11,7 +11,12 @@ import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, getObject } from "../services/storage";
 import { z } from "zod";
-import { deleteLocalFile, Prisma, SourceFormat } from "@wavtopia/core-storage";
+import {
+  deleteLocalFile,
+  Prisma,
+  SourceFormat,
+  TrackStatus,
+} from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import { config } from "../config";
 import { deleteTrack, deleteMultipleTracks } from "../services/track";
@@ -51,7 +56,10 @@ const authenticateTrackAccess: RequestHandler = async (
 
     // First check if track is public
     const track = await prisma.track.findUnique({
-      where: { id: trackId },
+      where: {
+        id: trackId,
+        status: TrackStatus.ACTIVE,
+      },
       include: { sharedWith: true },
     });
 
@@ -93,7 +101,10 @@ const authenticateTrackAccess: RequestHandler = async (
 
     // Store the track in the request for later use
     const reqTrack = await prisma.track.findUnique({
-      where: { id: trackId },
+      where: {
+        id: trackId,
+        status: TrackStatus.ACTIVE,
+      },
       include: {
         user: {
           select: {
