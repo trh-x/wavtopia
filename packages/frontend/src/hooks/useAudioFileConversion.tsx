@@ -65,7 +65,8 @@ export function useAudioFileConversion({
               addNotification({
                 type: "success",
                 title: `${formatName} Conversion Complete`,
-                message: `${name} is ready for download in ${formatName} format.`,
+                // TODO: Create a shared constant for the file cleanup timeframe
+                message: `${name} is ready for download in ${formatName} format. The file will be available for 7 days.`,
               });
             } else if (data.data.conversionStatus === "FAILED") {
               setIsConverting(false);
