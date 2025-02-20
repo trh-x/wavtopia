@@ -78,6 +78,7 @@ model Track {
   @@index([status, duration, id])
   @@index([originalFormat, wavLastRequestedAt])
   @@index([originalFormat, flacLastRequestedAt])
+  @@index([status, userId])
   @@map("tracks")
 }
 

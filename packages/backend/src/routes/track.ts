@@ -469,6 +469,7 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
       where: {
         id: req.params.id,
         userId: req.user!.id,
+        status: TrackStatus.ACTIVE,
       },
     });
 
@@ -555,6 +556,7 @@ router.post("/:id/share", async (req: Request, res: Response, next) => {
       where: {
         id: req.params.id,
         userId: req.user!.id,
+        status: TrackStatus.ACTIVE,
       },
     });
 
@@ -590,6 +592,7 @@ router.delete("/:id/share", async (req: Request, res: Response, next) => {
       where: {
         id: req.params.id,
         userId: req.user!.id,
+        status: TrackStatus.ACTIVE,
       },
     });
 
@@ -622,6 +625,7 @@ router.patch("/:id/visibility", async (req: Request, res: Response, next) => {
     const existingTrack = await prisma.track.findFirst({
       where: {
         id: req.params.id,
+        status: TrackStatus.ACTIVE,
         OR: [
           { userId: req.user!.id },
           { sharedWith: { some: { userId: req.user!.id } } },
