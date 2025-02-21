@@ -192,23 +192,6 @@ export const api = {
         body: formData,
       }) as Promise<Track>;
     },
-
-    delete: async (id: string, token: string) => {
-      return apiRequest(`/track/${id}`, {
-        method: "DELETE",
-        token,
-      });
-    },
-
-    // TODO: Move batchDelete to tracks?
-    batchDelete: async (ids: string[], token: string) => {
-      return apiRequest("/track/batch", {
-        method: "DELETE",
-        token,
-        contentType: "application/json",
-        body: JSON.stringify({ trackIds: ids }),
-      });
-    },
   },
 
   tracks: {
@@ -251,6 +234,16 @@ export const api = {
         token,
         searchParams,
       }) as Promise<PaginatedResponse<Track>>;
+    },
+
+    delete: async (trackIds: string | string[], token: string) => {
+      const ids = Array.isArray(trackIds) ? trackIds : [trackIds];
+      return apiRequest("/tracks", {
+        method: "DELETE",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify({ trackIds: ids }),
+      });
     },
   },
 

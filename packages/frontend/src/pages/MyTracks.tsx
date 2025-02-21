@@ -74,22 +74,23 @@ export function MyTracks() {
     return <ErrorState message="Please log in to view your tracks" />;
   }
 
-  const deleteTrackMutation = useMutation({
-    mutationFn: async (trackId: string) => {
-      await api.track.delete(token, trackId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tracks"] });
-    },
-  });
-
   const deleteTracksMutation = useMutation({
-    mutationFn: async (trackIds: string[]) => {
-      await api.track.batchDelete(trackIds, token);
+    mutationFn: async ({
+      trackIds,
+    }: {
+      trackIds: string | string[];
+      isBatchDelete: boolean;
+    }) => {
+      await api.tracks.delete(trackIds, token);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tracks"] });
-      setSelectedTracks(new Set());
+    onSuccess: (_, { isBatchDelete }) => {
+      queryClient.invalidateQueries({ queryKey: ["/tracks"] });
+      queryClient.invalidateQueries({ queryKey: ["/tracks/shared"] });
+      queryClient.invalidateQueries({ queryKey: ["/tracks/public"] });
+      queryClient.invalidateQueries({ queryKey: ["/tracks/available"] });
+      if (isBatchDelete) {
+        setSelectedTracks(new Set());
+      }
     },
   });
 
@@ -107,7 +108,10 @@ export function MyTracks() {
 
   const handleDeleteTracks = () => {
     if (selectedTracks.size > 0) {
-      deleteTracksMutation.mutate(Array.from(selectedTracks));
+      deleteTracksMutation.mutate({
+        trackIds: Array.from(selectedTracks),
+        isBatchDelete: true,
+      });
     }
   };
 
@@ -127,7 +131,12 @@ export function MyTracks() {
           <UserTracksTab
             selectedTracks={selectedTracks}
             onTrackSelect={handleTrackSelect}
-            onDeleteTrack={deleteTrackMutation.mutate}
+            onDeleteTrack={(trackId) =>
+              deleteTracksMutation.mutate({
+                trackIds: trackId,
+                isBatchDelete: false,
+              })
+            }
           />
         </TabsContent>
 
