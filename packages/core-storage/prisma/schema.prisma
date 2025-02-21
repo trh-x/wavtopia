@@ -37,6 +37,11 @@ enum SourceFormat {
   MOD @map("mod") // ProTracker/NoiseTracker
 }
 
+enum TrackStatus {
+  ACTIVE
+  PENDING_DELETION
+}
+
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
 // the exception of originalUrl, which is a file:// URL until the track is converted).
 model Track {
@@ -53,6 +58,7 @@ model Track {
   coverArt              String?                    @map("cover_art")
   metadata              Json?
   isPublic              Boolean                    @default(false) @map("is_public")
+  status                TrackStatus                @default(ACTIVE) @map("status")
   components            Component[]
   userId                String                     @map("user_id")
   user                  User                       @relation(fields: [userId], references: [id])
@@ -66,12 +72,13 @@ model Track {
   flacCreatedAt         DateTime?                  @map("flac_created_at")
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
 
-  @@index([createdAt, id])
-  @@index([title, id])
-  @@index([artist, id])
-  @@index([duration, id])
+  @@index([status, createdAt, id])
+  @@index([status, title, id])
+  @@index([status, artist, id])
+  @@index([status, duration, id])
   @@index([originalFormat, wavLastRequestedAt])
   @@index([originalFormat, flacLastRequestedAt])
+  @@index([status, userId])
   @@map("tracks")
 }
 

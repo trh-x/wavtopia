@@ -7,7 +7,11 @@ import {
   encodeCursor,
   decodeCursor,
   Prisma,
+  TrackStatus,
 } from "@wavtopia/core-storage";
+import { AppError } from "../middleware/errorHandler";
+import { z } from "zod";
+import { config } from "../config";
 
 const router = Router();
 const DEFAULT_PAGE_SIZE = 6;
@@ -73,6 +77,7 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
     where: {
       ...where,
       ...cursorCondition,
+      status: TrackStatus.ACTIVE,
     },
     include,
     orderBy,
@@ -212,6 +217,82 @@ router.get("/available", async (req: Request, res: Response, next) => {
     res.json(result);
   } catch (error) {
     next(error);
+  }
+});
+
+// Schema for track deletion
+const deleteTrackSchema = z.object({
+  trackIds: z.array(z.string()).min(1),
+});
+
+// Delete one or more tracks
+router.delete("/", async (req, res, next) => {
+  try {
+    const { trackIds } = deleteTrackSchema.parse(req.body);
+
+    // Find all tracks and verify ownership/admin status
+    const tracks = await prisma.track.findMany({
+      where: {
+        id: { in: trackIds },
+        status: TrackStatus.ACTIVE,
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    // Check if all tracks exist
+    if (tracks.length !== trackIds.length) {
+      throw new AppError(404, "One or more tracks not found");
+    }
+
+    // Check if user has permission to delete all tracks
+    const isAdmin = req.user!.role === "ADMIN";
+    if (!isAdmin && tracks.some((track) => track.userId !== req.user!.id)) {
+      throw new AppError(
+        403,
+        "You don't have permission to delete one or more tracks"
+      );
+    }
+
+    // Update tracks status to PENDING_DELETION
+    await prisma.track.updateMany({
+      where: { id: { in: trackIds } },
+      data: { status: TrackStatus.PENDING_DELETION },
+    });
+
+    const mediaServiceUrl = config.services.mediaServiceUrl;
+    if (!mediaServiceUrl) {
+      throw new AppError(500, "Media service URL not configured");
+    }
+
+    // Queue tracks for deletion via media service
+    const response = await fetch(`${mediaServiceUrl}/api/media/tracks/delete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        trackIds,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = (await response.json()) as { error?: string };
+      throw new AppError(
+        response.status,
+        error.error || "Failed to delete tracks"
+      );
+    }
+
+    const data = await response.json();
+    res.status(202).json(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(new AppError(400, "trackIds must be a non-empty array"));
+    } else {
+      next(error);
+    }
   }
 });
 

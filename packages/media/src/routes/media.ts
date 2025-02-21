@@ -7,6 +7,7 @@ import {
   audioFileConversionQueue,
   fileCleanupQueue,
 } from "../services/queue";
+import { queueTrackDeletion } from "../services/queue/track-deletion-queue";
 import { runCleanupJobNow } from "../services/queue/file-cleanup-queue";
 import { z } from "zod";
 import {
@@ -28,6 +29,10 @@ const audioFileConversionOptionsSchema = z.object({
   type: z.enum(["full", "component"]),
   componentId: z.string().uuid().optional(),
   format: z.enum(["wav", "flac"]),
+});
+
+const trackDeletionSchema = z.object({
+  trackIds: z.array(z.string().uuid()).min(1),
 });
 
 // Convert track module file to MP3/FLAC format
@@ -249,6 +254,18 @@ router.post("/trigger-cleanup", async (req, res, next) => {
         }`,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Queue tracks for deletion
+router.post("/tracks/delete", async (req, res, next) => {
+  try {
+    const { trackIds } = trackDeletionSchema.parse(req.body);
+
+    const jobId = await queueTrackDeletion(trackIds);
+    res.status(202).json({ jobId });
   } catch (error) {
     next(error);
   }

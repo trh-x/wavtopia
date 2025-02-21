@@ -11,10 +11,14 @@ import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
 import { uploadFile, getObject } from "../services/storage";
 import { z } from "zod";
-import { deleteLocalFile, Prisma, SourceFormat } from "@wavtopia/core-storage";
+import {
+  deleteLocalFile,
+  Prisma,
+  SourceFormat,
+  TrackStatus,
+} from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import { config } from "../config";
-import { deleteTrack, deleteMultipleTracks } from "../services/track";
 
 // Extend Request type to include user property
 const router = Router();
@@ -51,7 +55,10 @@ const authenticateTrackAccess: RequestHandler = async (
 
     // First check if track is public
     const track = await prisma.track.findUnique({
-      where: { id: trackId },
+      where: {
+        id: trackId,
+        status: TrackStatus.ACTIVE,
+      },
       include: { sharedWith: true },
     });
 
@@ -93,7 +100,10 @@ const authenticateTrackAccess: RequestHandler = async (
 
     // Store the track in the request for later use
     const reqTrack = await prisma.track.findUnique({
-      where: { id: trackId },
+      where: {
+        id: trackId,
+        status: TrackStatus.ACTIVE,
+      },
       include: {
         user: {
           select: {
@@ -458,6 +468,7 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
       where: {
         id: req.params.id,
         userId: req.user!.id,
+        status: TrackStatus.ACTIVE,
       },
     });
 
@@ -508,32 +519,6 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
   }
 });
 
-// Delete multiple tracks and associated files
-router.delete("/batch", async (req, res, next) => {
-  try {
-    const { trackIds } = req.body;
-
-    if (!Array.isArray(trackIds) || trackIds.length === 0) {
-      throw new AppError(400, "trackIds must be a non-empty array");
-    }
-
-    await deleteMultipleTracks(trackIds, req.user!.id);
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Delete track and associated files
-router.delete("/:id", async (req, res, next) => {
-  try {
-    await deleteTrack(req.params.id, req.user!.id);
-    res.status(204).end();
-  } catch (error) {
-    next(error);
-  }
-});
-
 // Share a track with other users
 router.post("/:id/share", async (req: Request, res: Response, next) => {
   try {
@@ -544,6 +529,7 @@ router.post("/:id/share", async (req: Request, res: Response, next) => {
       where: {
         id: req.params.id,
         userId: req.user!.id,
+        status: TrackStatus.ACTIVE,
       },
     });
 
@@ -579,6 +565,7 @@ router.delete("/:id/share", async (req: Request, res: Response, next) => {
       where: {
         id: req.params.id,
         userId: req.user!.id,
+        status: TrackStatus.ACTIVE,
       },
     });
 
@@ -611,6 +598,7 @@ router.patch("/:id/visibility", async (req: Request, res: Response, next) => {
     const existingTrack = await prisma.track.findFirst({
       where: {
         id: req.params.id,
+        status: TrackStatus.ACTIVE,
         OR: [
           { userId: req.user!.id },
           { sharedWith: { some: { userId: req.user!.id } } },
