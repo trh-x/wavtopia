@@ -148,13 +148,13 @@ setup_tunnel() {
 # Function to test registry connection
 test_registry() {
     echo "Testing registry connection..."
-    if ! docker --context production info >/dev/null 2>&1; then
+    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
     fi
 
     # Get the remote host from the current context
-    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     
     # Get actual registry port before setting up tunnel
     REGISTRY_PORT=$(get_registry_port)
@@ -175,7 +175,7 @@ test_registry() {
 # Function to get registry port from container
 get_registry_port() {
     # Try to get the host port from container inspection using jq
-    local port=$(docker --context production inspect registry 2>/dev/null | jq -r '.[0].NetworkSettings.Ports."5000/tcp"[0].HostPort')
+    local port=$(docker --context wavtopia-prod inspect registry 2>/dev/null | jq -r '.[0].NetworkSettings.Ports."5000/tcp"[0].HostPort')
     if [ "$port" != "null" ] && [ -n "$port" ]; then
         echo -n "$port"
         return 0
@@ -201,29 +201,29 @@ setup_remote() {
     # Create context with SSH config
     DOCKER_HOST="ssh://$user@$host:$port"
     export DOCKER_SSH_CONFIG="$SSH_CONFIG_PATH"
-    docker context create production \
+    docker context create wavtopia-prod \
         --docker "host=$DOCKER_HOST" \
         --description "Production server at $host"
     
     echo "Testing connection..."
-    if docker --context production info >/dev/null 2>&1; then
+    if docker --context wavtopia-prod info >/dev/null 2>&1; then
         echo "Connection successful!"
         
         # Check if registry is already running
-        if docker --context production container inspect registry >/dev/null 2>&1; then
+        if docker --context wavtopia-prod container inspect registry >/dev/null 2>&1; then
             local detected_port=$(get_registry_port)
             echo "Registry already running on ${host}:${detected_port}"
             export REGISTRY_PORT="${detected_port}"
             # Check if registry is actually responding
-            if docker --context production exec registry wget -q --spider http://localhost:${detected_port}/v2/ 2>/dev/null; then
+            if docker --context wavtopia-prod exec registry wget -q --spider http://localhost:${detected_port}/v2/ 2>/dev/null; then
                 echo "Registry is healthy and responding to requests"
             else
                 echo "Warning: Registry container exists but may not be healthy"
-                echo "You may want to restart it with: docker --context production restart registry"
+                echo "You may want to restart it with: docker --context wavtopia-prod restart registry"
             fi
         else
             # Check if port is already in use
-            if docker --context production container ls -q --filter publish="${REGISTRY_PORT}" | grep -q .; then
+            if docker --context wavtopia-prod container ls -q --filter publish="${REGISTRY_PORT}" | grep -q .; then
                 echo "Warning: Port ${REGISTRY_PORT} is already in use. Please ensure there isn't another registry running."
                 exit 1
             fi
@@ -232,7 +232,7 @@ setup_remote() {
             if [[ "$create_registry" =~ ^[Yy]$ ]]; then
                 # Set up private registry on remote host
                 echo "Setting up private registry on remote host..."
-                docker --context production run -d \
+                docker --context wavtopia-prod run -d \
                     --restart=always \
                     --name registry \
                     --network host \
@@ -244,11 +244,11 @@ setup_remote() {
                 sleep 5
                 
                 # Verify registry is responding
-                if docker --context production exec registry wget -q --spider http://localhost:${REGISTRY_PORT}/v2/ 2>/dev/null; then
+                if docker --context wavtopia-prod exec registry wget -q --spider http://localhost:${REGISTRY_PORT}/v2/ 2>/dev/null; then
                     echo "Registry is running and healthy on ${host}:${REGISTRY_PORT}"
                 else
                     echo "Warning: Registry container started but is not responding"
-                    echo "Check logs with: docker --context production logs registry"
+                    echo "Check logs with: docker --context wavtopia-prod logs registry"
                     exit 1
                 fi
             else
@@ -257,7 +257,7 @@ setup_remote() {
         fi
     else
         echo "Connection failed. Please check your SSH configuration and try again."
-        docker context rm production
+        docker context rm wavtopia-prod
         exit 1
     fi
 }
@@ -330,7 +330,7 @@ deploy_prod() {
     debug_log "Starting deployment process"
     debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
     
-    if ! docker --context production info >/dev/null 2>&1; then
+    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
     fi
@@ -339,7 +339,7 @@ deploy_prod() {
     verify_prod_volumes
 
     # Get the remote host from the current context
-    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     REMOTE_USER=$(echo "$REMOTE_HOST" | cut -d'@' -f1)
     REMOTE_HOSTNAME=$(echo "$REMOTE_HOST" | cut -d'@' -f2)
     debug_log "Remote host details: User=$REMOTE_USER, Hostname=$REMOTE_HOSTNAME"
@@ -396,7 +396,7 @@ deploy_prod() {
 
     # Switch to production context and deploy
     echo "Deploying services..."
-    docker context use production
+    docker context use wavtopia-prod
     debug_log "Switched to production context"
     
     # Use localhost for registry when deploying since we're on the remote host
@@ -432,13 +432,13 @@ deploy_prod() {
 # Function to bootstrap production database
 bootstrap_prod() {
     echo "Bootstrapping production database..."
-    if ! docker --context production info >/dev/null 2>&1; then
+    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
     fi
 
     # Run bootstrap command in production context
-    docker context use production
+    docker context use wavtopia-prod
     DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
       backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap"
     
@@ -452,13 +452,13 @@ verify_prod_volumes() {
     echo "Verifying production volume directories..."
     debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
     
-    if ! docker --context production info >/dev/null 2>&1; then
+    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
         echo "Cannot connect to production server. Please run setup-remote first."
         exit 1
     fi
 
     # Get the remote host from the current context
-    REMOTE_HOST=$(docker context inspect production --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+    REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
     debug_log "Remote host: $REMOTE_HOST"
 
     # List of required directories (without base path)
