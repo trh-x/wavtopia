@@ -267,17 +267,6 @@ router.post("/tracks/delete", async (req, res, next) => {
     const jobId = await queueTrackDeletion(trackIds);
     res.status(202).json({ jobId });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: "Invalid request data" });
-    } else if (error instanceof Error && error.message === "Track not found") {
-      res.status(404).json({ error: "Track not found" });
-    } else if (
-      error instanceof Error &&
-      error.message === "One or more tracks not found"
-    ) {
-      res.status(404).json({ error: "One or more tracks not found" });
-    } else {
-      next(error);
-    }
+    next(error);
   }
 });

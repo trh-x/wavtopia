@@ -237,7 +237,6 @@ router.delete("/", async (req, res, next) => {
         status: TrackStatus.ACTIVE,
       },
       select: {
-        id: true,
         userId: true,
       },
     });
@@ -249,11 +248,7 @@ router.delete("/", async (req, res, next) => {
 
     // Check if user has permission to delete all tracks
     const isAdmin = req.user!.role === "ADMIN";
-    const unauthorizedTracks = tracks.filter(
-      (track) => track.userId !== req.user!.id && !isAdmin
-    );
-
-    if (unauthorizedTracks.length > 0) {
+    if (!isAdmin && tracks.some((track) => track.userId !== req.user!.id)) {
       throw new AppError(
         403,
         "You don't have permission to delete one or more tracks"

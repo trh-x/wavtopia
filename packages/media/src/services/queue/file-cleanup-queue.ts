@@ -1,6 +1,6 @@
 import { Job, Worker } from "bullmq";
 import { Prisma, SourceFormat, config } from "@wavtopia/core-storage";
-import { deleteFile } from "../storage";
+import { retryableDeleteFile, FileCleanupError } from "../storage/deletion";
 import {
   createQueue,
   prisma,
@@ -20,13 +20,6 @@ interface FileCleanupJob {
     value: number;
     unit: "days" | "hours" | "minutes" | "seconds";
   };
-}
-
-class FileCleanupError extends Error {
-  constructor(message: string, public cause?: unknown) {
-    super(message);
-    this.name = "FileCleanupError";
-  }
 }
 
 interface CleanupFailure {
@@ -70,32 +63,6 @@ function getThresholdDate(timeframe?: FileCleanupJob["timeframe"]): Date {
   }
 
   return now;
-}
-
-async function retryableDeleteFile(
-  fileUrl: string,
-  maxRetries = 3
-): Promise<void> {
-  let lastError: Error | undefined;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      await deleteFile(fileUrl);
-      return;
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      if (attempt < maxRetries) {
-        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
-        console.log(
-          `Retry ${attempt}/${maxRetries} for ${fileUrl} after ${delay}ms`
-        );
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
-    }
-  }
-  throw new FileCleanupError(
-    `Failed to delete file after ${maxRetries} attempts: ${fileUrl}`,
-    lastError
-  );
 }
 
 async function fileCleanupProcessor(job: Job<FileCleanupJob>) {

@@ -45,48 +45,34 @@ async function trackDeletionProcessor(job: Job<TrackDeletionJob>) {
       return;
     }
 
-    // Process tracks in batches to avoid overwhelming the system
-    const BATCH_SIZE = 5;
     const failures: {
       trackId: string;
       failures: { fileUrl: string; error: Error }[];
     }[] = [];
 
-    for (let i = 0; i < tracks.length; i += BATCH_SIZE) {
-      const batch = tracks.slice(i, i + BATCH_SIZE);
-      console.log(`Processing batch ${i / BATCH_SIZE + 1}`);
+    // Process tracks sequentially to maintain file deletion concurrency limits
+    for (const track of tracks) {
+      console.log(`Processing track ${track.id}`);
 
       await prisma.$transaction(async (tx) => {
-        // Delete all associated files for each track in the batch
-        const deletionResults = await Promise.all(
-          batch.map(async (track) => {
-            const trackFailures = await deleteTrackFiles(track);
-            if (trackFailures.length > 0) {
-              failures.push({ trackId: track.id, failures: trackFailures });
-            }
-            return trackFailures;
-          })
-        );
-
-        // If any track had no failures, delete its components and the track itself
-        const successfulTracks = batch.filter(
-          (track, idx) => deletionResults[idx].length === 0
-        );
-
-        if (successfulTracks.length > 0) {
-          // Delete all components for these tracks
-          await tx.component.deleteMany({
-            where: { trackId: { in: successfulTracks.map((t) => t.id) } },
-          });
-
-          // Then delete all tracks
-          await tx.track.deleteMany({
-            where: { id: { in: successfulTracks.map((t) => t.id) } },
-          });
+        // Delete all associated files for the track
+        const trackFailures = await deleteTrackFiles(track);
+        if (trackFailures.length > 0) {
+          failures.push({ trackId: track.id, failures: trackFailures });
+          return; // Skip component/track deletion if any files failed
         }
+
+        // Delete components and track only if all files were deleted successfully
+        await tx.component.deleteMany({
+          where: { trackId: track.id },
+        });
+
+        await tx.track.delete({
+          where: { id: track.id },
+        });
       });
 
-      console.log(`Completed batch ${i / BATCH_SIZE + 1}`);
+      console.log(`Completed processing track ${track.id}`);
     }
 
     if (failures.length > 0) {

@@ -40,7 +40,6 @@ enum SourceFormat {
 enum TrackStatus {
   ACTIVE
   PENDING_DELETION
-  DELETING
 }
 
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
