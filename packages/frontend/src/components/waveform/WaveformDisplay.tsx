@@ -22,74 +22,70 @@ interface ButtonIconProps {
   isMuted: boolean;
 }
 
-const ButtonIcon = ({
-  isWaveformLoading,
-  isPlaying,
-  isMuted,
-}: ButtonIconProps) => {
-  if (isWaveformLoading) {
-    return (
-      <svg className="w-5 h-5 animate-spin text-gray-600" viewBox="0 0 24 24">
-        <circle
-          className="opacity-25"
-          cx="12"
-          cy="12"
-          r="10"
-          stroke="currentColor"
-          strokeWidth="4"
-          fill="none"
-        />
-        <path
-          className="opacity-75"
-          fill="currentColor"
-          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        />
-      </svg>
-    );
-  }
-
-  if (isPlaying) {
-    if (isMuted) {
-      return (
-        <svg
-          className="w-5 h-5 text-gray-500"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
-          />
-        </svg>
-      );
-    }
-
-    return (
-      <svg
-        className="w-5 h-5 text-blue-600"
-        fill="none"
-        viewBox="0 0 24 24"
+function LoadingSpinnerIcon() {
+  return (
+    <svg className="w-5 h-5 animate-spin text-gray-600" viewBox="0 0 24 24">
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
         stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M15.75 5.25v13.5m-7.5-13.5v13.5"
-        />
-      </svg>
-    );
-  }
+        strokeWidth="4"
+        fill="none"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      />
+    </svg>
+  );
+}
 
+function MutedIcon() {
+  return (
+    <svg
+      className="w-5 h-5 text-gray-500"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"
+      />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg
+      className="w-5 h-5 text-blue-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M15.75 5.25v13.5m-7.5-13.5v13.5"
+      />
+    </svg>
+  );
+}
+
+function PlayIcon() {
   return (
     <svg
       className="w-5 h-5 text-red-500"
@@ -105,7 +101,26 @@ const ButtonIcon = ({
       />
     </svg>
   );
-};
+}
+
+function ButtonIcon({
+  isWaveformLoading,
+  isPlaying,
+  isMuted,
+}: ButtonIconProps) {
+  if (isWaveformLoading) {
+    return <LoadingSpinnerIcon />;
+  }
+
+  if (isPlaying) {
+    if (isMuted) {
+      return <MutedIcon />;
+    }
+    return <PauseIcon />;
+  }
+
+  return <PlayIcon />;
+}
 
 export function WaveformDisplay({
   context,
