@@ -1,7 +1,7 @@
 import { Prisma } from ".prisma/client";
 
-// Base Component type - matches what Prisma gives us in track.components
-export type Component = Prisma.ComponentGetPayload<{}>;
+// Base Stem type - matches what Prisma gives us in track.stems
+export type Stem = Prisma.StemGetPayload<{}>;
 
 export type Track = Prisma.TrackGetPayload<{
   include: {
@@ -12,7 +12,7 @@ export type Track = Prisma.TrackGetPayload<{
         email: true;
       };
     };
-    components: true;
+    stems: true;
     sharedWith: {
       include: {
         user: {

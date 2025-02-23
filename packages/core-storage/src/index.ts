@@ -29,7 +29,7 @@ export {
 
 export {
   type Track,
-  type Component,
+  type Stem,
   type TrackShare,
   type PaginatedResponse,
   type PaginationParams,

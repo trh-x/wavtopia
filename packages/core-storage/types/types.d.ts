@@ -1,5 +1,5 @@
 import { Prisma } from ".prisma/client";
-export type Component = Prisma.ComponentGetPayload<{}>;
+export type Stem = Prisma.StemGetPayload<{}>;
 export type Track = Prisma.TrackGetPayload<{
     include: {
         user: {
@@ -9,7 +9,7 @@ export type Track = Prisma.TrackGetPayload<{
                 email: true;
             };
         };
-        components: true;
+        stems: true;
         sharedWith: {
             include: {
                 user: {
