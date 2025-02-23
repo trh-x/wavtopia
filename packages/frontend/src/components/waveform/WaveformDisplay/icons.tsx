@@ -1,4 +1,4 @@
-export interface ButtonIconProps {
+export interface PlayPauseButtonIconProps {
   isWaveformLoading: boolean;
   isPlaying: boolean;
   isMuted: boolean;
@@ -148,11 +148,11 @@ export function SoloIcon() {
   );
 }
 
-export function ButtonIcon({
+export function PlayPauseButtonIcon({
   isWaveformLoading,
   isPlaying,
   isMuted,
-}: ButtonIconProps) {
+}: PlayPauseButtonIconProps) {
   if (isWaveformLoading) {
     return <LoadingSpinnerIcon />;
   }

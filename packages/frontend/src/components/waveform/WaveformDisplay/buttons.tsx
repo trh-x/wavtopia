@@ -1,5 +1,5 @@
 import {
-  ButtonIcon,
+  PlayPauseButtonIcon,
   StopIcon,
   StopAllIcon,
   ResetIcon,
@@ -64,7 +64,7 @@ export function PlayPauseButton({
         }
       `}
     >
-      <ButtonIcon
+      <PlayPauseButtonIcon
         isWaveformLoading={isWaveformLoading}
         isPlaying={isPlaying}
         isMuted={isMuted}
