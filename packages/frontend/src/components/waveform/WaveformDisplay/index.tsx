@@ -2,13 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 import { TrackListPlaybackContextType } from "@/contexts/TrackListPlaybackContext";
 import { SyncedPlaybackContextType } from "@/contexts/SyncedPlaybackContext";
-import {
-  ButtonIcon,
-  StopIcon,
-  StopAllIcon,
-  ResetIcon,
-  SoloIcon,
-} from "./icons";
+import { PlayPauseButton, StopButton, SoloButton } from "./buttons";
 
 interface WaveformDisplayProps {
   context: TrackListPlaybackContextType | SyncedPlaybackContextType;
@@ -69,30 +63,23 @@ export function WaveformDisplay({
     triggerUpdate();
   };
 
-  const getStopButtonTitle = () => {
-    if (isPlaying) {
-      return "Stop Playback";
-    }
+  const handlePlayPause = async () => {
+    if (!wavesurferRef.current || !isWaveformReady) return;
 
-    if (getCurrentTime() === 0) {
-      return context.type === "synced"
-        ? "" // Nothing to do in this state
-        : "Stop All Tracks";
+    try {
+      if (isPlaying && !isMuted(wavesurferRef.current)) {
+        stopPlayback(wavesurferRef.current);
+      } else {
+        startPlayback(wavesurferRef.current);
+      }
+    } catch (error) {
+      console.error("Playback error:", error);
     }
-
-    return "Reset to Start";
   };
 
-  const getStopButtonIcon = () => {
-    if (isPlaying) {
-      return <StopIcon />;
-    }
-
-    if (getCurrentTime() === 0) {
-      return context.type === "synced" ? <StopIcon /> : <StopAllIcon />;
-    }
-
-    return <ResetIcon />;
+  const handleSolo = async () => {
+    if (!wavesurferRef.current || !isWaveformReady) return;
+    soloComponent(wavesurferRef.current);
   };
 
   let cleanupCanPlay: () => void;
@@ -231,105 +218,35 @@ export function WaveformDisplay({
     currentWavesurfer.setOptions({ peaks: [peaks] });
   }, [waveformData]);
 
-  const handlePlayPause = async () => {
-    if (!wavesurferRef.current || !isWaveformReady) return;
-
-    try {
-      if (isPlaying && !isMuted(wavesurferRef.current)) {
-        stopPlayback(wavesurferRef.current);
-      } else {
-        startPlayback(wavesurferRef.current);
-      }
-    } catch (error) {
-      console.error("Playback error:", error);
-    }
-  };
-
-  const handleSolo = async () => {
-    if (!wavesurferRef.current || !isWaveformReady) return;
-    soloComponent(wavesurferRef.current);
-  };
-
   return (
     <div className="flex items-center gap-4 group">
       <div className="flex gap-2">
-        <button
+        <PlayPauseButton
+          isWaveformLoading={isWaveformLoading}
+          isWaveformReady={isWaveformReady}
+          isPlaying={isPlaying}
+          isMuted={isMuted(wavesurferRef.current!)}
           onClick={handlePlayPause}
-          disabled={isWaveformLoading || !isWaveformReady}
-          className={`
-            flex-shrink-0
-            p-2.5 rounded-full 
-            shadow-md hover:shadow-lg 
-            transition-all duration-200
-            border
-            ${
-              isWaveformLoading || !isWaveformReady
-                ? "cursor-not-allowed opacity-50 border-gray-200"
-                : ""
-            }
-            ${
-              isPlaying
-                ? isMuted(wavesurferRef.current!)
-                  ? "opacity-60 bg-gray-100 border-gray-300" // Muted state
-                  : "bg-blue-50 hover:bg-blue-100 border-blue-200" // Playing state
-                : "opacity-70 bg-red-50 hover:bg-red-100 border-red-200" // Stopped state
-            }
-          `}
-        >
-          <ButtonIcon
-            isWaveformLoading={isWaveformLoading}
-            isPlaying={isPlaying}
-            isMuted={isMuted(wavesurferRef.current!)}
-          />
-        </button>
+        />
         {isFullTrack && (
-          <button
+          <StopButton
+            isWaveformLoading={isWaveformLoading}
+            isWaveformReady={isWaveformReady}
+            isPlaying={isPlaying}
+            getCurrentTime={getCurrentTime}
+            context={context}
             onClick={handleStopButton}
-            disabled={isWaveformLoading || !isWaveformReady}
-            className={`
-              flex-shrink-0
-              p-2.5 rounded-full 
-              shadow-md hover:shadow-lg 
-              transition-all duration-200
-              border
-              ${
-                isWaveformLoading || !isWaveformReady
-                  ? "cursor-not-allowed opacity-50 border-gray-200"
-                  : "bg-red-50 hover:bg-red-100 border-red-200"
-              }
-            `}
-            title={getStopButtonTitle()}
-          >
-            {getStopButtonIcon()}
-          </button>
+          />
         )}
         {!isFullTrack && (
-          <button
+          <SoloButton
+            isWaveformLoading={isWaveformLoading}
+            isWaveformReady={isWaveformReady}
+            isPlaying={isPlaying}
+            isMuted={isMuted(wavesurferRef.current!)}
+            isSoloed={isSoloed(wavesurferRef.current!)}
             onClick={handleSolo}
-            disabled={isWaveformLoading || !isWaveformReady}
-            className={`
-              flex-shrink-0
-              p-2.5 rounded-full 
-              shadow-md hover:shadow-lg 
-              transition-all duration-200
-              border
-              ${
-                isWaveformLoading || !isWaveformReady
-                  ? "cursor-not-allowed opacity-50 border-gray-200"
-                  : ""
-              }
-              ${
-                isSoloed(wavesurferRef.current!)
-                  ? "bg-yellow-100 hover:bg-yellow-200 border-yellow-300 text-yellow-700"
-                  : isPlaying && !isMuted(wavesurferRef.current!)
-                  ? "bg-yellow-50 hover:bg-yellow-100 border-yellow-200 text-yellow-600"
-                  : "bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-400 hover:text-gray-600"
-              }
-            `}
-            title={isSoloed(wavesurferRef.current!) ? "Unsolo" : "Solo"}
-          >
-            <SoloIcon />
-          </button>
+          />
         )}
       </div>
       <div
