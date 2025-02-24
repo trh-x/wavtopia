@@ -112,7 +112,7 @@ const authenticateTrackAccess: RequestHandler = async (
             email: true,
           },
         },
-        components: true,
+        stems: true,
         sharedWith: {
           include: {
             user: {
@@ -190,7 +190,7 @@ router.get(
 
 // Utility function to update last requested timestamp
 async function updateLastRequestedAt(
-  type: "full" | "component",
+  type: "full" | "stem",
   id: string,
   format: "wav" | "flac"
 ): Promise<void> {
@@ -203,38 +203,38 @@ async function updateLastRequestedAt(
       data: { [timestampField]: new Date() },
     });
   } else {
-    await prisma.component.update({
+    await prisma.stem.update({
       where: { id },
       data: { [timestampField]: new Date() },
     });
   }
 }
 
-// Get track component file (before auth middleware)
+// Get track stem file
 router.get(
-  "/:id/component/:componentId.:format",
+  "/:id/stem/:stemId.:format",
   authenticateTrackAccess,
   async (req: Request, res: Response, next) => {
     try {
       const track = (req as any).track; // TODO: Fix this `any`
-      const component = track.components.find(
-        (c: any) => c.id === req.params.componentId // TODO: Fix this `any`
+      const stem = track.stems.find(
+        (s: any) => s.id === req.params.stemId // TODO: Fix this `any`
       );
-      if (!component) {
-        throw new AppError(404, "Component not found");
+      if (!stem) {
+        throw new AppError(404, "Stem not found");
       }
 
       const format = req.params.format.toLowerCase();
 
       let filePath: string;
       if (format === "mp3") {
-        filePath = component.mp3Url;
+        filePath = stem.mp3Url;
       } else if (format === "wav") {
-        filePath = component.wavUrl;
-        await updateLastRequestedAt("component", component.id, "wav");
+        filePath = stem.wavUrl;
+        await updateLastRequestedAt("stem", stem.id, "wav");
       } else if (format === "flac") {
-        filePath = component.flacUrl;
-        await updateLastRequestedAt("component", component.id, "flac");
+        filePath = stem.flacUrl;
+        await updateLastRequestedAt("stem", stem.id, "flac");
       } else {
         throw new AppError(400, "Invalid format");
       }
@@ -244,7 +244,7 @@ router.get(
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${component.name}.${format}"`
+        `attachment; filename="${stem.name}.${format}"`
       );
       fileStream.pipe(res);
     } catch (error) {
@@ -505,7 +505,7 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
         metadata: data.metadata as Prisma.InputJsonValue,
       },
       include: {
-        components: true,
+        stems: true,
       },
     });
 
@@ -639,9 +639,9 @@ router.patch("/:id/visibility", async (req: Request, res: Response, next) => {
 router.post(
   "/:id/convert-audio",
   authenticateTrackAccess,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next) => {
     try {
-      const { type, componentId, format } = req.body;
+      const { type, stemId, format } = req.body;
       const mediaServiceUrl = config.services.mediaServiceUrl;
 
       if (!mediaServiceUrl) {
@@ -658,7 +658,7 @@ router.post(
           body: JSON.stringify({
             trackId: req.params.id,
             type,
-            componentId,
+            stemId,
             format,
           }),
         }
@@ -696,11 +696,11 @@ router.get(
   }
 );
 
-// Get component audio file conversion status
+// Get stem audio file conversion status
 router.get(
-  "/:id/component/:componentId/audio-conversion-status",
+  "/:id/stem/:stemId/audio-conversion-status",
   authenticateTrackAccess,
-  async (req, res, next) => {
+  async (req: Request, res: Response, next) => {
     try {
       const mediaServiceUrl = config.services.mediaServiceUrl;
 
@@ -709,7 +709,7 @@ router.get(
       }
 
       const response = await fetch(
-        `${mediaServiceUrl}/api/media/component/${req.params.componentId}/audio-conversion-status`
+        `${mediaServiceUrl}/api/media/stem/${req.params.stemId}/audio-conversion-status`
       );
       const data = await response.json();
       res.json(data);
