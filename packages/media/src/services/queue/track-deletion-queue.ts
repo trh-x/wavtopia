@@ -35,7 +35,7 @@ async function trackDeletionProcessor(job: Job<TrackDeletionJob>) {
         id: { in: trackIds },
         status: "PENDING_DELETION", // Only delete tracks that are still pending deletion
       },
-      include: { components: true },
+      include: { stems: true },
     });
 
     if (tracks.length === 0) {
@@ -59,11 +59,11 @@ async function trackDeletionProcessor(job: Job<TrackDeletionJob>) {
         const trackFailures = await deleteTrackFiles(track);
         if (trackFailures.length > 0) {
           failures.push({ trackId: track.id, failures: trackFailures });
-          return; // Skip component/track deletion if any files failed
+          return; // Skip stem/track deletion if any files failed
         }
 
-        // Delete components and track only if all files were deleted successfully
-        await tx.component.deleteMany({
+        // Delete stems and track only if all files were deleted successfully
+        await tx.stem.deleteMany({
           where: { trackId: track.id },
         });
 

@@ -9,7 +9,7 @@ import { SourceFormat } from "@wavtopia/core-storage";
 
 const execAsync = promisify(exec);
 
-interface ConvertedComponent {
+export interface ConvertedStem {
   name: string;
   type: string;
   buffer: Buffer;
@@ -18,7 +18,7 @@ interface ConvertedComponent {
 
 interface ConversionResult {
   fullTrackWavBuffer: Buffer;
-  components: ConvertedComponent[];
+  stems: ConvertedStem[];
 }
 
 async function convertFullTrack(
@@ -51,18 +51,18 @@ async function convertFullTrack(
   throw new AppError(500, `Unsupported module format: ${moduleFormat}`);
 }
 
-async function convertComponents(
+async function convertStems(
   moduleFormat: SourceFormat,
   modulePath: string,
   tempDir: string,
-  componentsBaseName: string
+  stemsBaseName: string
 ): Promise<{ stdout: string; stderr: string }> {
   // TODO: Try libxmp for mod files
   if (moduleFormat === SourceFormat.XM || moduleFormat === SourceFormat.MOD) {
     const { stdout, stderr } = await execAsync(
       `"${config.tools.milkyCliPath}" "${modulePath}" -output "${join(
         tempDir,
-        componentsBaseName
+        stemsBaseName
       )}" -multi-track`
     );
     return { stdout, stderr };
@@ -72,7 +72,7 @@ async function convertComponents(
     const { stdout, stderr } = await execAsync(
       `"${config.tools.schismTrackerPath}" --headless --diskwrite="${join(
         tempDir,
-        componentsBaseName.replace(".wav", "_%c.wav")
+        stemsBaseName.replace(".wav", "_%c.wav")
       )}" "${modulePath}"`
     );
     return { stdout, stderr };
@@ -87,12 +87,10 @@ export async function convertModuleToWAV(
 ): Promise<ConversionResult> {
   try {
     // Create temporary directory
-
-    // Create temporary directory
     const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-"));
     const modulePath = join(tempDir, `input.${moduleFormat}`);
     const fullTrackOutput = "full_track.wav";
-    const componentsBaseName = "output.wav"; // Base name for component files (will become output_01.wav, etc.)
+    const stemsBaseName = "output.wav"; // Base name for stem files (will become output_01.wav, etc.)
 
     try {
       // Write module file to temp directory
@@ -115,26 +113,26 @@ export async function convertModuleToWAV(
         join(tempDir, fullTrackOutput)
       );
 
-      // Then convert individual components
-      const { stderr: componentsStderr } = await convertComponents(
+      // Then convert individual stems
+      const { stderr: stemsStderr } = await convertStems(
         moduleFormat,
         modulePath,
         tempDir,
-        componentsBaseName
+        stemsBaseName
       );
 
-      if (componentsStderr) {
-        console.error("Components conversion stderr:", componentsStderr);
+      if (stemsStderr) {
+        console.error("Stems conversion stderr:", stemsStderr);
       }
 
-      // Find all generated component WAV files in the temp directory
+      // Find all generated stem WAV files in the temp directory
       const files = await readdir(tempDir);
       const wavFiles = files
         .filter((file) => file.startsWith("output_") && file.endsWith(".wav"))
         .sort(); // Sort to ensure consistent order (output_01.wav, output_02.wav, etc.)
 
-      // Create components from the WAV files
-      const convertedComponents: ConvertedComponent[] = await Promise.all(
+      // Create stems from the WAV files
+      const convertedStems: ConvertedStem[] = await Promise.all(
         wavFiles.map(async (filename, index) => {
           const buffer = await readWavFile(join(tempDir, filename));
           // Extract track number from filename (e.g., "output_01.wav" -> "01")
@@ -152,7 +150,7 @@ export async function convertModuleToWAV(
 
       return {
         fullTrackWavBuffer,
-        components: convertedComponents,
+        stems: convertedStems,
       };
     } finally {
       // Clean up temporary directory
@@ -160,7 +158,7 @@ export async function convertModuleToWAV(
     }
   } catch (error) {
     console.error("Error converting module to WAV:", error);
-    throw new AppError(500, "Failed to convert module to WAV components");
+    throw new AppError(500, "Failed to convert module to WAV stems");
   }
 }
 

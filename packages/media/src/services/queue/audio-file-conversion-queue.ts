@@ -17,8 +17,8 @@ import {
 
 interface AudioFileConversionJob {
   trackId: string;
-  type: "full" | "component";
-  componentId?: string;
+  type: "full" | "stem";
+  stemId?: string;
   format: "wav" | "flac";
 }
 
@@ -59,7 +59,7 @@ async function uploadAudioFile(
 
 // Utility function to update audio file conversion status
 async function updateAudioFileConversionStatus(
-  type: "full" | "component",
+  type: "full" | "stem",
   id: string,
   status: AudioFileConversionStatus,
   format: "wav" | "flac",
@@ -94,7 +94,7 @@ async function updateAudioFileConversionStatus(
   } else {
     const audioFileUrlProperty = format === "wav" ? "wavUrl" : "flacUrl";
 
-    await prisma.component.update({
+    await prisma.stem.update({
       where: { id },
       data: {
         [conversionStatusProperty]: status,
@@ -109,11 +109,11 @@ async function updateAudioFileConversionStatus(
 }
 
 async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
-  const { trackId, type, componentId, format } = job.data;
+  const { trackId, type, stemId, format } = job.data;
 
   console.log(
     `Processing ${format} conversion job ${job.id} for ${
-      componentId ? `component ${componentId}` : `track ${trackId}`
+      stemId ? `stem ${stemId}` : `track ${trackId}`
     }`
   );
 
@@ -121,7 +121,7 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
     // Get the track
     const track = await prisma.track.findUnique({
       where: { id: trackId },
-      include: { components: true },
+      include: { stems: true },
     });
 
     if (!track) {
@@ -176,17 +176,17 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
         format,
         audioFileUrl
       );
-    } else if (type === "component" && componentId) {
-      const component = track.components.find((c) => c.id === componentId);
-      if (!component) {
-        throw new Error(`Component ${componentId} not found`);
+    } else if (type === "stem" && stemId) {
+      const stem = track.stems.find((s) => s.id === stemId);
+      if (!stem) {
+        throw new Error(`Stem ${stemId} not found`);
       }
 
       const sourceUrlProperty = format === "wav" ? "flacUrl" : "wavUrl";
 
       if (
         !(
-          component[sourceUrlProperty] ||
+          stem[sourceUrlProperty] ||
           ((track.originalFormat === SourceFormat.XM ||
             track.originalFormat === SourceFormat.IT ||
             track.originalFormat === SourceFormat.MOD) &&
@@ -195,37 +195,37 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
       ) {
         const sourceFormat = format === "wav" ? "FLAC" : "WAV";
         throw new Error(
-          `Component ${componentId} has no ${sourceFormat} or full track original source ${track.originalFormat} file URL`
+          `Stem ${stemId} has no ${sourceFormat} or full track original source ${track.originalFormat} file URL`
         );
       }
 
-      // Update conversion status to IN_PROGRESS for component conversion
+      // Update conversion status to IN_PROGRESS for stem conversion
       await updateAudioFileConversionStatus(
-        "component",
-        componentId,
+        "stem",
+        stemId,
         AudioFileConversionStatus.IN_PROGRESS,
         format
       );
 
       const audioBuffer = await convertToFormat(
         track,
-        component[sourceUrlProperty],
+        stem[sourceUrlProperty],
         format,
-        component.index
+        stem.index
       );
 
       // Upload WAV file
       const wavUrl = await uploadAudioFile(
         audioBuffer,
-        `${track.title}_${component.name}`,
-        "components/",
+        `${track.title}_${stem.name}`,
+        "stems/",
         format
       );
 
-      // Update component with WAV URL and status
+      // Update stem with WAV URL and status
       await updateAudioFileConversionStatus(
-        "component",
-        componentId,
+        "stem",
+        stemId,
         AudioFileConversionStatus.COMPLETED,
         format,
         wavUrl
@@ -243,10 +243,10 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
         AudioFileConversionStatus.FAILED,
         job.data.format
       );
-    } else if (job.data.type === "component" && job.data.componentId) {
+    } else if (job.data.type === "stem" && job.data.stemId) {
       await updateAudioFileConversionStatus(
-        "component",
-        job.data.componentId,
+        "stem",
+        job.data.stemId,
         AudioFileConversionStatus.FAILED,
         job.data.format
       );
@@ -273,17 +273,17 @@ export async function cleanup(): Promise<void> {
 // Add audio file conversion job to queue
 export const queueAudioFileConversion = async (
   trackId: string,
-  type: "full" | "component",
+  type: "full" | "stem",
   format: "wav" | "flac",
-  componentId?: string
+  stemId?: string
 ) => {
   const job = await audioFileConversionQueue.add(
     "convert-audio-file",
     {
       trackId,
       type,
-      componentId,
       format,
+      stemId,
     },
     standardJobOptions
   );
@@ -301,7 +301,7 @@ async function convertToFormat(
   },
   sourceUrl: string | null,
   format: "flac" | "wav",
-  componentIndex?: number
+  stemIndex?: number
 ): Promise<Buffer> {
   const sourceFormat = format === "wav" ? "flac" : "wav";
   // Try source path first
@@ -328,18 +328,18 @@ async function convertToFormat(
     );
 
     let wavBuffer: Buffer;
-    if (typeof componentIndex === "number") {
-      // TODO: We might want to retain all components, seeing as the user has
+    if (typeof stemIndex === "number") {
+      // TODO: We might want to retain all stems, seeing as the user has
       // expressed an interest in this track.
       // An alternative could be to check for other queued jobs for this track
       // and merge them with the current job.
-      const { components } = converted;
-      if (!components[componentIndex]) {
+      const { stems } = converted;
+      if (!stems[stemIndex]) {
         throw new Error(
-          `Could not find matching WAV component at index ${componentIndex}`
+          `Could not find matching WAV stem at index ${stemIndex}`
         );
       }
-      wavBuffer = components[componentIndex].buffer;
+      wavBuffer = stems[stemIndex].buffer;
     } else {
       wavBuffer = converted.fullTrackWavBuffer;
     }

@@ -9,7 +9,7 @@ export async function deleteTrackFiles(track: {
   fullTrackMp3Url?: string | null;
   fullTrackFlacUrl?: string | null;
   coverArt?: string | null;
-  components: {
+  stems: {
     flacUrl: string | null;
     wavUrl: string | null;
     mp3Url: string | null;
@@ -24,12 +24,12 @@ export async function deleteTrackFiles(track: {
     track.coverArt,
   ];
 
-  const componentFiles = track.components.flatMap((component) => [
-    component.wavUrl,
-    component.mp3Url,
-    component.flacUrl,
+  const stemFiles = track.stems.flatMap((stem) => [
+    stem.wavUrl,
+    stem.mp3Url,
+    stem.flacUrl,
   ]);
 
   // Process all files in batches and return any failures
-  return processBatchedDeletions([...trackFiles, ...componentFiles]);
+  return processBatchedDeletions([...trackFiles, ...stemFiles]);
 }

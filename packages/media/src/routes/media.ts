@@ -26,8 +26,8 @@ const conversionOptionsSchema = z.object({
 
 const audioFileConversionOptionsSchema = z.object({
   trackId: z.string().uuid(),
-  type: z.enum(["full", "component"]),
-  componentId: z.string().uuid().optional(),
+  type: z.enum(["full", "stem"]),
+  stemId: z.string().uuid().optional(),
   format: z.enum(["wav", "flac"]),
 });
 
@@ -124,7 +124,7 @@ router.post("/convert-audio", async (req, res, next) => {
         job.data.trackId === options.trackId &&
         job.data.type === options.type &&
         job.data.format === options.format &&
-        job.data.componentId === options.componentId
+        job.data.stemId === options.stemId
     );
 
     if (existingJob) {
@@ -141,7 +141,7 @@ router.post("/convert-audio", async (req, res, next) => {
       options.trackId,
       options.type,
       options.format,
-      options.componentId
+      options.stemId
     );
 
     res.json({
@@ -188,37 +188,34 @@ router.get("/audio-conversion-status/:trackId", async (req, res, next) => {
   }
 });
 
-// Get component audio file conversion status
-router.get(
-  "/component/:componentId/audio-conversion-status",
-  async (req, res, next) => {
-    try {
-      const { componentId } = req.params;
-      const { format } = req.query;
+// Get stem audio file conversion status
+router.get("/stem/:stemId/audio-conversion-status", async (req, res, next) => {
+  try {
+    const { stemId } = req.params;
+    const { format } = req.query;
 
-      const conversionStatusProperty =
-        format === "wav" ? "wavConversionStatus" : "flacConversionStatus";
+    const conversionStatusProperty =
+      format === "wav" ? "wavConversionStatus" : "flacConversionStatus";
 
-      const component = await prisma.component.findUnique({
-        where: { id: componentId },
-        select: { [conversionStatusProperty]: true },
-      });
+    const stem = await prisma.stem.findUnique({
+      where: { id: stemId },
+      select: { [conversionStatusProperty]: true },
+    });
 
-      if (!component) {
-        throw new AppError(404, "Component not found");
-      }
-
-      res.json({
-        status: "success",
-        data: {
-          conversionStatus: component[conversionStatusProperty],
-        },
-      });
-    } catch (error) {
-      next(error);
+    if (!stem) {
+      throw new AppError(404, "Stem not found");
     }
+
+    res.json({
+      status: "success",
+      data: {
+        conversionStatus: stem[conversionStatusProperty],
+      },
+    });
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 // Trigger file cleanup job on demand
 router.post("/trigger-cleanup", async (req, res, next) => {
