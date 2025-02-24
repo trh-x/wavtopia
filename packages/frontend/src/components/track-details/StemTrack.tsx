@@ -1,20 +1,16 @@
-import { Track, Component } from "@/types";
+import { Track, Stem } from "@/types";
 import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetailsWaveform";
-import { ComponentDownloadButtons } from "./DownloadLink";
+import { StemDownloadButtons } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 
-interface TrackComponentProps {
-  component: Component;
+interface StemTrackProps {
+  stem: Stem;
   track: Track;
   isGridView: boolean;
 }
 
-export function TrackComponent({
-  component,
-  track,
-  isGridView,
-}: TrackComponentProps) {
+export function StemTrack({ stem, track, isGridView }: StemTrackProps) {
   return (
     <div
       className={`${styles.container.card} ${
@@ -26,20 +22,18 @@ export function TrackComponent({
           <h3
             className={`${isGridView ? "font-medium" : "text-lg font-medium"}`}
           >
-            {component.name}
+            {stem.name}
           </h3>
         </div>
-        <ComponentDownloadButtons track={track} component={component} />
+        <StemDownloadButtons track={track} stem={stem} />
       </div>
       <TrackDetailsWaveform
-        waveformData={component.waveformData}
-        duration={component.duration ?? undefined}
+        waveformData={stem.waveformData}
+        duration={stem.duration ?? undefined}
         height={isGridView ? 48 : 64}
         color="#4b5563"
         progressColor="#6366f1"
-        audioUrl={getAudioUrl(
-          `/api/track/${track.id}/component/${component.id}.mp3`
-        )}
+        audioUrl={getAudioUrl(`/api/track/${track.id}/stem/${stem.id}.mp3`)}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { Job, Worker } from "bullmq";
-import { convertModuleToWAV } from "../module-converter";
+import { convertModuleToWAV, ConvertedStem } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
 import { StorageFile, config } from "@wavtopia/core-storage";
@@ -63,9 +63,9 @@ function isDiskSpaceError(error: unknown): boolean {
   );
 }
 
-// Utility function to process a component
-async function processComponent(
-  component: { buffer: Buffer; name: string; type: string },
+// Utility function to process a stem
+async function processStem(
+  stem: ConvertedStem,
   originalName: string,
   index: number,
   totalCount: number
@@ -77,27 +77,22 @@ async function processComponent(
   waveformData: number[];
   duration: number;
 }> {
-  console.log(
-    `Processing component ${index + 1}/${totalCount}: ${component.name}`
-  );
+  console.log(`Processing stem ${index + 1}/${totalCount}: ${stem.name}`);
 
   // TODO: Make this configurable
   const kbps = 192;
-  const mp3Buffer = await convertWAVToMP3(component.buffer, kbps);
-  const componentName = `${originalName}_${component.name.replace(
-    /[^a-z0-9]/gi,
-    "_"
-  )}`;
+  const mp3Buffer = await convertWAVToMP3(stem.buffer, kbps);
+  const stemName = `${originalName}_${stem.name.replace(/[^a-z0-9]/gi, "_")}`;
 
-  const waveformResult = await generateWaveformData(component.buffer);
-  console.log(`Generated waveform data for component: ${component.name}`);
+  const waveformResult = await generateWaveformData(stem.buffer);
+  console.log(`Generated waveform data for stem: ${stem.name}`);
 
-  const mp3Url = await uploadMp3File(mp3Buffer, componentName, "components/");
+  const mp3Url = await uploadMp3File(mp3Buffer, stemName, "stems/");
 
-  console.log(`Component ${component.name} MP3 uploaded`);
+  console.log(`Stem ${stem.name} MP3 uploaded`);
   return {
-    name: component.name,
-    type: component.type,
+    name: stem.name,
+    type: stem.type,
     index,
     mp3Url,
     waveformData: waveformResult.peaks,
@@ -188,11 +183,11 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
 
     // Convert module to WAV
     console.log("Converting module to WAV...");
-    const { fullTrackWavBuffer, components } = await convertModuleToWAV(
+    const { fullTrackWavBuffer, stems } = await convertModuleToWAV(
       originalFile.buffer,
       track.originalFormat
     );
-    console.log("Module conversion complete. Components:", components.length);
+    console.log("Module conversion complete. Stems:", stems.length);
 
     const {
       mp3Url: fullTrackMp3Url,
@@ -200,11 +195,11 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       duration,
     } = await processFullTrack(fullTrackWavBuffer, originalName);
 
-    // Convert and upload component files
-    console.log("Processing components...");
-    const componentUploads = await Promise.all(
-      components.map((component, index) =>
-        processComponent(component, originalName, index, components.length)
+    // Convert and upload stem files
+    console.log("Processing stems...");
+    const stemUploads = await Promise.all(
+      stems.map((stem, index) =>
+        processStem(stem, originalName, index, stems.length)
       )
     );
 
@@ -219,8 +214,8 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
           waveformData,
           duration,
           coverArt: coverArtUrl,
-          components: {
-            create: componentUploads,
+          stems: {
+            create: stemUploads,
           },
         },
       });
@@ -234,7 +229,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
         originalUrl,
         fullTrackMp3Url,
         coverArtUrl,
-        ...componentUploads.map((comp) => comp.mp3Url),
+        ...stemUploads.map((stem) => stem.mp3Url),
       ]);
 
       if (isDiskSpaceError(dbError)) {

@@ -25,13 +25,13 @@ interface FileCleanupJob {
 interface CleanupFailure {
   fileUrl: string;
   error: Error;
-  type: "track-wav" | "track-flac" | "component-wav" | "component-flac";
+  type: "track-wav" | "track-flac" | "stem-wav" | "stem-flac";
   entityId: string;
 }
 
 interface DeletionOperation {
   fileUrl: string;
-  type: "track-wav" | "track-flac" | "component-wav" | "component-flac";
+  type: "track-wav" | "track-flac" | "stem-wav" | "stem-flac";
   entityId: string;
   updateFn: () => Promise<any>;
 }
@@ -81,8 +81,8 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
   const summary = {
     fullTrackWav: 0,
     fullTrackFlac: 0,
-    componentWav: 0,
-    componentFlac: 0,
+    stemWav: 0,
+    stemFlac: 0,
     failures: [] as CleanupFailure[],
   };
 
@@ -110,18 +110,18 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                 fullTrackFlacUrl: { not: null },
                 flacLastRequestedAt: { lt: thresholdDate },
               },
-              // Component WAV file conditions
+              // Stem WAV file conditions
               {
-                components: {
+                stems: {
                   some: {
                     wavUrl: { not: null },
                     wavLastRequestedAt: { lt: thresholdDate },
                   },
                 },
               },
-              // Component FLAC file conditions
+              // Stem FLAC file conditions
               {
-                components: {
+                stems: {
                   some: {
                     flacUrl: { not: null },
                     flacLastRequestedAt: { lt: thresholdDate },
@@ -133,7 +133,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
         ],
       },
       include: {
-        components: true,
+        stems: true,
       },
       take: BATCH_SIZE + 1,
       orderBy: { id: "asc" },
@@ -195,20 +195,20 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
             });
           }
 
-          // Add component deletions if needed
-          for (const component of track.components) {
+          // Add stem deletions if needed
+          for (const stem of track.stems) {
             if (
-              component.wavUrl &&
-              component.wavLastRequestedAt &&
-              component.wavLastRequestedAt < thresholdDate
+              stem.wavUrl &&
+              stem.wavLastRequestedAt &&
+              stem.wavLastRequestedAt < thresholdDate
             ) {
               deletionOps.push({
-                fileUrl: component.wavUrl,
-                type: "component-wav",
-                entityId: component.id,
+                fileUrl: stem.wavUrl,
+                type: "stem-wav",
+                entityId: stem.id,
                 updateFn: () =>
-                  tx.component.update({
-                    where: { id: component.id },
+                  tx.stem.update({
+                    where: { id: stem.id },
                     data: {
                       wavUrl: null,
                       wavLastRequestedAt: null,
@@ -219,17 +219,17 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
             }
 
             if (
-              component.flacUrl &&
-              component.flacLastRequestedAt &&
-              component.flacLastRequestedAt < thresholdDate
+              stem.flacUrl &&
+              stem.flacLastRequestedAt &&
+              stem.flacLastRequestedAt < thresholdDate
             ) {
               deletionOps.push({
-                fileUrl: component.flacUrl,
-                type: "component-flac",
-                entityId: component.id,
+                fileUrl: stem.flacUrl,
+                type: "stem-flac",
+                entityId: stem.id,
                 updateFn: () =>
-                  tx.component.update({
-                    where: { id: component.id },
+                  tx.stem.update({
+                    where: { id: stem.id },
                     data: {
                       flacUrl: null,
                       flacLastRequestedAt: null,
@@ -257,11 +257,11 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                     case "track-flac":
                       summary.fullTrackFlac++;
                       break;
-                    case "component-wav":
-                      summary.componentWav++;
+                    case "stem-wav":
+                      summary.stemWav++;
                       break;
-                    case "component-flac":
-                      summary.componentFlac++;
+                    case "stem-flac":
+                      summary.stemFlac++;
                       break;
                   }
                 } catch (error) {
@@ -298,15 +298,15 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
     const totalFiles =
       summary.fullTrackWav +
       summary.fullTrackFlac +
-      summary.componentWav +
-      summary.componentFlac;
+      summary.stemWav +
+      summary.stemFlac;
 
     console.log("\nCleanup Summary:");
     console.log("---------------");
     console.log(`Full Track WAV files removed: ${summary.fullTrackWav}`);
     console.log(`Full Track FLAC files removed: ${summary.fullTrackFlac}`);
-    console.log(`Component WAV files removed: ${summary.componentWav}`);
-    console.log(`Component FLAC files removed: ${summary.componentFlac}`);
+    console.log(`Stem WAV files removed: ${summary.stemWav}`);
+    console.log(`Stem FLAC files removed: ${summary.stemFlac}`);
     console.log("---------------");
     console.log(`Total files removed: ${totalFiles}`);
 

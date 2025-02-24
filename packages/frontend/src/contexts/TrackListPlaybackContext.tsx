@@ -9,7 +9,7 @@ export interface TrackListPlaybackContextType {
   stopPlayback: (ws: WaveSurfer) => void;
   stopAll: () => void;
   isMuted: () => boolean;
-  soloComponent: () => void;
+  soloStem: () => void;
   isSoloed: () => boolean;
   triggerUpdate: () => void;
 }
@@ -68,7 +68,7 @@ export function TrackListPlaybackProvider({
   };
 
   const isMuted = () => false;
-  const soloComponent = () => {};
+  const soloStem = () => {};
   const isSoloed = () => false;
 
   // Changes to force re-render when stop button is clicked
@@ -85,7 +85,7 @@ export function TrackListPlaybackProvider({
         stopPlayback,
         stopAll,
         isMuted,
-        soloComponent,
+        soloStem,
         isSoloed,
         triggerUpdate,
       }}

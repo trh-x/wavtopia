@@ -47,7 +47,7 @@ export function WaveformDisplay({
     stopPlayback,
     stopAll,
     isMuted,
-    soloComponent,
+    soloStem,
     isSoloed,
     triggerUpdate,
   } = context;
@@ -79,7 +79,7 @@ export function WaveformDisplay({
 
   const handleSolo = async () => {
     if (!wavesurferRef.current || !isWaveformReady) return;
-    soloComponent(wavesurferRef.current);
+    soloStem(wavesurferRef.current);
   };
 
   let cleanupCanPlay: () => void;

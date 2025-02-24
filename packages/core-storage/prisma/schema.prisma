@@ -59,7 +59,7 @@ model Track {
   metadata              Json?
   isPublic              Boolean                    @default(false) @map("is_public")
   status                TrackStatus                @default(ACTIVE) @map("status")
-  components            Component[]
+  stems                 Stem[]
   userId                String                     @map("user_id")
   user                  User                       @relation(fields: [userId], references: [id])
   sharedWith            TrackShare[]               @relation("SharedTracks")
@@ -95,7 +95,7 @@ model TrackShare {
   @@map("track_shares")
 }
 
-model Component {
+model Stem {
   id                    String                     @id @default(uuid())
   index                 Int
   name                  String
@@ -119,7 +119,7 @@ model Component {
   @@unique([trackId, index])
   @@index([wavLastRequestedAt])
   @@index([flacLastRequestedAt])
-  @@map("components")
+  @@map("stems")
 }
 
 model InviteCode {

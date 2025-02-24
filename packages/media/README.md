@@ -4,7 +4,7 @@ The Media Service handles all audio file processing, conversion, and cleanup ope
 
 - Converting module files (MOD, XM, IT) to WAV/FLAC/MP3 formats
 - Managing audio file storage and cleanup
-- Processing individual track components
+- Processing individual track stems
 - Handling audio file conversion queues
 
 ## Architecture
@@ -26,8 +26,8 @@ The service uses BullMQ for reliable job queue processing with the following que
 ### Audio File Conversion
 
 - `POST /api/media/convert-audio`
-  - Converts track or component to WAV/FLAC
-  - Body: `{ trackId: string, type: "full" | "component", componentId?: string, format: "wav" | "flac" }`
+  - Converts track or stem to WAV/FLAC
+  - Body: `{ trackId: string, type: "full" | "stem", stemId?: string, format: "wav" | "flac" }`
 
 ### Status Endpoints
 
@@ -35,8 +35,8 @@ The service uses BullMQ for reliable job queue processing with the following que
   - Get conversion job status
 - `GET /api/media/audio-conversion-status/:trackId`
   - Get track audio conversion status
-- `GET /api/media/component/:componentId/audio-conversion-status`
-  - Get component audio conversion status
+- `GET /api/media/stem/:stemId/audio-conversion-status`
+  - Get stem audio conversion status
 
 ### File Cleanup
 

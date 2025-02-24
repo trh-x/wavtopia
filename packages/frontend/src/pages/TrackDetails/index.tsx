@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuthToken } from "../../hooks/useAuthToken";
 import { TrackHeader } from "../../components/track-details/TrackHeader";
 import { FullTrackSection } from "../../components/track-details/FullTrackSection";
-import { ComponentsSection } from "../../components/track-details/ComponentsSection";
+import { StemsSection } from "../../components/track-details/StemsSection";
 import { ViewMode } from "../../components/track-details/ViewModeToggle";
 import { LoadingState } from "../../components/ui/LoadingState";
 import { ErrorState } from "../../components/ui/ErrorState";
@@ -15,7 +15,7 @@ import { TrackDetailsPlaybackProvider } from "./contexts/PlaybackContext";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
-  // TODO: Move viewMode state to ComponentsSection if it's only used there
+  // TODO: Move viewMode state to StemsSection if it's only used there
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { getToken } = useAuthToken();
   const { user } = useAuth();
@@ -57,7 +57,7 @@ export function TrackDetails() {
           duration={track.duration}
         />
         <FullTrackSection track={track} />
-        <ComponentsSection
+        <StemsSection
           track={track}
           viewMode={viewMode}
           onViewModeChange={setViewMode}

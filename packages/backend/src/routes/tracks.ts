@@ -168,7 +168,7 @@ router.get("/shared", async (req: Request, res: Response, next) => {
             email: true,
           },
         },
-        components: true,
+        stems: true,
         sharedWith: {
           include: {
             user: {
