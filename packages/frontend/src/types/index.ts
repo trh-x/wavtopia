@@ -21,16 +21,17 @@ export interface Track {
   isPublic: boolean;
   userId: string;
   user: User;
-  components: TrackComponent[];
+  stems: Stem[];
   sharedWith?: TrackShare[];
 }
 
-export interface TrackComponent {
+export interface Stem {
   id: string;
   name: string;
   type: string;
-  wavUrl: string;
+  wavUrl: string | null;
   mp3Url: string;
+  flacUrl: string | null;
   waveformData: number[];
   duration?: number;
   trackId: string;

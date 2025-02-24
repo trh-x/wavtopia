@@ -1,32 +1,32 @@
 import { useState, useEffect } from "react";
 import { useNotifications } from "../contexts/NotificationsContext";
 import { useAuthToken } from "./useAuthToken";
-import { Track, Component } from "@/types";
+import { Track, Stem } from "@/types";
 
-type ConversionType = "full" | "component";
+type ConversionType = "full" | "stem";
 type ConversionStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "FAILED";
 type ConversionFormat = "wav" | "flac";
 
-interface UseWavConversionProps {
+interface UseAudioFileConversionProps {
   track: Track;
   type: ConversionType;
-  component?: Component;
+  stem?: Stem;
   format: ConversionFormat;
 }
 
 export function useAudioFileConversion({
   track,
   type,
-  component,
+  stem,
   format,
-}: UseWavConversionProps) {
+}: UseAudioFileConversionProps) {
   const [status, setStatus] = useState<ConversionStatus>("NOT_STARTED");
   const [isConverting, setIsConverting] = useState(false);
   const { addNotification } = useNotifications();
   const { getToken } = useAuthToken();
 
   const formatName = format === "wav" ? "WAV" : "FLAC";
-  const name = component ? component.name : track.title;
+  const name = stem ? stem.name : track.title;
 
   // Poll for status updates when conversion is in progress
   useEffect(() => {
@@ -39,8 +39,8 @@ export function useAudioFileConversion({
           const token = getToken();
           if (!token) return;
 
-          const statusUrl = component
-            ? `/api/track/${track.id}/component/${component.id}/audio-conversion-status`
+          const statusUrl = stem
+            ? `/api/track/${track.id}/stem/${stem.id}/audio-conversion-status`
             : `/api/track/${track.id}/audio-conversion-status`;
 
           // Abort any pending requests before making a new one
@@ -104,7 +104,7 @@ export function useAudioFileConversion({
   }, [
     isConverting,
     track,
-    component,
+    stem,
     format,
     formatName,
     getToken,
@@ -125,14 +125,14 @@ export function useAudioFileConversion({
         },
         body: JSON.stringify({
           type,
-          componentId: component?.id,
+          stemId: stem?.id,
           format,
         }),
       });
 
       const data = await response.json();
 
-      const name = component ? component.name : track.title;
+      const name = stem ? stem.name : track.title;
 
       if (data.status === "success") {
         addNotification({

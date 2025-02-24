@@ -1,7 +1,7 @@
 import { useAuthToken } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 import { useAudioFileConversion } from "../../hooks/useAudioFileConversion";
-import { Component, Track } from "@/types"; // TODO: Rename Component to save confusion with React.
+import { Stem, Track } from "@/types";
 
 interface DownloadLinkProps {
   href: string;
@@ -13,8 +13,8 @@ interface ConvertAudioFileProps {
   href: string;
   small?: boolean;
   track: Track;
-  type: "full" | "component";
-  component?: Component;
+  type: "full" | "stem";
+  stem?: Stem;
   format: "wav" | "flac";
   children: React.ReactNode;
 }
@@ -42,7 +42,7 @@ export function ConvertAudioFile({
   small,
   track,
   type,
-  component,
+  stem,
   format,
   children,
 }: ConvertAudioFileProps) {
@@ -50,7 +50,7 @@ export function ConvertAudioFile({
   const { status, isConverting, startConversion } = useAudioFileConversion({
     track,
     type,
-    component,
+    stem,
     format,
   });
 
@@ -122,23 +122,22 @@ export function ConvertAudioFile({
 
 interface AudioFileDownloadButtonProps {
   track: Track;
-  component: Component;
+  stem: Stem;
   format: "wav" | "flac";
 }
 
 function AudioFileDownloadButton({
   track,
-  component,
+  stem,
   format,
 }: AudioFileDownloadButtonProps) {
   const downloadProps = {
-    href: `/api/track/${track.id}/component/${component.id}.${format}`,
+    href: `/api/track/${track.id}/stem/${stem.id}.${format}`,
     children: format === "wav" ? "WAV" : "FLAC",
     small: true,
   };
 
-  const audioFileUrl =
-    format === "wav" ? component?.wavUrl : component?.flacUrl;
+  const audioFileUrl = format === "wav" ? stem?.wavUrl : stem?.flacUrl;
 
   if (audioFileUrl) {
     return <DownloadLink {...downloadProps} />;
@@ -148,38 +147,27 @@ function AudioFileDownloadButton({
     <ConvertAudioFile
       {...downloadProps}
       track={track}
-      type="component"
-      component={component}
+      type="stem"
+      stem={stem}
       format={format}
     />
   );
 }
 
-export function ComponentDownloadButtons({
+export function StemDownloadButtons({
   track,
-  component,
+  stem,
 }: {
   track: Track;
-  component: Component;
+  stem: Stem;
 }) {
   return (
     <div className="flex gap-2">
-      <DownloadLink
-        href={`/api/track/${track.id}/component/${component.id}.mp3`}
-        small
-      >
+      <DownloadLink href={`/api/track/${track.id}/stem/${stem.id}.mp3`} small>
         MP3
       </DownloadLink>
-      <AudioFileDownloadButton
-        track={track}
-        component={component}
-        format="flac"
-      />
-      <AudioFileDownloadButton
-        track={track}
-        component={component}
-        format="wav"
-      />
+      <AudioFileDownloadButton track={track} stem={stem} format="flac" />
+      <AudioFileDownloadButton track={track} stem={stem} format="wav" />
     </div>
   );
 }

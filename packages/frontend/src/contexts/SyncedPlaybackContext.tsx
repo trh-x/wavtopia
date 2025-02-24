@@ -21,7 +21,7 @@ export interface SyncedPlaybackContextType {
   stopPlayback: (wavesurfer: WaveSurfer) => void;
   stopAll: () => void;
   isMuted: (wavesurfer: WaveSurfer) => boolean;
-  soloComponent: (wavesurfer: WaveSurfer) => void;
+  soloStem: (wavesurfer: WaveSurfer) => void;
   isSoloed: (wavesurfer: WaveSurfer) => boolean;
   triggerUpdate: () => void;
 }
@@ -76,10 +76,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     wavesurfer: WaveSurfer,
     { isFullTrack }: { isFullTrack: boolean }
   ) => {
-    console.log(
-      "Registering waveform",
-      isFullTrack ? "full track" : "component"
-    );
+    console.log("Registering waveform", isFullTrack ? "full track" : "stem");
     activeWaveformsRef.current.set(wavesurfer, {
       wavesurfer,
       isFullTrack,
@@ -134,7 +131,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const muteAllComponents = () => {
+  const muteAllStems = () => {
     activeWaveformsRef.current.forEach((info) => {
       if (!info.isFullTrack) {
         info.isMuted = true;
@@ -143,7 +140,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const unmuteAllComponents = () => {
+  const unmuteAllStems = () => {
     activeWaveformsRef.current.forEach((info) => {
       if (!info.isFullTrack) {
         info.isMuted = false;
@@ -185,13 +182,13 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     clearAllSolos();
 
     if (waveformInfo.isFullTrack) {
-      // If starting full track, mute all component tracks
-      muteAllComponents();
+      // If starting full track, mute all stem tracks
+      muteAllStems();
       unmuteFullTrack();
     } else {
-      // If starting component track, mute full track and unmute all components
+      // If starting stem track, mute full track and unmute all stems
       muteFullTrack();
-      unmuteAllComponents();
+      unmuteAllStems();
     }
 
     // Add the new waveform to playing set and start playback if not already playing
@@ -272,13 +269,13 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
     return info ? info.isMuted : false;
   };
 
-  const soloComponent = (wavesurfer: WaveSurfer) => {
-    console.log("Soloing component");
+  const soloStem = (wavesurfer: WaveSurfer) => {
+    console.log("Soloing stem");
     const waveformInfo = activeWaveformsRef.current.get(wavesurfer);
     if (!waveformInfo || waveformInfo.isFullTrack) return;
 
     if (waveformInfo.isSoloed) {
-      // If already soloed, unsolo by unmuting only other components
+      // If already soloed, unsolo by unmuting only other stems
       activeWaveformsRef.current.forEach((info) => {
         if (!info.isFullTrack) {
           info.isMuted = false;
@@ -292,7 +289,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
         }
       });
     } else {
-      // Solo this component by muting everything else
+      // Solo this stem by muting everything else
       activeWaveformsRef.current.forEach((info, otherWavesurfer) => {
         if (otherWavesurfer !== wavesurfer) {
           info.isMuted = true;
@@ -306,7 +303,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // Start playing this component if it's not already playing
+    // Start playing this stem if it's not already playing
     if (!playingWaveformsRef.current.has(wavesurfer)) {
       playingWaveformsRef.current.add(wavesurfer);
       wavesurfer.play();
@@ -340,7 +337,7 @@ export function SyncedPlaybackProvider({ children }: { children: ReactNode }) {
         stopPlayback,
         stopAll,
         isMuted,
-        soloComponent,
+        soloStem,
         isSoloed,
         triggerUpdate,
       }}
