@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useAuthToken } from "../../hooks/useAuthToken";
+import { usePresignedUrl } from "../../hooks/usePresignedUrl";
 import { styles } from "../../styles/common";
 import { useAudioFileConversion } from "../../hooks/useAudioFileConversion";
 import { Stem, Track } from "@/types";
@@ -7,6 +9,7 @@ interface DownloadLinkProps {
   href: string;
   small?: boolean;
   children: React.ReactNode;
+  usePresigned?: boolean;
 }
 
 interface ConvertAudioFileProps {
@@ -19,20 +22,46 @@ interface ConvertAudioFileProps {
   children: React.ReactNode;
 }
 
-export function DownloadLink({ href, small, children }: DownloadLinkProps) {
+export function DownloadLink({
+  href,
+  small,
+  children,
+  usePresigned = false,
+}: DownloadLinkProps) {
   const { appendTokenToUrl } = useAuthToken();
-  const onClick = (e: React.MouseEvent) => {
+  const { getPresignedUrl, isLoading } = usePresignedUrl();
+  const [error, setError] = useState<string | null>(null);
+
+  const onClick = async (e: React.MouseEvent) => {
     e.preventDefault();
-    window.location.href = appendTokenToUrl(href);
+
+    try {
+      if (usePresigned) {
+        const url = await getPresignedUrl(href);
+        window.location.href = url;
+      } else {
+        window.location.href = appendTokenToUrl(href);
+      }
+    } catch (err) {
+      console.error("Failed to get download URL:", err);
+      setError("Failed to start download");
+    }
   };
 
   return (
     <a
-      href={href}
+      href="#"
       onClick={onClick}
-      className={small ? styles.button.small : styles.button.inactive}
+      className={`${small ? styles.button.small : styles.button.inactive} ${
+        isLoading
+          ? "opacity-50 cursor-wait"
+          : error
+          ? "opacity-50 cursor-not-allowed"
+          : ""
+      }`}
+      title={error || undefined}
     >
-      {children}
+      {isLoading ? "Loading..." : children}
     </a>
   );
 }
@@ -46,7 +75,7 @@ export function ConvertAudioFile({
   format,
   children,
 }: ConvertAudioFileProps) {
-  const { appendTokenToUrl } = useAuthToken();
+  const { getPresignedUrl, isLoading: isUrlLoading } = usePresignedUrl();
   const { status, isConverting, startConversion } = useAudioFileConversion({
     track,
     type,
@@ -62,19 +91,27 @@ export function ConvertAudioFile({
     if (showConversionIcon) {
       startConversion();
     } else {
-      window.location.href = appendTokenToUrl(href);
+      try {
+        const url = await getPresignedUrl(href);
+        window.location.href = url;
+      } catch (err) {
+        console.error("Failed to get download URL:", err);
+      }
     }
   };
+
+  const isLoading = isUrlLoading || isConverting;
 
   // TODO: Add a tooltip to explain the conversion process
   return (
     <a
-      href={status === "COMPLETED" ? href : "#"}
+      href="#"
       onClick={handleClick}
       className={`inline-flex items-center space-x-1 ${
         small ? "text-sm" : ""
-      } text-primary-600 hover:text-primary-700 font-medium`}
-      download
+      } text-primary-600 hover:text-primary-700 font-medium ${
+        isLoading ? "opacity-50 cursor-wait" : ""
+      }`}
     >
       {showConversionIcon ? (
         isConverting ? (
@@ -114,30 +151,52 @@ export function ConvertAudioFile({
             />
           </svg>
         )
+      ) : isUrlLoading ? (
+        <svg
+          className="animate-spin h-4 w-4"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
+        </svg>
       ) : null}
       <span>{children}</span>
     </a>
   );
 }
 
-interface AudioFileDownloadButtonProps {
+interface StemAudioFileDownloadButtonProps {
   track: Track;
   stem: Stem;
   format: "wav" | "flac";
 }
 
-function AudioFileDownloadButton({
+function StemAudioFileDownloadButton({
   track,
   stem,
   format,
-}: AudioFileDownloadButtonProps) {
+}: StemAudioFileDownloadButtonProps) {
   const downloadProps = {
     href: `/api/track/${track.id}/stem/${stem.id}.${format}`,
     children: format === "wav" ? "WAV" : "FLAC",
     small: true,
+    usePresigned: true,
   };
 
-  const audioFileUrl = format === "wav" ? stem?.wavUrl : stem?.flacUrl;
+  const audioFileUrl = format === "wav" ? stem.wavUrl : stem.flacUrl;
 
   if (audioFileUrl) {
     return <DownloadLink {...downloadProps} />;
@@ -163,11 +222,15 @@ export function StemDownloadButtons({
 }) {
   return (
     <div className="flex gap-2">
-      <DownloadLink href={`/api/track/${track.id}/stem/${stem.id}.mp3`} small>
+      <DownloadLink
+        href={`/api/track/${track.id}/stem/${stem.id}.mp3`}
+        small
+        usePresigned
+      >
         MP3
       </DownloadLink>
-      <AudioFileDownloadButton track={track} stem={stem} format="flac" />
-      <AudioFileDownloadButton track={track} stem={stem} format="wav" />
+      <StemAudioFileDownloadButton track={track} stem={stem} format="flac" />
+      <StemAudioFileDownloadButton track={track} stem={stem} format="wav" />
     </div>
   );
 }
