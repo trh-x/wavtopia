@@ -9,7 +9,7 @@ import { AppError } from "../middleware/errorHandler";
 import { authenticate } from "../middleware/auth";
 import { verifyToken } from "../services/auth";
 import { uploadTrackFiles } from "../middleware/upload";
-import { uploadFile, getObject } from "../services/storage";
+import { uploadFile, getObject, getFileUrl } from "../services/storage";
 import { z } from "zod";
 import {
   deleteLocalFile,
@@ -239,21 +239,16 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
-      // Stream the file directly from MinIO
-      const fileStream = await getObject(filePath);
-      res.setHeader("Content-Type", "application/octet-stream");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${stem.name}.${format}"`
-      );
-      fileStream.pipe(res);
+      // Generate a presigned URL instead of streaming
+      const presignedUrl = await getFileUrl(filePath);
+      res.json({ url: presignedUrl });
     } catch (error) {
       next(error);
     }
   }
 );
 
-// Get full track file (before auth middleware)
+// Get full track file
 router.get(
   "/:id/full.:format",
   authenticateTrackAccess,
@@ -275,35 +270,16 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
-      // Stream the file directly from MinIO
-      const fileStream = await getObject(filePath);
-
-      res.setHeader(
-        "Content-Type",
-        format === "mp3" ? "audio/mpeg" : "audio/wav"
-      );
-      res.setHeader("Transfer-Encoding", "chunked");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${track.title}.${format}"`
-      );
-
-      // Handle errors in the stream
-      fileStream.on("error", (err) => {
-        console.error("Error streaming file:", err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: "Error streaming file" });
-        }
-      });
-
-      fileStream.pipe(res);
+      // Generate a presigned URL instead of streaming
+      const presignedUrl = await getFileUrl(filePath);
+      res.json({ url: presignedUrl });
     } catch (error) {
       next(error);
     }
   }
 );
 
-// Get original track file (before auth middleware)
+// Get original track file
 router.get(
   "/:id/original",
   authenticateTrackAccess,
@@ -330,7 +306,18 @@ router.get(
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(track.originalUrl);
-      res.setHeader("Content-Type", "application/octet-stream");
+
+      // Set appropriate content type for tracker files
+      const mimeTypes: { [key: string]: string } = {
+        xm: "audio/x-xm",
+        it: "audio/x-it",
+        mod: "audio/x-mod",
+      };
+      const contentType =
+        mimeTypes[track.originalFormat.toLowerCase()] ||
+        "application/octet-stream";
+
+      res.setHeader("Content-Type", contentType);
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${track.title}.${track.originalFormat}"`
