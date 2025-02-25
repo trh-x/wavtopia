@@ -90,10 +90,18 @@ export class StorageService {
     expiryInSeconds: number = 7 * 24 * 60 * 60
   ): Promise<string> {
     try {
+      // Add response headers to force download
+      const reqParams = {
+        "response-content-disposition": `attachment; filename="${fileName
+          .split("/")
+          .pop()}"`,
+      };
+
       return await this.client.presignedGetObject(
         this.bucket,
         fileName,
-        expiryInSeconds
+        expiryInSeconds,
+        reqParams
       );
     } catch (error) {
       console.error("Failed to get file URL:", error);

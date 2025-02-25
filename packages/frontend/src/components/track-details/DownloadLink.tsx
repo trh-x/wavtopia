@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthToken } from "../../hooks/useAuthToken";
 import { usePresignedUrl } from "../../hooks/usePresignedUrl";
 import { styles } from "../../styles/common";
@@ -22,35 +22,82 @@ interface ConvertAudioFileProps {
   children: React.ReactNode;
 }
 
-export function DownloadLink({
+// Utility function to trigger a file download
+// TODO: Consider using StreamSaver.js or similar for streaming downloads of large files
+// instead of loading the entire file into memory
+async function triggerDownload(url: string) {
+  try {
+    // Create a temporary anchor element
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+    a.download = url.split("/").pop()?.split("?")[0] || "download";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error("Download failed:", error);
+    throw error;
+  }
+}
+
+function DirectDownloadLink({
   href,
   small,
   children,
-  usePresigned = false,
-}: DownloadLinkProps) {
+}: Omit<DownloadLinkProps, "usePresigned">) {
   const { appendTokenToUrl } = useAuthToken();
-  const { getPresignedUrl, isLoading } = usePresignedUrl();
-  const [error, setError] = useState<string | null>(null);
 
-  const onClick = async (e: React.MouseEvent) => {
+  return (
+    <a
+      href={appendTokenToUrl(href)}
+      className={small ? styles.button.small : styles.button.inactive}
+      download
+    >
+      {children}
+    </a>
+  );
+}
+
+function PresignedDownloadLink({
+  href,
+  small,
+  children,
+}: Omit<DownloadLinkProps, "usePresigned">) {
+  const { getPresignedUrl, isLoading } = usePresignedUrl();
+  const [downloadUrl, setDownloadUrl] = useState<string>("#");
+  const [shouldDownload, setShouldDownload] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const linkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (shouldDownload && downloadUrl !== "#" && linkRef.current) {
+      linkRef.current.click();
+      setShouldDownload(false);
+    }
+  }, [downloadUrl, shouldDownload]);
+
+  const onClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (downloadUrl !== "#") {
+      return;
+    }
+
     e.preventDefault();
 
     try {
-      if (usePresigned) {
-        const url = await getPresignedUrl(href);
-        window.location.href = url;
-      } else {
-        window.location.href = appendTokenToUrl(href);
-      }
+      const url = await getPresignedUrl(href);
+      setDownloadUrl(url);
+      setShouldDownload(true);
     } catch (err) {
       console.error("Failed to get download URL:", err);
-      setError("Failed to start download");
+      setError("Failed to get download URL");
     }
   };
 
   return (
     <a
-      href="#"
+      ref={linkRef}
+      href={downloadUrl}
       onClick={onClick}
       className={`${small ? styles.button.small : styles.button.inactive} ${
         isLoading
@@ -60,9 +107,21 @@ export function DownloadLink({
           : ""
       }`}
       title={error || undefined}
+      download
     >
       {isLoading ? "Loading..." : children}
     </a>
+  );
+}
+
+export function DownloadLink({
+  usePresigned = false,
+  ...props
+}: DownloadLinkProps) {
+  return usePresigned ? (
+    <PresignedDownloadLink {...props} />
+  ) : (
+    <DirectDownloadLink {...props} />
   );
 }
 
@@ -93,7 +152,7 @@ export function ConvertAudioFile({
     } else {
       try {
         const url = await getPresignedUrl(href);
-        window.location.href = url;
+        await triggerDownload(url);
       } catch (err) {
         console.error("Failed to get download URL:", err);
       }
