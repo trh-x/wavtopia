@@ -240,7 +240,11 @@ router.get(
       }
 
       // Generate a presigned URL instead of streaming
-      const presignedUrl = await getFileUrl(filePath);
+      const presignedUrl = await getFileUrl(filePath, {
+        urlExpiryInSeconds: 2 * 60, // 2 minutes, for testing
+        cacheExpiryInSeconds: 1 * 60, // 1 minute, for testing
+        isAttachment: true,
+      });
       res.json({ url: presignedUrl });
     } catch (error) {
       next(error);
@@ -271,7 +275,11 @@ router.get(
       }
 
       // Generate a presigned URL instead of streaming
-      const presignedUrl = await getFileUrl(filePath);
+      const presignedUrl = await getFileUrl(filePath, {
+        urlExpiryInSeconds: 2 * 60, // 2 minutes, for testing
+        cacheExpiryInSeconds: 1 * 60, // 1 minute, for testing
+        isAttachment: true,
+      });
       res.json({ url: presignedUrl });
     } catch (error) {
       next(error);

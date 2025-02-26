@@ -1,6 +1,14 @@
-import { StorageService, config } from "@wavtopia/core-storage";
+import {
+  DEFAULT_URL_EXPIRY_SECONDS,
+  StorageService,
+  config,
+} from "@wavtopia/core-storage";
 import { AppError } from "../middleware/errorHandler";
 import internal from "stream";
+
+// Extract complex parameter types
+type GetFileUrlParams = Parameters<StorageService["getFileUrl"]>;
+type GetFileUrlOptions = NonNullable<GetFileUrlParams[1]>;
 
 const storageService = new StorageService(config.storage);
 
@@ -34,9 +42,20 @@ export async function deleteFile(fileName: string): Promise<void> {
   }
 }
 
-export async function getFileUrl(fileName: string): Promise<string> {
+export async function getFileUrl(
+  fileName: string,
+  {
+    urlExpiryInSeconds = DEFAULT_URL_EXPIRY_SECONDS,
+    cacheExpiryInSeconds,
+    isAttachment = false,
+  }: GetFileUrlOptions = {}
+): Promise<string> {
   try {
-    return await storageService.getFileUrl(fileName);
+    return await storageService.getFileUrl(fileName, {
+      urlExpiryInSeconds,
+      cacheExpiryInSeconds,
+      isAttachment,
+    });
   } catch (error) {
     console.error("Failed to get file URL:", error);
     throw new AppError(500, "Failed to get file URL");
