@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuthToken } from "./useAuthToken";
 
+// TODO: Can this be simplified using useQuery?
 export function usePresignedUrl() {
   const { getToken } = useAuthToken();
   const [isLoading, setIsLoading] = useState(false);
