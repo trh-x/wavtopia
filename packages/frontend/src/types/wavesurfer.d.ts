@@ -30,6 +30,7 @@ declare module "wavesurfer.js" {
     normalize?: boolean;
     partialRender?: boolean;
     peaks?: Float32Array[];
+    duration?: number;
   }
 
   class WaveSurfer {
@@ -37,8 +38,11 @@ declare module "wavesurfer.js" {
 
     static create(params: WaveSurferParams): WaveSurfer;
 
+    // Instance properties
+    options: WaveSurferParams;
+
     // Core methods
-    load(url: string): void;
+    load(url: string, peaks?: Float32Array[], duration?: number): void;
     play(start?: number, end?: number): void;
     pause(): void;
     stop(): void;
