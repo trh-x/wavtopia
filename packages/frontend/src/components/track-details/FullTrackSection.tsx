@@ -15,7 +15,7 @@ function AudioFileDownloadButton({
   format,
 }: AudioFileDownloadButtonProps) {
   const downloadProps = {
-    href: `/api/track/${track.id}/full.${format}`,
+    href: `/api/track/${track.id}/full.${format}?attachment`,
     children: format === "wav" ? "WAV" : "FLAC",
     usePresigned: true,
   };
@@ -62,7 +62,10 @@ export function FullTrackSection({ track }: FullTrackSectionProps) {
         <DownloadLink href={`/api/track/${track.id}/original`}>
           Download Original {track.originalFormat.toUpperCase()} File
         </DownloadLink>
-        <DownloadLink href={`/api/track/${track.id}/full.mp3`} usePresigned>
+        <DownloadLink
+          href={`/api/track/${track.id}/full.mp3?attachment`}
+          usePresigned
+        >
           MP3
         </DownloadLink>
         <AudioFileDownloadButton track={track} format="flac" />

@@ -152,7 +152,7 @@ export function ConvertAudioFile({
     } else {
       try {
         const url = await getPresignedUrl(href);
-        // TODO: Use the same pattern as the DownloadLink component for downloading the file
+        // FIXME: Use the same pattern as the DownloadLink component for downloading the file
         await triggerDownload(url);
       } catch (err) {
         console.error("Failed to get download URL:", err);
@@ -250,7 +250,7 @@ function StemAudioFileDownloadButton({
   format,
 }: StemAudioFileDownloadButtonProps) {
   const downloadProps = {
-    href: `/api/track/${track.id}/stem/${stem.id}.${format}`,
+    href: `/api/track/${track.id}/stem/${stem.id}.${format}?attachment`,
     children: format === "wav" ? "WAV" : "FLAC",
     small: true,
     usePresigned: true,
@@ -283,7 +283,7 @@ export function StemDownloadButtons({
   return (
     <div className="flex gap-2">
       <DownloadLink
-        href={`/api/track/${track.id}/stem/${stem.id}.mp3`}
+        href={`/api/track/${track.id}/stem/${stem.id}.mp3?attachment`}
         small
         usePresigned
       >

@@ -241,10 +241,17 @@ router.get(
 
       // Generate a presigned URL instead of streaming
       const presignedUrl = await getFileUrl(filePath, {
-        urlExpiryInSeconds: 2 * 60, // 2 minutes, for testing
-        cacheExpiryInSeconds: 1 * 60, // 1 minute, for testing
-        isAttachment: true,
+        // Expiry set to 2 minutes, for testing. TODO: Set to 7 days
+        urlExpiryInSeconds: 2 * 60,
+        cacheExpiryInSeconds: 2 * 60,
+        isAttachment: req.query.hasOwnProperty("attachment"),
       });
+
+      // Set cache control headers
+      // Cache expiry set to 1 minute, for testing. TODO: Set to 3.5 days
+      res.setHeader("Cache-Control", "public, max-age=60");
+      res.setHeader("Expires", new Date(Date.now() + 60 * 1000).toUTCString());
+
       res.json({ url: presignedUrl });
     } catch (error) {
       next(error);
@@ -276,10 +283,17 @@ router.get(
 
       // Generate a presigned URL instead of streaming
       const presignedUrl = await getFileUrl(filePath, {
-        urlExpiryInSeconds: 2 * 60, // 2 minutes, for testing
-        cacheExpiryInSeconds: 1 * 60, // 1 minute, for testing
-        isAttachment: true,
+        // Expiry set to 2 minutes, for testing. TODO: Set to 7 days
+        urlExpiryInSeconds: 2 * 60,
+        cacheExpiryInSeconds: 2 * 60,
+        isAttachment: req.query.hasOwnProperty("attachment"),
       });
+
+      // Set cache control headers
+      // Cache expiry set to 1 minute, for testing. TODO: Set to 3.5 days
+      res.setHeader("Cache-Control", "public, max-age=60");
+      res.setHeader("Expires", new Date(Date.now() + 60 * 1000).toUTCString());
+
       res.json({ url: presignedUrl });
     } catch (error) {
       next(error);
