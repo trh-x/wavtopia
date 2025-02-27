@@ -4,9 +4,8 @@ import { prisma } from "../lib/prisma";
 import jwt from "jsonwebtoken";
 import { AppError } from "../middleware/errorHandler";
 import { isEarlyAccessRequired } from "./featureFlags";
-
+import { config } from "../config";
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
-const SALT_ROUNDS = 10;
 
 interface UserSignupData {
   email: string;
@@ -118,12 +117,12 @@ export function generateToken(user: User): string {
     role: user.role,
   };
 
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign(payload, config.server.jwtSecret, { expiresIn: "7d" });
 }
 
 export function verifyToken(token: string): JWTPayload {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, config.server.jwtSecret) as JWTPayload;
   } catch (error) {
     throw new AppError(401, "Invalid token");
   }

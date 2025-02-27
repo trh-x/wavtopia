@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const ServerConfigSchema = z.object({
   port: z.number().default(3002),
-  // TODO: Remove jwtSecret if we don't need it
   jwtSecret: z.string().default("your-secret-key"),
 });
 

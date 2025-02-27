@@ -1,5 +1,4 @@
 import {
-  DEFAULT_URL_EXPIRY_SECONDS,
   StorageFile,
   StorageService,
   config,
@@ -7,10 +6,6 @@ import {
 } from "@wavtopia/core-storage";
 import fs from "fs/promises";
 import internal from "stream";
-
-// Extract complex parameter types
-type GetFileUrlParams = Parameters<StorageService["getFileUrl"]>;
-type GetFileUrlOptions = NonNullable<GetFileUrlParams[1]>;
 
 const storageService = new StorageService(config.storage);
 
@@ -28,21 +23,6 @@ export async function uploadFile(
 
 export async function deleteFile(fileName: string): Promise<void> {
   await storageService.deleteFile(fileName);
-}
-
-export async function getFileUrl(
-  fileName: string,
-  {
-    urlExpiryInSeconds = DEFAULT_URL_EXPIRY_SECONDS,
-    cacheExpiryInSeconds,
-    isAttachment = false,
-  }: GetFileUrlOptions = {}
-): Promise<string> {
-  return await storageService.getFileUrl(fileName, {
-    urlExpiryInSeconds,
-    cacheExpiryInSeconds,
-    isAttachment,
-  });
 }
 
 export async function getObject(fileName: string): Promise<internal.Readable> {
