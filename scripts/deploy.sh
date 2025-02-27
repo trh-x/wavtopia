@@ -47,17 +47,18 @@ debug_log() {
 check_prod_connection() {
     echo "Checking connection to production server..."
     
+    # Temporarily disable the exit-on-error behavior
+    set +e
+    
     # Capture the command output and exit status in one go
     local docker_output
     local exit_status
     
-    debug_log "Running docker context check"
-    # The || true prevents set -e from exiting the script if the command fails
-    docker_output=$(docker --context wavtopia-prod info 2>&1) || true
+    docker_output=$(docker --context wavtopia-prod info 2>&1)
     exit_status=$?
     
-    debug_log "Docker command completed with exit status: $exit_status"
-    debug_log "Docker command output length: ${#docker_output}"
+    # Re-enable exit-on-error behavior
+    set -e
     
     if [ $exit_status -ne 0 ]; then
         # Print the error for debugging if in debug mode
