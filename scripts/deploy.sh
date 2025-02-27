@@ -51,8 +51,13 @@ check_prod_connection() {
     local docker_output
     local exit_status
     
-    docker_output=$(docker --context wavtopia-prod info 2>&1)
+    debug_log "Running docker context check"
+    # The || true prevents set -e from exiting the script if the command fails
+    docker_output=$(docker --context wavtopia-prod info 2>&1) || true
     exit_status=$?
+    
+    debug_log "Docker command completed with exit status: $exit_status"
+    debug_log "Docker command output length: ${#docker_output}"
     
     if [ $exit_status -ne 0 ]; then
         # Print the error for debugging if in debug mode
@@ -488,8 +493,6 @@ bootstrap_prod() {
 verify_prod_volumes() {
     echo "Verifying production volume directories..."
     debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
-    
-    check_prod_connection
 
     # Get the remote host from the current context
     REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
@@ -586,6 +589,7 @@ case $COMMAND in
         test_registry
         ;;
     "verify-prod-volumes")
+        check_prod_connection
         verify_prod_volumes
         ;;
     "bootstrap-prod")
