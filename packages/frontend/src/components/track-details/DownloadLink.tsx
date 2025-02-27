@@ -22,25 +22,6 @@ interface ConvertAudioFileProps {
   children: React.ReactNode;
 }
 
-// Utility function to trigger a file download
-// TODO: Consider using StreamSaver.js or similar for streaming downloads of large files
-// instead of loading the entire file into memory
-async function triggerDownload(url: string) {
-  try {
-    // Create a temporary anchor element
-    const a = document.createElement("a");
-    a.style.display = "none";
-    a.href = url;
-    a.download = url.split("/").pop()?.split("?")[0] || "download";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch (error) {
-    console.error("Download failed:", error);
-    throw error;
-  }
-}
-
 function DirectDownloadLink({
   href,
   small,
@@ -141,37 +122,55 @@ export function ConvertAudioFile({
     stem,
     format,
   });
+  const [downloadUrl, setDownloadUrl] = useState<string>("#");
+  const [shouldDownload, setShouldDownload] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const linkRef = useRef<HTMLAnchorElement>(null);
 
   const showConversionIcon = status !== "COMPLETED";
+  const isLoading = isUrlLoading || isConverting;
+
+  useEffect(() => {
+    if (shouldDownload && downloadUrl !== "#" && linkRef.current) {
+      linkRef.current.click();
+      setShouldDownload(false);
+    }
+  }, [downloadUrl, shouldDownload]);
 
   const handleClick = async (e: React.MouseEvent) => {
+    if (downloadUrl !== "#") {
+      return;
+    }
+
     e.preventDefault();
 
     if (showConversionIcon) {
       startConversion();
-    } else {
+    } else if (downloadUrl === "#") {
       try {
         const url = await getPresignedUrl(href);
-        // FIXME: Use the same pattern as the DownloadLink component for downloading the file
-        await triggerDownload(url);
+        setDownloadUrl(url);
+        setShouldDownload(true);
       } catch (err) {
         console.error("Failed to get download URL:", err);
+        setError("Failed to get download URL");
       }
     }
   };
 
-  const isLoading = isUrlLoading || isConverting;
-
   // TODO: Add a tooltip to explain the conversion process
   return (
     <a
-      href="#"
+      ref={linkRef}
+      href={downloadUrl}
       onClick={handleClick}
       className={`inline-flex items-center space-x-1 ${
         small ? "text-sm" : ""
       } text-primary-600 hover:text-primary-700 font-medium ${
-        isLoading ? "opacity-50 cursor-wait" : ""
+        isLoading || error ? "opacity-50 cursor-wait" : ""
       }`}
+      title={error || undefined}
+      download
     >
       {showConversionIcon ? (
         isConverting ? (
