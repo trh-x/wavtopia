@@ -43,6 +43,52 @@ debug_log() {
     fi
 }
 
+# Function to check production connection
+check_prod_connection() {
+    echo "Checking connection to production server..."
+    
+    # Capture the command output and exit status in one go
+    local docker_output
+    local exit_status
+    
+    docker_output=$(docker --context wavtopia-prod info 2>&1)
+    exit_status=$?
+    
+    if [ $exit_status -ne 0 ]; then
+        # Print the error for debugging if in debug mode
+        debug_log "Docker command failed with output: $docker_output"
+        
+        # Check the captured output for specific error patterns
+        # Order from most specific to most general
+        if echo "$docker_output" | grep -q "Permission denied"; then
+            debug_log "Detected SSH permission denied error"
+            echo "SSH connection error: Permission denied."
+            echo "Please check your SSH keys and permissions."
+            debug_log "Full error: $(echo "$docker_output" | grep -o "ERROR:.*" | head -1)"
+            exit 1
+        elif echo "$docker_output" | grep -q "Connection refused\|No route to host\|Could not resolve host"; then
+            debug_log "Detected network connectivity error"
+            echo "SSH connection error: Server unreachable."
+            echo "Please check that the server is online and network connectivity is available."
+            debug_log "Full error: $(echo "$docker_output" | grep -o "ERROR:.*" | head -1)"
+            exit 1
+        elif echo "$docker_output" | grep -q "exit status"; then
+            debug_log "Detected SSH command execution error"
+            echo "SSH connection error: Command execution failed on remote host."
+            echo "Please check your SSH configuration and Docker installation on the remote server."
+            debug_log "Full error: $(echo "$docker_output" | grep -o "ERROR:.*" | head -1)"
+            exit 1
+        else
+            debug_log "Detected unknown connection error"
+            echo "Cannot connect to production server. Please run setup-remote first."
+            debug_log "Error: $(echo "$docker_output" | grep -o "ERROR:.*" | head -1 || echo "$docker_output" | head -1)"
+            exit 1
+        fi
+    fi
+    debug_log "Connection check successful"
+    echo "Connection to production server successful."
+}
+
 # Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -148,10 +194,7 @@ setup_tunnel() {
 # Function to test registry connection
 test_registry() {
     echo "Testing registry connection..."
-    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
-        echo "Cannot connect to production server. Please run setup-remote first."
-        exit 1
-    fi
+    check_prod_connection
 
     # Get the remote host from the current context
     REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
@@ -330,10 +373,7 @@ deploy_prod() {
     debug_log "Starting deployment process"
     debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
     
-    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
-        echo "Cannot connect to production server. Please run setup-remote first."
-        exit 1
-    fi
+    check_prod_connection
 
     # Verify required volume directories exist
     verify_prod_volumes
@@ -432,10 +472,7 @@ deploy_prod() {
 # Function to bootstrap production database
 bootstrap_prod() {
     echo "Bootstrapping production database..."
-    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
-        echo "Cannot connect to production server. Please run setup-remote first."
-        exit 1
-    fi
+    check_prod_connection
 
     # Run bootstrap command in production context
     docker context use wavtopia-prod
@@ -452,10 +489,7 @@ verify_prod_volumes() {
     echo "Verifying production volume directories..."
     debug_log "Using Docker volumes base path: $DOCKER_VOLUMES_BASE"
     
-    if ! docker --context wavtopia-prod info >/dev/null 2>&1; then
-        echo "Cannot connect to production server. Please run setup-remote first."
-        exit 1
-    fi
+    check_prod_connection
 
     # Get the remote host from the current context
     REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
