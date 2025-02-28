@@ -1,6 +1,15 @@
-import { StorageService, config } from "@wavtopia/core-storage";
+import {
+  DEFAULT_URL_EXPIRY_SECONDS,
+  StorageService,
+  config,
+} from "@wavtopia/core-storage";
+import { config as backendConfig } from "../config";
 import { AppError } from "../middleware/errorHandler";
 import internal from "stream";
+
+// Extract complex parameter types
+type GetFileUrlParams = Parameters<StorageService["getFileUrl"]>;
+type GetFileUrlOptions = NonNullable<GetFileUrlParams[1]>;
 
 const storageService = new StorageService(config.storage);
 
@@ -34,9 +43,42 @@ export async function deleteFile(fileName: string): Promise<void> {
   }
 }
 
-export async function getFileUrl(fileName: string): Promise<string> {
+export async function getFileUrl(
+  fileName: string,
+  {
+    urlExpiryInSeconds = DEFAULT_URL_EXPIRY_SECONDS,
+    cacheExpiryInSeconds,
+    isAttachment = false,
+  }: GetFileUrlOptions = {}
+): Promise<string> {
   try {
-    return await storageService.getFileUrl(fileName);
+    const minioUrl = await storageService.getFileUrl(fileName, {
+      urlExpiryInSeconds,
+      cacheExpiryInSeconds,
+      isAttachment,
+    });
+
+    // Check if URL transformation is enabled via environment variable
+    const transformEnabled =
+      process.env.STORAGE_URL_TRANSFORM_ENABLED === "true";
+
+    // Transform URL if enabled
+    if (
+      backendConfig.client.storageUrlTransformEnabled &&
+      backendConfig.client.publicUrl
+    ) {
+      const url = new URL(minioUrl);
+      const pathWithBucket = url.pathname;
+      // Use environment variable for the domain
+      const newUrl = new URL(
+        `/minio${pathWithBucket}${url.search}`,
+        backendConfig.client.publicUrl
+      );
+      return newUrl.toString();
+    }
+
+    // In development, return the original MinIO URL
+    return minioUrl;
   } catch (error) {
     console.error("Failed to get file URL:", error);
     throw new AppError(500, "Failed to get file URL");

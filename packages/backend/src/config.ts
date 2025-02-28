@@ -2,7 +2,6 @@ import { z } from "zod";
 
 export const ServerConfigSchema = z.object({
   port: z.number().default(3002),
-  // TODO: Remove jwtSecret if we don't need it
   jwtSecret: z.string().default("your-secret-key"),
 });
 
@@ -10,9 +9,15 @@ export const ServicesConfigSchema = z.object({
   mediaServiceUrl: z.string().url().default("http://localhost:3001"),
 });
 
+export const ClientConfigSchema = z.object({
+  publicUrl: z.string().url().default("http://localhost:5173"),
+  storageUrlTransformEnabled: z.boolean().default(false),
+});
+
 export const SharedConfigSchema = z.object({
   server: ServerConfigSchema,
   services: ServicesConfigSchema,
+  client: ClientConfigSchema,
 });
 
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;
@@ -27,6 +32,11 @@ function loadConfig(): SharedConfig {
     },
     services: {
       mediaServiceUrl: process.env.MEDIA_SERVICE_URL || "http://localhost:3001",
+    },
+    client: {
+      publicUrl: process.env.PUBLIC_URL || "http://localhost:5173",
+      storageUrlTransformEnabled:
+        process.env.STORAGE_URL_TRANSFORM_ENABLED === "true",
     },
   });
 }

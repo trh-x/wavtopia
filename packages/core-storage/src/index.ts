@@ -1,4 +1,8 @@
-export { StorageService, type StorageFile } from "./services/storage";
+export {
+  DEFAULT_URL_EXPIRY_SECONDS,
+  StorageService,
+  type StorageFile,
+} from "./services/storage";
 export { PrismaService } from "./services/prisma";
 export {
   deleteLocalFile,

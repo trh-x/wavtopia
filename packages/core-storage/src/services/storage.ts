@@ -5,6 +5,8 @@ import type { StorageConfig } from "../config";
 // TODO: Remove the reference to Express.Multer.File from this package
 export type StorageFile = Express.Multer.File;
 
+export const DEFAULT_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
+
 export class StorageService {
   private client: Client;
   private bucket: string;
@@ -87,13 +89,47 @@ export class StorageService {
 
   async getFileUrl(
     fileName: string,
-    expiryInSeconds: number = 7 * 24 * 60 * 60
+    {
+      urlExpiryInSeconds = DEFAULT_URL_EXPIRY_SECONDS,
+      cacheExpiryInSeconds,
+      isAttachment = false,
+    }: {
+      urlExpiryInSeconds?: number;
+      cacheExpiryInSeconds?: number;
+      isAttachment?: boolean;
+    } = {}
   ): Promise<string> {
     try {
+      // TODO: Implement client-side caching for downloaded files to reduce bandwidth costs
+      // Options considered:
+      // - IndexedDB: Large storage (80% of disk) but needs quota management
+      // - LocalStorage: Too small (~5-10MB)
+      // - Cache API: Good size but needs service worker
+      // Libraries available:
+      // - Workbox (Google): Full featured, handles quotas + service workers (recommended)
+      // - localforage: Simple key-value wrapper for IndexedDB
+      // - idb-keyval: Lightweight IndexedDB wrapper
+      // - StreamSaver.js: Specialized for large file downloads
+      // Recommendation: Use Workbox - handles quota management, cache expiration,
+      // and service worker setup. Implement after presigned URL work is complete.
+
+      // Add response header to prompt browser to download the file
+      const reqParams = {
+        ...(isAttachment && {
+          "response-content-disposition": `attachment; filename="${fileName
+            .split("/")
+            .pop()}"`,
+        }),
+        ...(cacheExpiryInSeconds && {
+          "response-cache-control": `public, max-age=${cacheExpiryInSeconds}`,
+        }),
+      };
+
       return await this.client.presignedGetObject(
         this.bucket,
         fileName,
-        expiryInSeconds
+        urlExpiryInSeconds,
+        reqParams
       );
     } catch (error) {
       console.error("Failed to get file URL:", error);

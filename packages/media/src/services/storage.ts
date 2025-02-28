@@ -16,17 +16,13 @@ export async function initializeStorage(): Promise<void> {
 
 export async function uploadFile(
   file: StorageFile,
-  prefix: string = ""
+  prefix = ""
 ): Promise<string> {
   return await storageService.uploadFile(file, prefix);
 }
 
 export async function deleteFile(fileName: string): Promise<void> {
   await storageService.deleteFile(fileName);
-}
-
-export async function getFileUrl(fileName: string): Promise<string> {
-  return await storageService.getFileUrl(fileName);
 }
 
 export async function getObject(fileName: string): Promise<internal.Readable> {

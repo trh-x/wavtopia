@@ -1,4 +1,6 @@
+import { useState, useEffect, useRef } from "react";
 import { useAuthToken } from "../../hooks/useAuthToken";
+import { usePresignedUrl } from "../../hooks/usePresignedUrl";
 import { styles } from "../../styles/common";
 import { useAudioFileConversion } from "../../hooks/useAudioFileConversion";
 import { Stem, Track } from "@/types";
@@ -7,6 +9,7 @@ interface DownloadLinkProps {
   href: string;
   small?: boolean;
   children: React.ReactNode;
+  usePresigned?: boolean;
 }
 
 interface ConvertAudioFileProps {
@@ -19,21 +22,87 @@ interface ConvertAudioFileProps {
   children: React.ReactNode;
 }
 
-export function DownloadLink({ href, small, children }: DownloadLinkProps) {
+function DirectDownloadLink({
+  href,
+  small,
+  children,
+}: Omit<DownloadLinkProps, "usePresigned">) {
   const { appendTokenToUrl } = useAuthToken();
-  const onClick = (e: React.MouseEvent) => {
+
+  return (
+    <a
+      href={appendTokenToUrl(href)}
+      className={small ? styles.button.small : styles.button.inactive}
+      download
+    >
+      {children}
+    </a>
+  );
+}
+
+function PresignedDownloadLink({
+  href,
+  small,
+  children,
+}: Omit<DownloadLinkProps, "usePresigned">) {
+  const { getPresignedUrl, isLoading } = usePresignedUrl();
+  const [downloadUrl, setDownloadUrl] = useState<string>("#");
+  const [shouldDownload, setShouldDownload] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const linkRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (shouldDownload && downloadUrl !== "#" && linkRef.current) {
+      linkRef.current.click();
+      setShouldDownload(false);
+    }
+  }, [downloadUrl, shouldDownload]);
+
+  const onClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (downloadUrl !== "#") {
+      return;
+    }
+
     e.preventDefault();
-    window.location.href = appendTokenToUrl(href);
+
+    try {
+      const url = await getPresignedUrl(href);
+      setDownloadUrl(url);
+      setShouldDownload(true);
+    } catch (err) {
+      console.error("Failed to get download URL:", err);
+      setError("Failed to get download URL");
+    }
   };
 
   return (
     <a
-      href={href}
+      ref={linkRef}
+      href={downloadUrl}
       onClick={onClick}
-      className={small ? styles.button.small : styles.button.inactive}
+      className={`${small ? styles.button.small : styles.button.inactive} ${
+        isLoading
+          ? "opacity-50 cursor-wait"
+          : error
+          ? "opacity-50 cursor-not-allowed"
+          : ""
+      }`}
+      title={error || undefined}
+      download
     >
       {children}
     </a>
+  );
+}
+
+export function DownloadLink({
+  usePresigned = false,
+  ...props
+}: DownloadLinkProps) {
+  return usePresigned ? (
+    <PresignedDownloadLink {...props} />
+  ) : (
+    <DirectDownloadLink {...props} />
   );
 }
 
@@ -46,34 +115,61 @@ export function ConvertAudioFile({
   format,
   children,
 }: ConvertAudioFileProps) {
-  const { appendTokenToUrl } = useAuthToken();
+  const { getPresignedUrl, isLoading: isUrlLoading } = usePresignedUrl();
   const { status, isConverting, startConversion } = useAudioFileConversion({
     track,
     type,
     stem,
     format,
   });
+  const [downloadUrl, setDownloadUrl] = useState<string>("#");
+  const [shouldDownload, setShouldDownload] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const linkRef = useRef<HTMLAnchorElement>(null);
 
   const showConversionIcon = status !== "COMPLETED";
+  const isLoading = isUrlLoading || isConverting;
+
+  useEffect(() => {
+    if (shouldDownload && downloadUrl !== "#" && linkRef.current) {
+      linkRef.current.click();
+      setShouldDownload(false);
+    }
+  }, [downloadUrl, shouldDownload]);
 
   const handleClick = async (e: React.MouseEvent) => {
+    if (downloadUrl !== "#") {
+      return;
+    }
+
     e.preventDefault();
 
     if (showConversionIcon) {
       startConversion();
-    } else {
-      window.location.href = appendTokenToUrl(href);
+    } else if (downloadUrl === "#") {
+      try {
+        const url = await getPresignedUrl(href);
+        setDownloadUrl(url);
+        setShouldDownload(true);
+      } catch (err) {
+        console.error("Failed to get download URL:", err);
+        setError("Failed to get download URL");
+      }
     }
   };
 
   // TODO: Add a tooltip to explain the conversion process
   return (
     <a
-      href={status === "COMPLETED" ? href : "#"}
+      ref={linkRef}
+      href={downloadUrl}
       onClick={handleClick}
       className={`inline-flex items-center space-x-1 ${
         small ? "text-sm" : ""
-      } text-primary-600 hover:text-primary-700 font-medium`}
+      } text-primary-600 hover:text-primary-700 font-medium ${
+        isLoading || error ? "opacity-50 cursor-wait" : ""
+      }`}
+      title={error || undefined}
       download
     >
       {showConversionIcon ? (
@@ -120,24 +216,25 @@ export function ConvertAudioFile({
   );
 }
 
-interface AudioFileDownloadButtonProps {
+interface StemAudioFileDownloadButtonProps {
   track: Track;
   stem: Stem;
   format: "wav" | "flac";
 }
 
-function AudioFileDownloadButton({
+function StemAudioFileDownloadButton({
   track,
   stem,
   format,
-}: AudioFileDownloadButtonProps) {
+}: StemAudioFileDownloadButtonProps) {
   const downloadProps = {
-    href: `/api/track/${track.id}/stem/${stem.id}.${format}`,
+    href: `/api/track/${track.id}/stem/${stem.id}.${format}?attachment`,
     children: format === "wav" ? "WAV" : "FLAC",
     small: true,
+    usePresigned: true,
   };
 
-  const audioFileUrl = format === "wav" ? stem?.wavUrl : stem?.flacUrl;
+  const audioFileUrl = format === "wav" ? stem.wavUrl : stem.flacUrl;
 
   if (audioFileUrl) {
     return <DownloadLink {...downloadProps} />;
@@ -163,11 +260,15 @@ export function StemDownloadButtons({
 }) {
   return (
     <div className="flex gap-2">
-      <DownloadLink href={`/api/track/${track.id}/stem/${stem.id}.mp3`} small>
+      <DownloadLink
+        href={`/api/track/${track.id}/stem/${stem.id}.mp3?attachment`}
+        small
+        usePresigned
+      >
         MP3
       </DownloadLink>
-      <AudioFileDownloadButton track={track} stem={stem} format="flac" />
-      <AudioFileDownloadButton track={track} stem={stem} format="wav" />
+      <StemAudioFileDownloadButton track={track} stem={stem} format="flac" />
+      <StemAudioFileDownloadButton track={track} stem={stem} format="wav" />
     </div>
   );
 }
