@@ -50,12 +50,13 @@ router.post("/invite-codes", async (req, res) => {
   if (!req.user) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  const { maxUses, expiresAt } = req.body;
+  const { maxUses, expiresAt, reference } = req.body;
   const code = await prisma.inviteCode.create({
     data: {
       code: generateInviteCode(),
       maxUses: maxUses ?? 1,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
+      reference: reference || null,
       createdBy: req.user.id,
     },
   });

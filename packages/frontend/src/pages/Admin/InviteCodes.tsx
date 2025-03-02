@@ -9,6 +9,7 @@ export function InviteCodesAdmin() {
   const [newCode, setNewCode] = useState({
     maxUses: 1,
     expiresAt: "",
+    reference: "",
   });
   const [loading, setLoading] = useState(true);
   const { getToken } = useAuthToken();
@@ -42,8 +43,9 @@ export function InviteCodesAdmin() {
       await api.admin.createInviteCode(token, {
         maxUses: newCode.maxUses,
         expiresAt: newCode.expiresAt ? new Date(newCode.expiresAt) : undefined,
+        reference: newCode.reference || undefined,
       });
-      setNewCode({ maxUses: 1, expiresAt: "" });
+      setNewCode({ maxUses: 1, expiresAt: "", reference: "" });
       await loadCodes();
     } catch (error) {
       console.error("Failed to create invite code:", error);
@@ -79,6 +81,15 @@ export function InviteCodesAdmin() {
             required
           />
           <FormInput
+            type="text"
+            label="Reference"
+            value={newCode.reference}
+            onChange={(e) =>
+              setNewCode({ ...newCode, reference: e.target.value })
+            }
+            placeholder="Optional reference or note"
+          />
+          <FormInput
             type="datetime-local"
             label="Expires At"
             value={newCode.expiresAt}
@@ -91,8 +102,9 @@ export function InviteCodesAdmin() {
       </div>
 
       <div className="grid gap-4">
-        <div className="grid grid-cols-6 font-semibold p-4 bg-gray-100 rounded">
+        <div className="grid grid-cols-7 font-semibold p-4 bg-gray-100 rounded">
           <div>Code</div>
+          <div>Reference</div>
           <div>Uses</div>
           <div>Max Uses</div>
           <div>Expires</div>
@@ -102,9 +114,10 @@ export function InviteCodesAdmin() {
         {codes.map((code) => (
           <div
             key={code.id}
-            className="grid grid-cols-6 p-4 border rounded items-center"
+            className="grid grid-cols-7 p-4 border rounded items-center"
           >
             <div className="font-mono">{code.code}</div>
+            <div>{code.reference || "-"}</div>
             <div>{code.usedCount}</div>
             <div>{code.maxUses}</div>
             <div>

@@ -181,6 +181,7 @@ model Stem {
 model InviteCode {
   id          String    @id @default(uuid())
   code        String    @unique
+  reference   String?   // Optional reference field
   maxUses     Int       @default(1)
   usedCount   Int       @default(0) @map("used_count")
   expiresAt   DateTime? @map("expires_at")

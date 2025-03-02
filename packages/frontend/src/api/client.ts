@@ -129,7 +129,7 @@ export const api = {
 
     createInviteCode: async (
       token: string,
-      data: { maxUses?: number; expiresAt?: Date }
+      data: { maxUses?: number; expiresAt?: Date; reference?: string }
     ) => {
       return apiRequest("/admin/invite-codes", {
         method: "POST",
