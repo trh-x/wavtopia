@@ -69,9 +69,10 @@ export async function getFileUrl(
     ) {
       const url = new URL(minioUrl);
       const pathWithBucket = url.pathname;
-      // Use environment variable for the domain
+      // Replace /wavtopia/ with /storage/ in the path
+      const newPath = pathWithBucket.replace(/^\/wavtopia\//, "/storage/");
       const newUrl = new URL(
-        `/minio${pathWithBucket}${url.search}`,
+        `${newPath}${url.search}`,
         backendConfig.client.publicUrl
       );
       return newUrl.toString();

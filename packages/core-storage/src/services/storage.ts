@@ -10,6 +10,7 @@ export const DEFAULT_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 days
 export class StorageService {
   private client: Client;
   private bucket: string;
+  private accessKey: string;
 
   constructor(config: StorageConfig) {
     const { secretKey, ...rest } = config;
@@ -26,28 +27,52 @@ export class StorageService {
     });
 
     this.bucket = config.bucket;
+    this.accessKey = config.accessKey;
   }
 
   async initialize(): Promise<void> {
     try {
       const exists = await this.client.bucketExists(this.bucket);
+
+      // Create bucket if it doesn't exist
       if (!exists) {
         await this.client.makeBucket(this.bucket);
-        // Make bucket public for downloads
-        const policy = {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: { AWS: ["*"] },
-              Action: ["s3:GetObject"],
-              Resource: [`arn:aws:s3:::${this.bucket}/*`],
-            },
-          ],
-        };
-        await this.client.setBucketPolicy(this.bucket, JSON.stringify(policy));
         console.log(`Created bucket: ${this.bucket}`);
       }
+
+      // Apply security policy to new or existing bucket
+      const policy = {
+        Version: "2012-10-17",
+        Statement: [
+          {
+            Sid: "DenyDirectAccess",
+            Effect: "Deny",
+            Principal: "*",
+            Action: ["s3:GetObject"],
+            Resource: [`arn:aws:s3:::${this.bucket}/*`],
+            Condition: {
+              StringNotEquals: {
+                "aws:username": this.accessKey,
+              },
+            },
+          },
+          {
+            Sid: "AllowApplicationAccess",
+            Effect: "Allow",
+            Principal: "*",
+            Action: ["s3:GetObject"],
+            Resource: [`arn:aws:s3:::${this.bucket}/*`],
+            Condition: {
+              StringEquals: {
+                "aws:username": this.accessKey,
+              },
+            },
+          },
+        ],
+      };
+
+      await this.client.setBucketPolicy(this.bucket, JSON.stringify(policy));
+      console.log(`Applied security policy to bucket: ${this.bucket}`);
     } catch (error) {
       console.error("Failed to initialize storage:", error);
       throw error;
