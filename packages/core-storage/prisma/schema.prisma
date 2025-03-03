@@ -175,6 +175,7 @@ model Stem {
   updatedAt             DateTime                   @updatedAt @map("updated_at")
 
   @@unique([trackId, index])
+  @@index([trackId])
   @@index([wavLastRequestedAt])
   @@index([flacLastRequestedAt])
   @@map("stems")
