@@ -45,58 +45,58 @@ enum TrackStatus {
 // Potential additional fields for Track model:
 //
 // 1. Release Information:
-// - releaseDate: DateTime - The official release date of the track
-// - originalReleaseDate: DateTime - For re-releases or remasters
-// - recordLabel: String - The record label that released the track
-// - catalogNumber: String - The label's catalog reference number
+// - [ ] releaseDate: DateTime - The official release date of the track
+// - [ ] originalReleaseDate: DateTime - For re-releases or remasters
+// - [ ] recordLabel: String - The record label that released the track
+// - [ ] catalogNumber: String - The label's catalog reference number
 //
 // 2. Musical Information:
-// - bpm: Float - Beats per minute
-// - key: String - Musical key of the track
-// - isrc: String - International Standard Recording Code
-// - genre: String[] - Multiple genres can be applicable
-// - mood: String[] - Emotional categorization (e.g., "energetic", "melancholic")
-// - language: String - Language of the lyrics
+// - [ ] bpm: Float - Beats per minute
+// - [ ] key: String - Musical key of the track
+// - [ ] isrc: String - International Standard Recording Code
+// - [ ] genre: String[] - Multiple genres can be applicable
+// - [ ] mood: String[] - Emotional categorization (e.g., "energetic", "melancholic")
+// - [ ] language: String - Language of the lyrics
 //
 // 3. Credits:
-// - composers: String[] - Song writers
-// - producers: String[] - Track producers
-// - features: String[] - Featured artists
-// - performers: String[] - Session musicians or band members
-// - credits: Json - Detailed production credits
+// - [ ] composers: String[] - Song writers
+// - [ ] producers: String[] - Track producers
+// - [ ] features: String[] - Featured artists
+// - [ ] performers: String[] - Session musicians or band members
+// - [ ] credits: Json - Detailed production credits
 //
 // 4. Technical Information:
-// - replayGain: Float - Volume normalization value
-// - peakAmplitude: Float - Maximum amplitude in the track
-// - encodingTechnology: String - Original recording technology
-// - recordingLocation: String - Studio or venue where recorded
-// - mixEngineer: String - Mix engineer name
-// - masteringEngineer: String - Mastering engineer name
+// - [ ] replayGain: Float - Volume normalization value
+// - [ ] peakAmplitude: Float - Maximum amplitude in the track
+// - [ ] encodingTechnology: String - Original recording technology
+// - [ ] recordingLocation: String - Studio or venue where recorded
+// - [ ] mixEngineer: String - Mix engineer name
+// - [ ] masteringEngineer: String - Mastering engineer name
 //
 // 5. Commercial/Rights:
-// - copyright: String - Copyright notice
-// - license: String - Licensing terms
-// - publisher: String - Music publisher
-// - pLine: String - Phonographic copyright line
-// - cLine: String - Copyright line
+// - [ ] copyright: String - Copyright notice
+// - [ ] license: String - Licensing terms
+// - [ ] publisher: String - Music publisher
+// - [ ] pLine: String - Phonographic copyright line
+// - [ ] cLine: String - Copyright line
 //
 // 6. Additional Metadata:
-// - lyrics: String - Song lyrics
-// - description: String - Track description or notes
-// - tags: String[] - Searchable keywords
-// - explicit: Boolean - Whether the track contains explicit content
-// - remixedBy: String - For remix versions
-// - version: String - Type of version (e.g., "Radio Edit", "Extended Mix")
-// - partOfAlbum: Boolean - Whether the track belongs to an album
-// - albumName: String - Name of the album if applicable
-// - trackNumber: Int - Position in album if applicable
-// - discNumber: Int - For multi-disc albums
+// - [ ] lyrics: String - Song lyrics
+// - [ ] description: String - Track description or notes
+// - [ ] tags: String[] - Searchable keywords
+// - [ ] explicit: Boolean - Whether the track contains explicit content
+// - [ ] remixedBy: String - For remix versions
+// - [ ] version: String - Type of version (e.g., "Radio Edit", "Extended Mix")
+// - [ ] partOfAlbum: Boolean - Whether the track belongs to an album
+// - [ ] albumName: String - Name of the album if applicable
+// - [ ] trackNumber: Int - Position in album if applicable
+// - [ ] discNumber: Int - For multi-disc albums
 //
 // These fields follow standards from:
-// - ID3 tags (the metadata standard for MP3s)
-// - MusicBrainz database schema
-// - Streaming platform metadata systems
-// - Industry-standard music databases like Gracenote
+// - [ ] ID3 tags (the metadata standard for MP3s)
+// - [ ] MusicBrainz database schema
+// - [ ] Streaming platform metadata systems
+// - [ ] Industry-standard music databases like Gracenote
 
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
 // the exception of originalUrl, which is a file:// URL until the track is converted).
