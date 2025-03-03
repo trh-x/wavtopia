@@ -128,14 +128,14 @@ model Track {
   flacCreatedAt         DateTime?                  @map("flac_created_at")
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
 
-  @@index([status, createdAt, id])
-  @@index([status, title, id])
-  @@index([status, artist, id])
-  @@index([status, duration, id])
+  // TODO: Audit these indexes and remove any that are not needed.
   @@index([originalFormat, wavLastRequestedAt])
   @@index([originalFormat, flacLastRequestedAt])
-  @@index([status, userId])
   @@index([id, status])
+  @@index([status, userId, title, createdAt, id])
+  @@index([status, userId, artist, createdAt, id])
+  @@index([status, userId, duration, createdAt, id])
+  @@index([status, isPublic, createdAt, id])
   @@map("tracks")
 }
 
@@ -150,6 +150,7 @@ model TrackShare {
 
   @@unique([trackId, userId])
   @@index([trackId])
+  @@index([userId])
   @@map("track_shares")
 }
 
