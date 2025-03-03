@@ -135,6 +135,7 @@ model Track {
   @@index([originalFormat, wavLastRequestedAt])
   @@index([originalFormat, flacLastRequestedAt])
   @@index([status, userId])
+  @@index([id, status])
   @@map("tracks")
 }
 
@@ -148,6 +149,7 @@ model TrackShare {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([trackId, userId])
+  @@index([trackId])
   @@map("track_shares")
 }
 

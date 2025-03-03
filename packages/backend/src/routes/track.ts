@@ -53,13 +53,19 @@ const authenticateTrackAccess: RequestHandler = async (
 
     console.log("Authenticating track access for track:", trackId);
 
-    // First check if track is public
+    // Fetch track with all fields but minimal relations
     const track = await prisma.track.findUnique({
       where: {
         id: trackId,
         status: TrackStatus.ACTIVE,
       },
-      include: { sharedWith: true },
+      include: {
+        sharedWith: {
+          select: {
+            userId: true,
+          },
+        },
+      },
     });
 
     if (!track) {
@@ -99,44 +105,11 @@ const authenticateTrackAccess: RequestHandler = async (
     }
 
     // Store the track in the request for later use
-    const reqTrack = await prisma.track.findUnique({
-      where: {
-        id: trackId,
-        status: TrackStatus.ACTIVE,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-          },
-        },
-        stems: true,
-        sharedWith: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                username: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!reqTrack) {
-      return next(new AppError(404, "Track not found"));
-    }
-
-    // Omit some fields for public tracks when user is not authenticated
-    if (reqTrack.isPublic && !req.user) {
-      const { sharedWith, ...publicTrack } = reqTrack;
+    if (track.isPublic && !req.user) {
+      const { sharedWith, ...publicTrack } = track;
       (req as any).track = publicTrack; // TODO: Fix this `any`
     } else {
-      (req as any).track = reqTrack; // TODO: Fix this `any`
+      (req as any).track = track; // TODO: Fix this `any`
     }
 
     next();
@@ -148,8 +121,56 @@ const authenticateTrackAccess: RequestHandler = async (
 // Get single track
 router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
   try {
-    const track = (req as any).track; // TODO: Fix this `any`
-    res.json(track);
+    const baseTrack = (req as any).track;
+
+    // Execute all three queries as a single transaction without referencing the tracks table
+    // This sends all queries to the database in a single round trip
+    const [user, stems, sharedUsers] = await prisma.$transaction([
+      // Get owner directly by ID
+      prisma.user.findUnique({
+        where: { id: baseTrack.userId },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+        },
+      }),
+
+      // Get stems directly by trackId
+      prisma.stem.findMany({
+        where: { trackId: baseTrack.id },
+      }),
+
+      // Get shared users directly by trackId
+      prisma.trackShare.findMany({
+        where: { trackId: baseTrack.id },
+        select: {
+          id: true,
+          userId: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (!user) {
+      return next(new AppError(404, "Track owner not found"));
+    }
+
+    // Combine everything into the final response
+    const fullTrack = {
+      ...baseTrack,
+      user,
+      stems,
+      sharedWith: sharedUsers,
+    };
+
+    res.json(fullTrack);
   } catch (error) {
     next(error);
   }
