@@ -104,7 +104,10 @@ enum TrackStatus {
 model Track {
   id                    String                     @id @default(uuid())
   title                 String
-  artist                String
+  primaryArtistId       String                     @map("primary_artist_id")
+  primaryArtist         Artist                     @relation("PrimaryArtist", fields: [primaryArtistId], references: [id])
+  // primaryArtistName is denormalized from Artist
+  primaryArtistName     String?                    @map("primary_artist_name")
   originalFormat        SourceFormat               @map("original_format")
   originalUrl           String                     @map("original_url")
   fullTrackWavUrl       String?                    @map("full_track_wav_url")
@@ -172,7 +175,7 @@ model Track {
   albums              TrackAlbum[]
   // TODO: Add denormalized array for album names if needed
   credits             TrackCredit[]
-  // artistNames is denormalized from Artist via TrackCredit
+  // artistNames is denormalized from Artist via TrackCredit and from the primaryArtistName field
   artistNames         String[]     @default([]) @map("artist_names")
   moods               TrackMood[]
   moodNames           String[]     @default([]) @map("mood_names")
@@ -188,7 +191,8 @@ model Track {
   @@index([originalFormat, flacLastRequestedAt])
   @@index([id, status])
   @@index([status, userId, title, createdAt, id])
-  @@index([status, userId, artist, createdAt, id])
+  @@index([status, userId, primaryArtistId, createdAt, id])
+  @@index([status, userId, primaryArtistName, createdAt, id])
   @@index([status, userId, duration, createdAt, id])
   @@index([status, isPublic, createdAt, id])
   @@map("tracks")
