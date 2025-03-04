@@ -137,9 +137,11 @@ model Track {
   isExplicit          Boolean      @default(false) @map("is_explicit")
   
   // Release Information
-  releaseDate         DateTime?    @map("release_date")
-  originalReleaseDate DateTime?    @map("original_release_date")
-  catalogNumber       String?      @map("catalog_number")
+  releaseDate                   DateTime?                     @map("release_date")
+  releaseDatePrecision          DatePrecision?  @default(DAY) @map("release_date_precision")
+  originalReleaseDate           DateTime?                     @map("original_release_date")
+  originalReleaseDatePrecision  DatePrecision?  @default(DAY) @map("original_release_date_precision")
+  catalogNumber                 String?                       @map("catalog_number")
   
   // Commercial/Rights Information
   copyright           String?
@@ -317,4 +319,10 @@ enum AudioFileConversionStatus {
   IN_PROGRESS
   COMPLETED
   FAILED
+}
+
+enum DatePrecision {
+  YEAR
+  MONTH
+  DAY
 }
