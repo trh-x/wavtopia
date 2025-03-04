@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../node_modules/.prisma/client"
+  previewFeatures = ["prismaSchemaFolder"]
 }
 
 datasource db {
@@ -127,6 +128,52 @@ model Track {
   wavLastRequestedAt    DateTime?                  @map("wav_last_requested_at")
   flacCreatedAt         DateTime?                  @map("flac_created_at")
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
+
+    // Musical Information
+  bpm                 Float?
+  key                 String?
+  isrc                String?      @map("isrc") // International Standard Recording Code
+  language            String?
+  isExplicit          Boolean      @default(false) @map("is_explicit")
+  
+  // Release Information
+  releaseDate         DateTime?    @map("release_date")
+  originalReleaseDate DateTime?    @map("original_release_date")
+  catalogNumber       String?      @map("catalog_number")
+  
+  // Commercial/Rights Information
+  copyright           String?
+  pLine               String?      @map("p_line") // Phonographic copyright line
+  cLine               String?      @map("c_line") // Copyright line
+  
+  // Additional Metadata
+  lyrics              String?
+  description         String?
+  version             String?      // e.g., "Radio Edit", "Extended Mix"
+  remixedBy           String?      @map("remixed_by")
+  
+  // Technical Information
+  replayGain          Float?       @map("replay_gain")
+  peakAmplitude       Float?       @map("peak_amplitude")
+  encodingTechnology  String?      @map("encoding_technology")
+  recordingLocation   String?      @map("recording_location")
+  
+  // Relationships to normalized tables
+  recordLabelId       String?      @map("record_label_id")
+  recordLabel         RecordLabel? @relation(fields: [recordLabelId], references: [id])
+  licenseId           String?      @map("license_id")
+  license             License?     @relation(fields: [licenseId], references: [id])
+  
+  // Many-to-many relationships
+  genres              TrackGenre[]
+  albums              TrackAlbum[]
+  credits             TrackCredit[]
+  moods               TrackMood[]
+  tags                TrackTag[]
+  
+  // Full-text search field (can be maintained by a trigger in PostgreSQL)
+  // Note: This requires custom SQL as Prisma doesn't directly support tsvector
+  // searchVector       Unsupported("tsvector")?  @map("search_vector")
 
   // TODO: Audit these indexes and remove any that are not needed.
   @@index([originalFormat, wavLastRequestedAt])

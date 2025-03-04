@@ -1,0 +1,179 @@
+// This file contains extensions to the Track model and related entities
+// It is meant to be used alongside the main schema.prisma file
+
+// Record Label - A company that publishes and promotes music
+model RecordLabel {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  website     String?
+  logoUrl     String?   @map("logo_url")
+  description String?
+  tracks      Track[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@map("record_labels")
+}
+
+// Genre - Musical classification
+model Genre {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  tracks      TrackGenre[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  
+  @@map("genres")
+}
+
+// TrackGenre - Many-to-many relationship between Track and Genre
+model TrackGenre {
+  id        String   @id @default(uuid())
+  trackId   String   @map("track_id")
+  track     Track    @relation(fields: [trackId], references: [id])
+  genreId   String   @map("genre_id")
+  genre     Genre    @relation(fields: [genreId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([trackId, genreId])
+  @@map("track_genres")
+}
+
+// Album - Collection of tracks
+model Album {
+  id          String       @id @default(uuid())
+  title       String
+  releaseDate DateTime?    @map("release_date")
+  coverArtUrl String?      @map("cover_art_url")
+  description String?
+  tracks      TrackAlbum[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  
+  @@map("albums")
+}
+
+// TrackAlbum - Many-to-many relationship between Track and Album
+model TrackAlbum {
+  id          String   @id @default(uuid())
+  trackId     String   @map("track_id")
+  track       Track    @relation(fields: [trackId], references: [id])
+  albumId     String   @map("album_id")
+  album       Album    @relation(fields: [albumId], references: [id])
+  trackNumber Int?     @map("track_number")
+  discNumber  Int?     @map("disc_number")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([trackId, albumId])
+  @@map("track_albums")
+}
+
+// Artist - A person or group who creates or performs music
+model Artist {
+  id             String           @id @default(uuid())
+  name           String
+  bio            String?
+  imageUrl       String?          @map("image_url")
+  website        String?
+  trackCredits   TrackCredit[]
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  
+  @@map("artists")
+}
+
+// Credit types for track contributors
+enum CreditType {
+  COMPOSER
+  PRODUCER
+  FEATURED_ARTIST
+  PERFORMER
+  MIX_ENGINEER
+  MASTERING_ENGINEER
+  LYRICIST
+  ARRANGER
+}
+
+// TrackCredit - Relationship between Track and Artist with role
+model TrackCredit {
+  id        String     @id @default(uuid())
+  trackId   String     @map("track_id")
+  track     Track      @relation(fields: [trackId], references: [id])
+  artistId  String     @map("artist_id")
+  artist    Artist     @relation(fields: [artistId], references: [id])
+  creditType CreditType @map("credit_type")
+  role      String?    // Optional specific role description
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@unique([trackId, artistId, creditType])
+  @@map("track_credits")
+}
+
+// Mood - Emotional categorization of tracks
+model Mood {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String?
+  tracks      TrackMood[]
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  
+  @@map("moods")
+}
+
+// TrackMood - Many-to-many relationship between Track and Mood
+model TrackMood {
+  id        String   @id @default(uuid())
+  trackId   String   @map("track_id")
+  track     Track    @relation(fields: [trackId], references: [id])
+  moodId    String   @map("mood_id")
+  mood      Mood     @relation(fields: [moodId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([trackId, moodId])
+  @@map("track_moods")
+}
+
+// Tag - Searchable keywords for tracks
+model Tag {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  description String?
+  tracks      TrackTag[]
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  
+  @@map("tags")
+}
+
+// TrackTag - Many-to-many relationship between Track and Tag
+model TrackTag {
+  id        String   @id @default(uuid())
+  trackId   String   @map("track_id")
+  track     Track    @relation(fields: [trackId], references: [id])
+  tagId     String   @map("tag_id")
+  tag       Tag      @relation(fields: [tagId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([trackId, tagId])
+  @@map("track_tags")
+}
+
+// License - Legal terms for track usage
+model License {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  terms       String?
+  tracks      Track[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("licenses")
+} 
