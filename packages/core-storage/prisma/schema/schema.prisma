@@ -166,12 +166,18 @@ model Track {
   licenseId           String?      @map("license_id")
   license             License?     @relation(fields: [licenseId], references: [id])
   
-  // Many-to-many relationships
+  // Many-to-many relationships, plus denormalized arrays for efficient filtering
   genres              TrackGenre[]
+  genreNames          String[]     @default([]) @map("genre_names")
   albums              TrackAlbum[]
+  // TODO: Add denormalized array for album names if needed
   credits             TrackCredit[]
+  // artistNames is denormalized from Artist via TrackCredit
+  artistNames         String[]     @default([]) @map("artist_names")
   moods               TrackMood[]
+  moodNames           String[]     @default([]) @map("mood_names")
   tags                TrackTag[]
+  tagNames            String[]     @default([]) @map("tag_names")
   
   // Full-text search field (can be maintained by a trigger in PostgreSQL)
   // Note: This requires custom SQL as Prisma doesn't directly support tsvector

@@ -45,6 +45,7 @@ model TrackGenre {
 model Album {
   id          String       @id @default(uuid())
   title       String
+  // TODO: Add release date precision
   releaseDate DateTime?    @map("release_date")
   coverArtUrl String?      @map("cover_art_url")
   description String?
