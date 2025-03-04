@@ -107,6 +107,8 @@ model Track {
   primaryArtistId       String                     @map("primary_artist_id")
   primaryArtist         Artist                     @relation("PrimaryArtist", fields: [primaryArtistId], references: [id])
   // primaryArtistName is denormalized from Artist
+  // See packages/core-storage/prisma/migrations/20250304005245_add_primary_artist_name/migration.sql
+  // for the trigger that keeps the primaryArtistName field in sync with the primaryArtistId field.
   primaryArtistName     String?                    @map("primary_artist_name")
   originalFormat        SourceFormat               @map("original_format")
   originalUrl           String                     @map("original_url")
@@ -170,6 +172,10 @@ model Track {
   license             License?     @relation(fields: [licenseId], references: [id])
   
   // Many-to-many relationships, plus denormalized arrays for efficient filtering
+  // See packages/core-storage/prisma/migrations/20250304005244_add_denormalized_arrays/migration.sql
+  // and packages/core-storage/prisma/migrations/20250304005245_add_primary_artist_name/migration.sql
+  // for triggers that keep the denormalized arrays in sync with the related tables,
+  // and GIN indexes on the arrays for efficient filtering.
   genres              TrackGenre[]
   genreNames          String[]     @default([]) @map("genre_names")
   albums              TrackAlbum[]
