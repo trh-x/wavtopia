@@ -226,3 +226,76 @@ const searchResults = await prisma.$queryRaw`
    - Parallel-safe functions
    - Optimized change detection
    - Minimal redundant processing
+
+### Maintenance Functions
+
+The implementation includes several utility functions for maintaining search vectors. The initial setup is handled automatically during migration, but these functions are available for maintenance and troubleshooting:
+
+1. **Batch Update Function**:
+
+   ```sql
+   -- Update search vectors for all tracks
+   SELECT update_all_tracks_search_vector();
+   ```
+
+   - Updates both search vectors and hashes in a single batch operation
+   - Useful for rebuilding search vectors if needed
+   - Uses a single UPDATE statement to minimize database load
+   - Automatically run during migration for initial setup
+
+2. **Single Track Update**:
+
+   ```sql
+   -- Update search vector for a specific track
+   SELECT update_track_search_vector('track-uuid');
+   ```
+
+   - Updates search vector and hash for one track
+   - Useful for manual fixes or testing
+   - Same logic as the batch update for consistency
+
+3. **Integrity Verification**:
+   ```sql
+   -- Find tracks with mismatched search hashes
+   SELECT * FROM verify_tracks_search_vector();
+   ```
+   - Returns tracks where current hash doesn't match content
+   - Helps identify data integrity issues
+   - Shows track ID, title, and both hashes for comparison
+
+Common maintenance scenarios:
+
+1. **After Database Restore/Clone**:
+
+   ```sql
+   -- Verify search vector integrity
+   SELECT * FROM verify_tracks_search_vector();
+
+   -- Rebuild if needed
+   SELECT update_all_tracks_search_vector();
+   ```
+
+2. **Troubleshooting Search Issues**:
+
+   ```sql
+   -- Check specific track's search vector
+   SELECT id, title, search_vector, search_config_hash
+   FROM tracks
+   WHERE id = 'track-uuid';
+
+   -- Update if needed
+   SELECT update_track_search_vector('track-uuid');
+   ```
+
+3. **Regular Maintenance**:
+
+   ```sql
+   -- Find any tracks with mismatched hashes
+   SELECT * FROM verify_tracks_search_vector();
+
+   -- Fix specific tracks as needed
+   SELECT update_track_search_vector(id)
+   FROM verify_tracks_search_vector();
+   ```
+
+These functions provide tools for maintaining and troubleshooting the full-text search implementation over time. The initial setup is handled automatically by the migration, so manual initialization is only needed in special cases like database restores or integrity checks.
