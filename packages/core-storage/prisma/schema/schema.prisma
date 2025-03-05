@@ -1,12 +1,13 @@
 generator client {
   provider = "prisma-client-js"
   output   = "../../node_modules/.prisma/client"
-  previewFeatures = ["prismaSchemaFolder"]
+  previewFeatures = ["prismaSchemaFolder", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
 }
 
 model User {
@@ -190,7 +191,8 @@ model Track {
   
   // Full-text search field (can be maintained by a trigger in PostgreSQL)
   // Note: This requires custom SQL as Prisma doesn't directly support tsvector
-  // searchVector        Unsupported("tsvector")?  @map("search_vector")
+  searchVector        Unsupported("tsvector")?  @map("search_vector")
+  searchConfigHash    String?                   @map("search_config_hash")
 
   // TODO: Audit these indexes and remove any that are not needed.
   @@index([originalFormat, wavLastRequestedAt])
@@ -207,6 +209,8 @@ model Track {
   @@index([moodNames], type: Gin)
   @@index([artistNames], type: Gin)
   @@index([tagNames], type: Gin)
+  @@index([searchVector], type: Gin)
+  @@index([searchConfigHash])
   @@map("tracks")
 }
 
