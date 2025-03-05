@@ -190,7 +190,7 @@ model Track {
   
   // Full-text search field (can be maintained by a trigger in PostgreSQL)
   // Note: This requires custom SQL as Prisma doesn't directly support tsvector
-  // searchVector       Unsupported("tsvector")?  @map("search_vector")
+  // searchVector        Unsupported("tsvector")?  @map("search_vector")
 
   // TODO: Audit these indexes and remove any that are not needed.
   @@index([originalFormat, wavLastRequestedAt])
@@ -198,9 +198,15 @@ model Track {
   @@index([id, status])
   @@index([status, userId, title, createdAt, id])
   @@index([status, userId, primaryArtistId, createdAt, id])
-  @@index([status, userId, primaryArtistName, createdAt, id])
+  // TODO: Add this index if it's needed for sorting:
+  // @@index([status, userId, primaryArtistName, createdAt, id])
   @@index([status, userId, duration, createdAt, id])
   @@index([status, isPublic, createdAt, id])
+  @@index([primaryArtistName])
+  @@index([genreNames], type: Gin)
+  @@index([moodNames], type: Gin)
+  @@index([artistNames], type: Gin)
+  @@index([tagNames], type: Gin)
   @@map("tracks")
 }
 
