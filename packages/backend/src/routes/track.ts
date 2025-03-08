@@ -19,6 +19,7 @@ import {
 } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import { config } from "../config";
+import { findOrCreateByName } from "../utils/entityManagement";
 
 // Extend Request type to include user property
 const router = Router();
@@ -26,7 +27,7 @@ const router = Router();
 // Schema for track creation/update
 const trackSchema = z.object({
   title: z.string().min(1),
-  artist: z.string().min(1),
+  primaryArtistName: z.string().min(1),
   // TODO: originalFormat: z.nativeEnum(SourceFormat),
   originalFormat: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
@@ -420,10 +421,15 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 
     console.log("Creating database record...");
     try {
+      const primaryArtist = await findOrCreateByName(
+        "artist",
+        data.primaryArtistName
+      );
+
       const track = await prisma.track.create({
         data: {
           title: data.title,
-          artist: data.artist,
+          primaryArtistId: primaryArtist.id,
           originalFormat,
           originalUrl: originalFileUrl,
           coverArt: coverArtUrl,
@@ -525,11 +531,15 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
         }[data.originalFormat]
       : undefined;
 
+    const primaryArtist = data.primaryArtistName
+      ? await findOrCreateByName("artist", data.primaryArtistName)
+      : undefined;
+
     const track = await prisma.track.update({
       where: { id: req.params.id },
       data: {
         title: data.title,
-        artist: data.artist,
+        primaryArtistId: primaryArtist?.id,
         originalFormat,
         coverArt: coverArtUrl,
         metadata: data.metadata as Prisma.InputJsonValue,

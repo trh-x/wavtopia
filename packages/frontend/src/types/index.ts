@@ -10,7 +10,7 @@ export interface User {
 export interface Track {
   id: string;
   title: string;
-  artist: string;
+  primaryArtistName: string | null;
   coverArt: string | null;
   originalUrl: string | null;
   fullTrackWavUrl: string | null;

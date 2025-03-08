@@ -20,7 +20,7 @@ import {
 interface SortOption {
   label: string;
   value: string;
-  field: "createdAt" | "title" | "duration" | "artist";
+  field: "createdAt" | "title" | "duration" | "primaryArtistName";
   direction: "asc" | "desc";
 }
 
@@ -54,13 +54,13 @@ const sortOptions: SortOption[] = [
   {
     label: "Artist A-Z",
     value: "artistAsc",
-    field: "artist",
+    field: "primaryArtistName",
     direction: "asc",
   },
   {
     label: "Artist Z-A",
     value: "artistDesc",
-    field: "artist",
+    field: "primaryArtistName",
     direction: "desc",
   },
 ];
@@ -293,7 +293,9 @@ export function TrackList({
                         {formatDuration(track.duration)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">{track.artist}</p>
+                    <p className="text-sm text-gray-600">
+                      {track.primaryArtistName}
+                    </p>
                     <p className="text-xs text-gray-500">
                       by {track.user.username}
                     </p>

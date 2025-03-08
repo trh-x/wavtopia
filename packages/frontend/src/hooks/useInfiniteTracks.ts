@@ -3,7 +3,7 @@ import { Track, PaginatedResponse } from "@/types";
 import { useAuthToken } from "./useAuthToken";
 import { apiRequest } from "@/api/client";
 
-type SortField = "createdAt" | "title" | "duration" | "artist";
+type SortField = "createdAt" | "title" | "duration" | "primaryArtistName";
 type SortDirection = "asc" | "desc";
 
 type UseInfiniteTracksOptions = {

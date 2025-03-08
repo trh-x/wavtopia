@@ -7,7 +7,7 @@ export interface FileMatch {
 }
 
 export interface BulkUploadState {
-  defaultArtist: string;
+  defaultArtistName: string;
   matches: FileMatch[];
   currentUploadIndex: number;
   uploadedTracks: string[];

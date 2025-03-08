@@ -5,7 +5,7 @@ import { processFiles } from "../utils/fileMatching";
 
 export function useFileProcessing(getToken: () => string | null) {
   const [state, setState] = useState<BulkUploadState>({
-    defaultArtist: "",
+    defaultArtistName: "",
     matches: [],
     currentUploadIndex: -1,
     uploadedTracks: [],
@@ -140,7 +140,8 @@ export function useFileProcessing(getToken: () => string | null) {
           "data",
           JSON.stringify({
             title: match.title,
-            artist: state.defaultArtist.trim() || "Unknown Artist",
+            primaryArtistName:
+              state.defaultArtistName.trim() || "Unknown Artist",
             originalFormat,
           })
         );
@@ -170,11 +171,11 @@ export function useFileProcessing(getToken: () => string | null) {
         throw error;
       }
     }
-  }, [state.matches, state.defaultArtist, getToken]);
+  }, [state.matches, state.defaultArtistName, getToken]);
 
   const handleClearAll = useCallback(() => {
     setState({
-      defaultArtist: "",
+      defaultArtistName: "",
       matches: [],
       currentUploadIndex: -1,
       uploadedTracks: [],
@@ -203,7 +204,7 @@ export function useFileProcessing(getToken: () => string | null) {
       handleClearAll,
       removeUnmatchedArt,
       setDefaultArtist: (value: string) =>
-        setState((prev) => ({ ...prev, defaultArtist: value })),
+        setState((prev) => ({ ...prev, defaultArtistName: value })),
     },
   };
 }

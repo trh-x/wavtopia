@@ -3,7 +3,7 @@ import { formatDuration } from "@/utils/formatDuration";
 
 interface TrackHeaderProps {
   title: string;
-  artist: string;
+  artistName: string | null;
   coverArt?: string | null;
   trackId: string;
   duration?: number | null;
@@ -11,7 +11,7 @@ interface TrackHeaderProps {
 
 export function TrackHeader({
   title,
-  artist,
+  artistName,
   coverArt,
   trackId,
   duration,
@@ -31,7 +31,7 @@ export function TrackHeader({
             {formatDuration(duration)}
           </span>
         </div>
-        <p className="text-gray-600">{artist}</p>
+        <p className="text-gray-600">{artistName}</p>
       </div>
     </div>
   );

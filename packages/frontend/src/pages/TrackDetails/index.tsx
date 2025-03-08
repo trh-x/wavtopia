@@ -51,7 +51,7 @@ export function TrackDetails() {
       <div>
         <TrackHeader
           title={track.title}
-          artist={track.artist}
+          artistName={track.primaryArtistName}
           coverArt={track.coverArt}
           trackId={track.id}
           duration={track.duration}
