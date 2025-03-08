@@ -13,6 +13,7 @@ const signupSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3).max(30),
   password: z.string().min(8),
+  inviteCode: z.string().optional(),
 });
 
 const loginSchema = z.object({
