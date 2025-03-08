@@ -20,6 +20,7 @@ import Notifications from "@/pages/Notifications";
 import { BulkUploadTrack } from "./pages/BulkUploadTrack";
 import { useInitializeFeatureFlags } from "./hooks/useFeatureFlags";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { TooltipProvider } from "@/components/ui/Tooltip";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -95,11 +96,13 @@ export default function App() {
 
   return (
     <Router>
-      <AuthProvider>
-        <NotificationsProvider>
-          <AppRoutes />
-        </NotificationsProvider>
-      </AuthProvider>
+      <TooltipProvider>
+        <AuthProvider>
+          <NotificationsProvider>
+            <AppRoutes />
+          </NotificationsProvider>
+        </AuthProvider>
+      </TooltipProvider>
     </Router>
   );
 }

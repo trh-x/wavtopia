@@ -82,7 +82,7 @@ export function RequestEarlyAccess() {
         Have an invite code?{" "}
         <Link
           to="/register"
-          className="text-primary-600 hover:text-primary-700"
+          className="text-primary-600 hover:text-primary-700 underline"
         >
           Create your account here
         </Link>

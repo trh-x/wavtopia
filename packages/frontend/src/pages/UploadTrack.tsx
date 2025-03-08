@@ -118,7 +118,7 @@ export function UploadTrack() {
           Need to upload multiple tracks?{" "}
           <Link
             to="/upload/bulk"
-            className="text-primary-600 hover:text-primary-700"
+            className="text-primary-600 hover:text-primary-700 underline"
           >
             Try bulk upload
           </Link>
