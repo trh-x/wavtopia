@@ -1,0 +1,60 @@
+// This file contains extensions to the Track model
+// It shows how the Track model should be modified to include the new fields and relationships
+
+/*
+Add these fields and relationships to the Track model in schema.prisma:
+
+  // Musical Information
+  bpm                 Float?
+  key                 String?
+  isrc                String?      @map("isrc") // International Standard Recording Code
+  language            String?
+  isExplicit          Boolean      @default(false) @map("is_explicit")
+  
+  // Release Information
+  releaseDate         DateTime?    @map("release_date")
+  originalReleaseDate DateTime?    @map("original_release_date")
+  catalogNumber       String?      @map("catalog_number")
+  
+  // Commercial/Rights Information
+  copyright           String?
+  pLine               String?      @map("p_line") // Phonographic copyright line
+  cLine               String?      @map("c_line") // Copyright line
+  
+  // Additional Metadata
+  lyrics              String?
+  description         String?
+  version             String?      // e.g., "Radio Edit", "Extended Mix"
+  remixedBy           String?      @map("remixed_by")
+  
+  // Technical Information
+  replayGain          Float?       @map("replay_gain")
+  peakAmplitude       Float?       @map("peak_amplitude")
+  encodingTechnology  String?      @map("encoding_technology")
+  recordingLocation   String?      @map("recording_location")
+  
+  // Relationships to normalized tables
+  recordLabelId       String?      @map("record_label_id")
+  recordLabel         RecordLabel? @relation(fields: [recordLabelId], references: [id])
+  licenseId           String?      @map("license_id")
+  license             License?     @relation(fields: [licenseId], references: [id])
+  
+  // Many-to-many relationships, plus denormalized arrays for efficient filtering
+  genres              TrackGenre[]
+  genreNames          String[]     @default([]) @map("genre_names")
+  albums              TrackAlbum[]
+  // TODO: Add denormalized array for album names if needed
+  credits             TrackCredit[]
+  artistNames         String[]     @default([]) @map("artist_names")
+  moods               TrackMood[]
+  moodNames           String[]     @default([]) @map("mood_names")
+  tags                TrackTag[]
+  tagNames            String[]     @default([]) @map("tag_names")
+  
+  // Full-text search field (can be maintained by a trigger in PostgreSQL)
+  // Note: This requires custom SQL as Prisma doesn't directly support tsvector
+  // searchVector       Unsupported("tsvector")?  @map("search_vector")
+  
+  // Extended JSON metadata for flexible storage of additional fields
+  extendedMetadata    Json?        @map("extended_metadata")
+*/ 

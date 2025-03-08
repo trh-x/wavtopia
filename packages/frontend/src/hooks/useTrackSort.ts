@@ -1,6 +1,10 @@
 import { useState } from "react";
 
-export type SortField = "createdAt" | "title" | "duration" | "artist";
+export type SortField =
+  | "createdAt"
+  | "title"
+  | "duration"
+  | "primaryArtistName";
 export type SortDirection = "asc" | "desc";
 
 export interface SortOption {
@@ -45,13 +49,13 @@ const defaultSortOptions: SortOption[] = [
   {
     label: "Artist A-Z",
     value: "artistAsc",
-    field: "artist",
+    field: "primaryArtistName",
     direction: "asc",
   },
   {
     label: "Artist Z-A",
     value: "artistDesc",
-    field: "artist",
+    field: "primaryArtistName",
     direction: "desc",
   },
 ];

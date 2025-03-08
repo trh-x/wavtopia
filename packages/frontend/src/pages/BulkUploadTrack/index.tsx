@@ -59,10 +59,10 @@ export function BulkUploadTrack() {
         />
 
         <FormInput
-          id="defaultArtist"
+          id="defaultArtistName"
           type="text"
           label="Default Artist (optional)"
-          value={state.defaultArtist}
+          value={state.defaultArtistName}
           onChange={(e) => setDefaultArtist(e.target.value)}
           disabled={isUploadInProgress}
         />

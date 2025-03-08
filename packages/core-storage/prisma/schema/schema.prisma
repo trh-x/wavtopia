@@ -1,11 +1,13 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
+  output   = "../../node_modules/.prisma/client"
+  previewFeatures = ["prismaSchemaFolder", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
 }
 
 model User {
@@ -45,65 +47,70 @@ enum TrackStatus {
 // Potential additional fields for Track model:
 //
 // 1. Release Information:
-// - releaseDate: DateTime - The official release date of the track
-// - originalReleaseDate: DateTime - For re-releases or remasters
-// - recordLabel: String - The record label that released the track
-// - catalogNumber: String - The label's catalog reference number
+// - [ ] releaseDate: DateTime - The official release date of the track
+// - [ ] originalReleaseDate: DateTime - For re-releases or remasters
+// - [ ] recordLabel: String - The record label that released the track
+// - [ ] catalogNumber: String - The label's catalog reference number
 //
 // 2. Musical Information:
-// - bpm: Float - Beats per minute
-// - key: String - Musical key of the track
-// - isrc: String - International Standard Recording Code
-// - genre: String[] - Multiple genres can be applicable
-// - mood: String[] - Emotional categorization (e.g., "energetic", "melancholic")
-// - language: String - Language of the lyrics
+// - [ ] bpm: Float - Beats per minute
+// - [ ] key: String - Musical key of the track
+// - [ ] isrc: String - International Standard Recording Code
+// - [ ] genre: String[] - Multiple genres can be applicable
+// - [ ] mood: String[] - Emotional categorization (e.g., "energetic", "melancholic")
+// - [ ] language: String - Language of the lyrics
 //
 // 3. Credits:
-// - composers: String[] - Song writers
-// - producers: String[] - Track producers
-// - features: String[] - Featured artists
-// - performers: String[] - Session musicians or band members
-// - credits: Json - Detailed production credits
+// - [ ] composers: String[] - Song writers
+// - [ ] producers: String[] - Track producers
+// - [ ] features: String[] - Featured artists
+// - [ ] performers: String[] - Session musicians or band members
+// - [ ] credits: Json - Detailed production credits
 //
 // 4. Technical Information:
-// - replayGain: Float - Volume normalization value
-// - peakAmplitude: Float - Maximum amplitude in the track
-// - encodingTechnology: String - Original recording technology
-// - recordingLocation: String - Studio or venue where recorded
-// - mixEngineer: String - Mix engineer name
-// - masteringEngineer: String - Mastering engineer name
+// - [ ] replayGain: Float - Volume normalization value
+// - [ ] peakAmplitude: Float - Maximum amplitude in the track
+// - [ ] encodingTechnology: String - Original recording technology
+// - [ ] recordingLocation: String - Studio or venue where recorded
+// - [ ] mixEngineer: String - Mix engineer name
+// - [ ] masteringEngineer: String - Mastering engineer name
 //
 // 5. Commercial/Rights:
-// - copyright: String - Copyright notice
-// - license: String - Licensing terms
-// - publisher: String - Music publisher
-// - pLine: String - Phonographic copyright line
-// - cLine: String - Copyright line
+// - [ ] copyright: String - Copyright notice
+// - [ ] license: String - Licensing terms
+// - [ ] publisher: String - Music publisher
+// - [ ] pLine: String - Phonographic copyright line
+// - [ ] cLine: String - Copyright line
 //
 // 6. Additional Metadata:
-// - lyrics: String - Song lyrics
-// - description: String - Track description or notes
-// - tags: String[] - Searchable keywords
-// - explicit: Boolean - Whether the track contains explicit content
-// - remixedBy: String - For remix versions
-// - version: String - Type of version (e.g., "Radio Edit", "Extended Mix")
-// - partOfAlbum: Boolean - Whether the track belongs to an album
-// - albumName: String - Name of the album if applicable
-// - trackNumber: Int - Position in album if applicable
-// - discNumber: Int - For multi-disc albums
+// - [ ] lyrics: String - Song lyrics
+// - [ ] description: String - Track description or notes
+// - [ ] tags: String[] - Searchable keywords
+// - [ ] explicit: Boolean - Whether the track contains explicit content
+// - [ ] remixedBy: String - For remix versions
+// - [ ] version: String - Type of version (e.g., "Radio Edit", "Extended Mix")
+// - [ ] partOfAlbum: Boolean - Whether the track belongs to an album
+// - [ ] albumName: String - Name of the album if applicable
+// - [ ] trackNumber: Int - Position in album if applicable
+// - [ ] discNumber: Int - For multi-disc albums
 //
 // These fields follow standards from:
-// - ID3 tags (the metadata standard for MP3s)
-// - MusicBrainz database schema
-// - Streaming platform metadata systems
-// - Industry-standard music databases like Gracenote
+// - [ ] ID3 tags (the metadata standard for MP3s)
+// - [ ] MusicBrainz database schema
+// - [ ] Streaming platform metadata systems
+// - [ ] Industry-standard music databases like Gracenote
 
 // TODO: The Url suffixes should be removed/replaced, as the values stored are not URLs (with
 // the exception of originalUrl, which is a file:// URL until the track is converted).
 model Track {
   id                    String                     @id @default(uuid())
   title                 String
-  artist                String
+  primaryArtistId       String                     @map("primary_artist_id")
+  primaryArtist         Artist                     @relation("PrimaryArtist", fields: [primaryArtistId], references: [id])
+  // primaryArtistName is denormalized from Artist
+  // See packages/core-storage/prisma/migrations/20250304005245_add_primary_artist_name/migration.sql
+  // for the trigger that keeps the primaryArtistName field in sync with the primaryArtistId field.
+  primaryArtistName     String?                    @map("primary_artist_name")
   originalFormat        SourceFormat               @map("original_format")
   originalUrl           String                     @map("original_url")
   fullTrackWavUrl       String?                    @map("full_track_wav_url")
@@ -128,14 +135,82 @@ model Track {
   flacCreatedAt         DateTime?                  @map("flac_created_at")
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
 
+    // Musical Information
+  bpm                 Float?
+  key                 String?
+  isrc                String?      @map("isrc") // International Standard Recording Code
+  language            String?
+  isExplicit          Boolean      @default(false) @map("is_explicit")
+  
+  // Release Information
+  releaseDate                   DateTime?                     @map("release_date")
+  releaseDatePrecision          DatePrecision?  @default(DAY) @map("release_date_precision")
+  originalReleaseDate           DateTime?                     @map("original_release_date")
+  originalReleaseDatePrecision  DatePrecision?  @default(DAY) @map("original_release_date_precision")
+  catalogNumber                 String?                       @map("catalog_number")
+  
+  // Commercial/Rights Information
+  copyright           String?
+  pLine               String?      @map("p_line") // Phonographic copyright line
+  cLine               String?      @map("c_line") // Copyright line
+  
+  // Additional Metadata
+  lyrics              String?
+  description         String?
+  version             String?      // e.g., "Radio Edit", "Extended Mix"
+  remixedBy           String?      @map("remixed_by")
+  
+  // Technical Information
+  replayGain          Float?       @map("replay_gain")
+  peakAmplitude       Float?       @map("peak_amplitude")
+  encodingTechnology  String?      @map("encoding_technology")
+  recordingLocation   String?      @map("recording_location")
+  
+  // Relationships to normalized tables
+  recordLabelId       String?      @map("record_label_id")
+  recordLabel         RecordLabel? @relation(fields: [recordLabelId], references: [id])
+  licenseId           String?      @map("license_id")
+  license             License?     @relation(fields: [licenseId], references: [id])
+  
+  // Many-to-many relationships, plus denormalized arrays for efficient filtering
+  // See packages/core-storage/prisma/migrations/20250304005244_add_denormalized_arrays/migration.sql
+  // and packages/core-storage/prisma/migrations/20250304005245_add_primary_artist_name/migration.sql
+  // for triggers that keep the denormalized arrays in sync with the related tables,
+  // and GIN indexes on the arrays for efficient filtering.
+  genres              TrackGenre[]
+  genreNames          String[]     @default([]) @map("genre_names")
+  albums              TrackAlbum[]
+  // TODO: Add denormalized array for album names if needed
+  credits             TrackCredit[]
+  // artistNames is denormalized from Artist via TrackCredit and from the primaryArtistName field
+  artistNames         String[]     @default([]) @map("artist_names")
+  moods               TrackMood[]
+  moodNames           String[]     @default([]) @map("mood_names")
+  tags                TrackTag[]
+  tagNames            String[]     @default([]) @map("tag_names")
+  
+  // Full-text search field (can be maintained by a trigger in PostgreSQL)
+  // Note: This requires custom SQL as Prisma doesn't directly support tsvector
+  searchVector        Unsupported("tsvector")?  @map("search_vector")
+  searchConfigHash    String?                   @map("search_config_hash")
+
   // TODO: Audit these indexes and remove any that are not needed.
   @@index([originalFormat, wavLastRequestedAt])
   @@index([originalFormat, flacLastRequestedAt])
   @@index([id, status])
   @@index([status, userId, title, createdAt, id])
-  @@index([status, userId, artist, createdAt, id])
+  @@index([status, userId, primaryArtistId, createdAt, id])
+  // TODO: Add this index if it's needed for sorting:
+  // @@index([status, userId, primaryArtistName, createdAt, id])
   @@index([status, userId, duration, createdAt, id])
   @@index([status, isPublic, createdAt, id])
+  @@index([primaryArtistName])
+  @@index([genreNames], type: Gin)
+  @@index([moodNames], type: Gin)
+  @@index([artistNames], type: Gin)
+  @@index([tagNames], type: Gin)
+  @@index([searchVector], type: Gin)
+  @@index([searchConfigHash])
   @@map("tracks")
 }
 
@@ -270,4 +345,10 @@ enum AudioFileConversionStatus {
   IN_PROGRESS
   COMPLETED
   FAILED
+}
+
+enum DatePrecision {
+  YEAR
+  MONTH
+  DAY
 }

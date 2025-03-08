@@ -6,7 +6,7 @@ import { api } from "@/api/client";
 
 interface UploadFormData {
   title: string;
-  artist: string;
+  primaryArtistName: string;
   originalFormat: string | null;
   original: File | null;
   coverArt: File | null;
@@ -20,7 +20,7 @@ export function UploadTrack() {
     useForm<UploadFormData>({
       initialValues: {
         title: "",
-        artist: "",
+        primaryArtistName: "",
         originalFormat: null,
         original: null,
         coverArt: null,
@@ -35,7 +35,7 @@ export function UploadTrack() {
           "data",
           JSON.stringify({
             title: values.title,
-            artist: values.artist,
+            primaryArtistName: values.primaryArtistName,
             originalFormat: values.originalFormat,
           })
         );
@@ -84,12 +84,12 @@ export function UploadTrack() {
           />
 
           <FormInput
-            id="artist"
+            id="primaryArtistName"
             type="text"
             label="Artist"
             required
-            value={values.artist}
-            onChange={(e) => handleChange("artist", e.target.value)}
+            value={values.primaryArtistName}
+            onChange={(e) => handleChange("primaryArtistName", e.target.value)}
           />
 
           <FormInput

@@ -26,7 +26,7 @@ function extractPaginationParams(req: Request) {
     | "createdAt"
     | "title"
     | "duration"
-    | "artist"
+    | "primaryArtistName"
     | undefined;
   const sortDirection = req.query.sortDirection as "asc" | "desc" | undefined;
 
@@ -38,7 +38,7 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
   where: Prisma.TrackWhereInput,
   include: I,
   params: PaginationParams & {
-    sortField?: "createdAt" | "title" | "duration" | "artist";
+    sortField?: "createdAt" | "title" | "duration" | "primaryArtistName";
     sortDirection?: "asc" | "desc";
   }
 ): Promise<PaginatedResponse<Prisma.TrackGetPayload<{ include: I }>>> {
