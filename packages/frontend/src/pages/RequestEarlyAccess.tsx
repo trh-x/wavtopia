@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { FormInput, FormButton } from "@/components/ui/FormInput";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
@@ -76,6 +77,16 @@ export function RequestEarlyAccess() {
           {isSubmitting ? "Requesting..." : "Request Access"}
         </FormButton>
       </form>
+
+      <p className="text-center text-sm text-gray-600 mt-4">
+        Have an invite code?{" "}
+        <Link
+          to="/register"
+          className="text-primary-600 hover:text-primary-700"
+        >
+          Create your account here
+        </Link>
+      </p>
     </div>
   );
 }
