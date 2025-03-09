@@ -96,9 +96,6 @@ router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
   }
 });
 
-// Apply authentication middleware for all other routes
-router.use(authenticate);
-
 // Function to efficiently find or create multiple genres
 async function findOrCreateGenres(genreNames: string[]) {
   if (!genreNames.length) return [];
@@ -138,7 +135,7 @@ async function findOrCreateGenres(genreNames: string[]) {
 }
 
 // Create track with files
-router.post("/", uploadTrackFiles, async (req, res, next) => {
+router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
   try {
     const data = trackSchema.parse(JSON.parse(req.body.data));
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -202,15 +199,19 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
           key: data.key,
           isExplicit: data.isExplicit,
           description: data.description,
-          genres: {
-            create: genres.map((genre) => ({
-              genre: {
-                connect: {
-                  id: genre.id,
+          ...(data.genres && data.genres.length > 0
+            ? {
+                genres: {
+                  create: genres.map((genre) => ({
+                    genre: {
+                      connect: {
+                        id: genre.id,
+                      },
+                    },
+                  })),
                 },
-              },
-            })),
-          },
+              }
+            : {}),
         },
       });
 
@@ -274,7 +275,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 
 // Update track
 // TODO: Add support for updating additional fields/metadata
-router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
+router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
   try {
     // Check if track belongs to user
     const existingTrack = await prisma.track.findUnique({

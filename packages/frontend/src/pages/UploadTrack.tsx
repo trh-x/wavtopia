@@ -17,10 +17,10 @@ interface UploadFormData {
   originalFormat: string | null;
   original: File | null;
   coverArt: File | null;
-  bpm: number | null;
-  key: string | null;
+  bpm: number | undefined;
+  key: string | undefined;
   genres: string[];
-  description: string | null;
+  description: string | undefined;
   isExplicit: boolean;
 }
 
@@ -36,10 +36,10 @@ export function UploadTrack() {
         originalFormat: null,
         original: null,
         coverArt: null,
-        bpm: null,
-        key: null,
+        bpm: undefined,
+        key: undefined,
         genres: [],
-        description: null,
+        description: undefined,
         isExplicit: false,
       },
       onSubmit: async (values) => {
