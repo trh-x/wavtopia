@@ -10,15 +10,12 @@ export function usePresignedUrl() {
     setIsLoading(true);
     try {
       const token = getToken();
-      if (!token) {
-        throw new Error("No auth token available");
-      }
 
-      const response = await fetch(path, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const options = token
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
+
+      const response = await fetch(path, options);
 
       if (!response.ok) {
         throw new Error(`Failed to get presigned URL: ${response.statusText}`);
