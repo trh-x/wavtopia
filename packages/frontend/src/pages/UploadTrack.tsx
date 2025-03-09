@@ -5,6 +5,7 @@ import {
   FormButton,
   FormTextArea,
   FormSwitch,
+  FormTagInput,
 } from "@/components/ui/FormInput";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
@@ -113,20 +114,13 @@ export function UploadTrack() {
             onChange={(e) => handleChange("primaryArtistName", e.target.value)}
           />
 
-          <FormInput
+          <FormTagInput
             id="genres"
-            type="text"
-            label="Genres (comma-separated)"
+            label="Genres"
             placeholder="e.g., Electronic, House, Techno"
-            value={values.genres.join(", ")}
-            onChange={(e) =>
-              handleChange(
-                "genres",
-                e.target.value
-                  .split(",")
-                  .map((g) => g.trim())
-                  .filter(Boolean)
-              )
+            value={values.genres}
+            onChange={(newGenres: string[]) =>
+              handleChange("genres", newGenres)
             }
           />
 
@@ -138,7 +132,7 @@ export function UploadTrack() {
                 label="BPM"
                 min="1"
                 max="999"
-                step="0.01"
+                step="1"
                 value={values.bpm || ""}
                 onChange={(e) =>
                   handleChange(
