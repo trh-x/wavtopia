@@ -1,6 +1,11 @@
 import { useNavigate, Link } from "react-router-dom";
-import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
-import { Switch } from "@/components/ui/Switch";
+import {
+  FormInput,
+  FormError,
+  FormButton,
+  FormTextArea,
+  FormSwitch,
+} from "@/components/ui/FormInput";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
@@ -154,47 +159,28 @@ export function UploadTrack() {
               />
             </div>
             <div className="flex-1">
-              <div className="space-y-1">
-                <label
-                  htmlFor="isExplicit"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Contains explicit content
-                </label>
-                <div className="flex items-center py-2">
-                  <Switch
-                    id="isExplicit"
-                    checked={values.isExplicit}
-                    onCheckedChange={(checked) =>
-                      handleChange("isExplicit", checked)
-                    }
-                  />
-                  <span className="text-sm text-gray-600 ml-2">
-                    {values.isExplicit ? "Yes" : "No"}
-                  </span>
-                </div>
-              </div>
+              <FormSwitch
+                id="isExplicit"
+                label="Contains explicit content"
+                checked={values.isExplicit}
+                onCheckedChange={(checked) =>
+                  handleChange("isExplicit", checked)
+                }
+                description={values.isExplicit ? "Yes" : "No"}
+              />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Description
-            </label>
-            <textarea
-              id="description"
-              rows={4}
-              className="block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
-              placeholder="Add a description for your track..."
-              value={values.description || ""}
-              onChange={(e) =>
-                handleChange("description", e.target.value || null)
-              }
-            />
-          </div>
+          <FormTextArea
+            id="description"
+            label="Description"
+            rows={4}
+            placeholder="Add a description for your track..."
+            value={values.description || ""}
+            onChange={(e) =>
+              handleChange("description", e.target.value || null)
+            }
+          />
 
           <FormInput
             id="original"

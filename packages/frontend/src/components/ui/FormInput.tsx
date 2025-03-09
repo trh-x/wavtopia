@@ -1,8 +1,24 @@
-import { InputHTMLAttributes } from "react";
+import { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { Switch } from "./Switch";
 
-interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface FormFieldProps {
   label: string;
   error?: string;
+}
+
+interface FormInputProps
+  extends InputHTMLAttributes<HTMLInputElement>,
+    FormFieldProps {}
+
+interface FormTextAreaProps
+  extends TextareaHTMLAttributes<HTMLTextAreaElement>,
+    FormFieldProps {}
+
+interface FormSwitchProps extends FormFieldProps {
+  id?: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  description?: string;
 }
 
 export function FormInput({
@@ -25,6 +41,62 @@ export function FormInput({
           error ? "border-red-500" : ""
         } ${className}`}
       />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+export function FormTextArea({
+  label,
+  error,
+  className = "",
+  ...props
+}: FormTextAreaProps) {
+  return (
+    <div className="space-y-1">
+      <label
+        htmlFor={props.id}
+        className="block text-sm font-medium text-gray-700"
+      >
+        {label}
+      </label>
+      <textarea
+        {...props}
+        className={`block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
+          error ? "border-red-500" : ""
+        } ${className}`}
+      />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+
+export function FormSwitch({
+  label,
+  error,
+  checked,
+  onCheckedChange,
+  description,
+  ...props
+}: FormSwitchProps) {
+  return (
+    <div className="space-y-1">
+      <label
+        htmlFor={props.id}
+        className="block text-sm font-medium text-gray-700"
+      >
+        {label}
+      </label>
+      <div className="flex items-center h-[38px]">
+        <Switch
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          {...props}
+        />
+        {description && (
+          <span className="text-sm text-gray-600 ml-2">{description}</span>
+        )}
+      </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
