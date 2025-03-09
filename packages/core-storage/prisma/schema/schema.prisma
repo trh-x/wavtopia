@@ -177,17 +177,20 @@ model Track {
   // and packages/core-storage/prisma/migrations/20250304005245_add_primary_artist_name/migration.sql
   // for triggers that keep the denormalized arrays in sync with the related tables,
   // and GIN indexes on the arrays for efficient filtering.
+  // Classification/Taxonomy
   genres              TrackGenre[]
   genreNames          String[]     @default([]) @map("genre_names")
+  moods               TrackMood[]
+  moodNames           String[]     @default([]) @map("mood_names")
+  tags                TrackTag[]
+  tagNames            String[]     @default([]) @map("tag_names")
+
+  // Associations
   albums              TrackAlbum[]
   // TODO: Add denormalized array for album names if needed
   credits             TrackCredit[]
   // artistNames is denormalized from Artist via TrackCredit and from the primaryArtistName field
   artistNames         String[]     @default([]) @map("artist_names")
-  moods               TrackMood[]
-  moodNames           String[]     @default([]) @map("mood_names")
-  tags                TrackTag[]
-  tagNames            String[]     @default([]) @map("tag_names")
   
   // Full-text search field (can be maintained by a trigger in PostgreSQL)
   // Note: This requires custom SQL as Prisma doesn't directly support tsvector

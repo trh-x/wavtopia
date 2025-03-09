@@ -33,6 +33,8 @@ export type TrackShare = Prisma.TrackShareGetPayload<{
   };
 }>;
 
+export type Genre = Prisma.GenreGetPayload<{}>;
+
 export interface PaginatedResponse<T> {
   items: T[];
   metadata: {
