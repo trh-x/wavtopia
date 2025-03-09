@@ -206,9 +206,6 @@ router.get(
   }
 );
 
-// Apply authentication middleware for all other routes
-router.use(authenticate);
-
 // Request audio file generation
 router.post(
   "/:id/convert-audio",
