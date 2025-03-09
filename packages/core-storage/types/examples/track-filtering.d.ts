@@ -75,9 +75,9 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         recordLabelId: string | null;
         licenseId: string | null;
         genreNames: string[];
-        artistNames: string[];
         moodNames: string[];
         tagNames: string[];
+        artistNames: string[];
         searchConfigHash: string | null;
     })[];
     total: number;

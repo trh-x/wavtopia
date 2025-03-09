@@ -9,6 +9,7 @@ import {
   Prisma,
   SourceFormat,
   TrackStatus,
+  Genre,
 } from "@wavtopia/core-storage";
 import { prisma } from "../../lib/prisma";
 import { config } from "../../config";
@@ -98,6 +99,44 @@ router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
 // Apply authentication middleware for all other routes
 router.use(authenticate);
 
+// Function to efficiently find or create multiple genres
+async function findOrCreateGenres(genreNames: string[]) {
+  if (!genreNames.length) return [];
+
+  // Deduplicate input array
+  const uniqueGenres = [...new Set(genreNames)];
+
+  // First, find all existing genres in a single query
+  const existingGenres = await prisma.genre.findMany({
+    where: {
+      name: {
+        in: uniqueGenres,
+      },
+    },
+  });
+
+  // Determine which genres don't exist yet
+  const existingGenreNames = existingGenres.map((genre) => genre.name);
+  const genresToCreate = uniqueGenres.filter(
+    (name) => !existingGenreNames.includes(name)
+  );
+
+  // Create missing genres in a single transaction
+  let newGenres: Genre[] = [];
+  if (genresToCreate.length > 0) {
+    newGenres = await prisma.$transaction(
+      genresToCreate.map((name) =>
+        prisma.genre.create({
+          data: { name },
+        })
+      )
+    );
+  }
+
+  // Return combined results
+  return [...existingGenres, ...newGenres];
+}
+
 // Create track with files
 router.post("/", uploadTrackFiles, async (req, res, next) => {
   try {
@@ -148,6 +187,8 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
         data.primaryArtistName
       );
 
+      const genres = await findOrCreateGenres(data.genres || []);
+
       const track = await prisma.track.create({
         data: {
           title: data.title,
@@ -157,6 +198,19 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
           coverArt: coverArtUrl,
           metadata: data.metadata as Prisma.InputJsonValue,
           userId: req.user!.id,
+          bpm: data.bpm,
+          key: data.key,
+          isExplicit: data.isExplicit,
+          description: data.description,
+          genres: {
+            create: genres.map((genre) => ({
+              genre: {
+                connect: {
+                  id: genre.id,
+                },
+              },
+            })),
+          },
         },
       });
 
@@ -258,6 +312,8 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
       ? await findOrCreateByName("artist", data.primaryArtistName)
       : undefined;
 
+    // const genres = await findOrCreateGenres(data.genres || []);
+
     const track = await prisma.track.update({
       where: { id: req.params.id },
       data: {
@@ -266,6 +322,17 @@ router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
         originalFormat,
         coverArt: coverArtUrl,
         metadata: data.metadata as Prisma.InputJsonValue,
+        /* FIXME: Don't attach genres if they already exist
+        genres: {
+          create: genres.map((genre) => ({
+            genre: {
+              connect: {
+                id: genre.id,
+              },
+            },
+          })),
+        },
+        */
       },
       include: {
         stems: true,
