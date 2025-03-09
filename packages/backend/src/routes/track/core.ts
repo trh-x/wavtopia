@@ -202,15 +202,19 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
           key: data.key,
           isExplicit: data.isExplicit,
           description: data.description,
-          genres: {
-            create: genres.map((genre) => ({
-              genre: {
-                connect: {
-                  id: genre.id,
+          ...(data.genres && data.genres.length > 0
+            ? {
+                genres: {
+                  create: genres.map((genre) => ({
+                    genre: {
+                      connect: {
+                        id: genre.id,
+                      },
+                    },
+                  })),
                 },
-              },
-            })),
-          },
+              }
+            : {}),
         },
       });
 
