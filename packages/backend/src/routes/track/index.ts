@@ -5,11 +5,11 @@ import {
   NextFunction,
   RequestHandler,
 } from "express";
-import { AppError } from "../middleware/errorHandler";
-import { authenticate } from "../middleware/auth";
-import { verifyToken } from "../services/auth";
-import { uploadTrackFiles } from "../middleware/upload";
-import { uploadFile, getObject, getFileUrl } from "../services/storage";
+import { AppError } from "../../middleware/errorHandler";
+import { authenticate } from "../../middleware/auth";
+import { verifyToken } from "../../services/auth";
+import { uploadTrackFiles } from "../../middleware/upload";
+import { uploadFile, getObject, getFileUrl } from "../../services/storage";
 import { z } from "zod";
 import {
   deleteLocalFile,
@@ -17,9 +17,9 @@ import {
   SourceFormat,
   TrackStatus,
 } from "@wavtopia/core-storage";
-import { prisma } from "../lib/prisma";
-import { config } from "../config";
-import { findOrCreateByName } from "../utils/entityManagement";
+import { prisma } from "../../lib/prisma";
+import { config } from "../../config";
+import { findOrCreateByName } from "../../utils/entityManagement";
 
 // Extend Request type to include user property
 const router = Router();
@@ -32,6 +32,14 @@ const trackSchema = z.object({
   originalFormat: z.string().min(1),
   metadata: z.record(z.unknown()).optional(),
   isPublic: z.boolean().optional(),
+  // Musical Information
+  bpm: z.number().optional(),
+  key: z.string().optional(),
+  isExplicit: z.boolean().optional(),
+  // Metadata
+  description: z.string().optional(),
+  // Classification/Taxonomy
+  genres: z.array(z.string()).optional(),
 });
 
 // Schema for track sharing
@@ -497,6 +505,7 @@ router.post("/", uploadTrackFiles, async (req, res, next) => {
 });
 
 // Update track
+// TODO: Add support for updating additional fields/metadata
 router.patch("/:id", uploadTrackFiles, async (req, res, next) => {
   try {
     // Check if track belongs to user
