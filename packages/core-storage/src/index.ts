@@ -35,7 +35,6 @@ export {
   type Track,
   type Stem,
   type TrackShare,
-  type Genre,
   type PaginatedResponse,
   type PaginationParams,
   encodeCursor,

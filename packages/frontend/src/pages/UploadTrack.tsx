@@ -1,12 +1,5 @@
 import { useNavigate, Link } from "react-router-dom";
-import {
-  FormInput,
-  FormError,
-  FormButton,
-  FormTextArea,
-  FormSwitch,
-  FormTagInput,
-} from "@/components/ui/FormInput";
+import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
@@ -17,11 +10,6 @@ interface UploadFormData {
   originalFormat: string | null;
   original: File | null;
   coverArt: File | null;
-  bpm: number | null;
-  key: string | null;
-  genres: string[];
-  description: string | null;
-  isExplicit: boolean;
 }
 
 export function UploadTrack() {
@@ -36,11 +24,6 @@ export function UploadTrack() {
         originalFormat: null,
         original: null,
         coverArt: null,
-        bpm: null,
-        key: null,
-        genres: [],
-        description: null,
-        isExplicit: false,
       },
       onSubmit: async (values) => {
         if (!values.original) {
@@ -54,11 +37,6 @@ export function UploadTrack() {
             title: values.title,
             primaryArtistName: values.primaryArtistName,
             originalFormat: values.originalFormat,
-            bpm: values.bpm,
-            key: values.key,
-            genres: values.genres,
-            description: values.description,
-            isExplicit: values.isExplicit,
           })
         );
         formData.append("original", values.original);
@@ -112,68 +90,6 @@ export function UploadTrack() {
             required
             value={values.primaryArtistName}
             onChange={(e) => handleChange("primaryArtistName", e.target.value)}
-          />
-
-          <FormTagInput
-            id="genres"
-            label="Genres"
-            placeholder="e.g., Electronic, House, Techno"
-            value={values.genres}
-            onChange={(newGenres: string[]) =>
-              handleChange("genres", newGenres)
-            }
-          />
-
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <FormInput
-                id="bpm"
-                type="number"
-                label="BPM"
-                min="1"
-                max="999"
-                step="1"
-                value={values.bpm || ""}
-                onChange={(e) =>
-                  handleChange(
-                    "bpm",
-                    e.target.value ? parseFloat(e.target.value) : null
-                  )
-                }
-              />
-            </div>
-            <div className="flex-1">
-              <FormInput
-                id="key"
-                type="text"
-                label="Musical Key"
-                placeholder="e.g., C major, Am"
-                value={values.key || ""}
-                onChange={(e) => handleChange("key", e.target.value || null)}
-              />
-            </div>
-            <div className="flex-1">
-              <FormSwitch
-                id="isExplicit"
-                label="Contains explicit content"
-                checked={values.isExplicit}
-                onCheckedChange={(checked) =>
-                  handleChange("isExplicit", checked)
-                }
-                description={values.isExplicit ? "Yes" : "No"}
-              />
-            </div>
-          </div>
-
-          <FormTextArea
-            id="description"
-            label="Description"
-            rows={4}
-            placeholder="Add a description for your track..."
-            value={values.description || ""}
-            onChange={(e) =>
-              handleChange("description", e.target.value || null)
-            }
           />
 
           <FormInput
