@@ -1,25 +1,39 @@
-import { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { InputHTMLAttributes, TextareaHTMLAttributes, ReactNode } from "react";
 import { Switch } from "./Switch";
+import { cn } from "../../utils/cn";
 
 interface FormFieldProps {
   label: string;
   error?: string;
+  id?: string;
+}
+
+interface FormFieldWrapperProps extends FormFieldProps {
+  children: ReactNode;
+  className?: string;
+}
+
+function FormFieldWrapper({
+  label,
+  error,
+  id,
+  children,
+  className,
+}: FormFieldWrapperProps) {
+  return (
+    <div className={cn("space-y-1", className)}>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      {children}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </div>
+  );
 }
 
 interface FormInputProps
   extends InputHTMLAttributes<HTMLInputElement>,
     FormFieldProps {}
-
-interface FormTextAreaProps
-  extends TextareaHTMLAttributes<HTMLTextAreaElement>,
-    FormFieldProps {}
-
-interface FormSwitchProps extends FormFieldProps {
-  id?: string;
-  checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
-  description?: string;
-}
 
 export function FormInput({
   label,
@@ -28,23 +42,22 @@ export function FormInput({
   ...props
 }: FormInputProps) {
   return (
-    <div className="space-y-1">
-      <label
-        htmlFor={props.id}
-        className="block text-sm font-medium text-gray-700"
-      >
-        {label}
-      </label>
+    <FormFieldWrapper label={label} error={error} id={props.id}>
       <input
         {...props}
-        className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-          error ? "border-red-500" : ""
-        } ${className}`}
+        className={cn(
+          "w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent",
+          error && "border-red-500",
+          className
+        )}
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </div>
+    </FormFieldWrapper>
   );
 }
+
+interface FormTextAreaProps
+  extends TextareaHTMLAttributes<HTMLTextAreaElement>,
+    FormFieldProps {}
 
 export function FormTextArea({
   label,
@@ -53,22 +66,23 @@ export function FormTextArea({
   ...props
 }: FormTextAreaProps) {
   return (
-    <div className="space-y-1">
-      <label
-        htmlFor={props.id}
-        className="block text-sm font-medium text-gray-700"
-      >
-        {label}
-      </label>
+    <FormFieldWrapper label={label} error={error} id={props.id}>
       <textarea
         {...props}
-        className={`block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm ${
-          error ? "border-red-500" : ""
-        } ${className}`}
+        className={cn(
+          "block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm",
+          error && "border-red-500",
+          className
+        )}
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </div>
+    </FormFieldWrapper>
   );
+}
+
+interface FormSwitchProps extends FormFieldProps {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  description?: string;
 }
 
 export function FormSwitch({
@@ -80,13 +94,7 @@ export function FormSwitch({
   ...props
 }: FormSwitchProps) {
   return (
-    <div className="space-y-1">
-      <label
-        htmlFor={props.id}
-        className="block text-sm font-medium text-gray-700"
-      >
-        {label}
-      </label>
+    <FormFieldWrapper label={label} error={error} id={props.id}>
       <div className="flex items-center h-[38px]">
         <Switch
           checked={checked}
@@ -97,8 +105,7 @@ export function FormSwitch({
           <span className="text-sm text-gray-600 ml-2">{description}</span>
         )}
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
-    </div>
+    </FormFieldWrapper>
   );
 }
 
