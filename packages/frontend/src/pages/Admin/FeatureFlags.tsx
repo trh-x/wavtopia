@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FormInput, FormButton } from "@/components/ui/FormInput";
+import { FormInput, FormButton } from "@/components/ui/forms";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { useFeatureFlagsAdmin } from "@/hooks/useFeatureFlags";
 

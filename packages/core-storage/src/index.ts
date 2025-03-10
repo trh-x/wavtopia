@@ -29,6 +29,7 @@ export {
   Notification,
   NotificationType,
   AudioFileConversionStatus,
+  DatePrecision,
 } from ".prisma/client";
 
 export {

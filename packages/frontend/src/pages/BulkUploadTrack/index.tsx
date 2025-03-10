@@ -1,5 +1,5 @@
 import React from "react";
-import { FormInput } from "@/components/ui/FormInput";
+import { FormInput } from "@/components/ui/forms";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { useFileProcessing } from "./hooks/useFileProcessing";
 import { DropZone } from "./components/DropZone";

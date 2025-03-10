@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "@/api/client";
 import { InviteCode } from "@wavtopia/core-storage";
-import { FormInput, FormButton } from "@/components/ui/FormInput";
+import { FormInput, FormButton } from "@/components/ui/forms";
 import { useAuthToken } from "@/hooks/useAuthToken";
 
 export function InviteCodesAdmin() {

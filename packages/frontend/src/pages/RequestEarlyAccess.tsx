@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { FormInput, FormButton } from "@/components/ui/FormInput";
+import { FormInput, FormButton } from "@/components/ui/forms";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
 

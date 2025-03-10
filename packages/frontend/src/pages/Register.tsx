@@ -1,6 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { FormInput, FormError, FormButton } from "@/components/ui/FormInput";
+import { FormInput, FormError, FormButton } from "@/components/ui/forms";
 import { useForm, ValidationRules } from "@/hooks/useForm";
 import { api } from "@/api/client";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";

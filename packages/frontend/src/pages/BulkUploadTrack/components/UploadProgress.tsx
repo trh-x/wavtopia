@@ -1,4 +1,4 @@
-import { FormButton } from "@/components/ui/FormInput";
+import { FormButton } from "@/components/ui/forms";
 
 interface UploadProgressProps {
   matches: { uploaded?: boolean }[];
