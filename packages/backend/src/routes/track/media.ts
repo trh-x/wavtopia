@@ -72,9 +72,9 @@ router.get(
   async (req: Request, res: Response, next) => {
     try {
       const track = (req as any).track; // TODO: Fix this `any`
-      const stem = track.stems.find(
-        (s: any) => s.id === req.params.stemId // TODO: Fix this `any`
-      );
+      const stem = await prisma.stem.findUnique({
+        where: { id: req.params.stemId, trackId: track.id },
+      });
       if (!stem) {
         throw new AppError(404, "Stem not found");
       }
@@ -85,9 +85,15 @@ router.get(
       if (format === "mp3") {
         filePath = stem.mp3Url;
       } else if (format === "wav") {
+        if (!stem.wavUrl) {
+          throw new AppError(404, "WAV file not found");
+        }
         filePath = stem.wavUrl;
         await updateLastRequestedAt("stem", stem.id, "wav");
       } else if (format === "flac") {
+        if (!stem.flacUrl) {
+          throw new AppError(404, "FLAC file not found");
+        }
         filePath = stem.flacUrl;
         await updateLastRequestedAt("stem", stem.id, "flac");
       } else {
