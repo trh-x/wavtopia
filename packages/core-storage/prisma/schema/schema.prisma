@@ -158,6 +158,7 @@ model Track {
   lyrics              String?
   description         String?
   version             String?      // e.g., "Radio Edit", "Extended Mix"
+  // TODO: Maybe remixedBy could be represented in the Credits table
   remixedBy           String?      @map("remixed_by")
   
   // Technical Information

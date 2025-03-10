@@ -6,6 +6,8 @@ import {
   FormTextArea,
   FormSwitch,
   FormTagInput,
+  FormDateWithPrecision,
+  DatePrecision,
 } from "@/components/ui/FormInput";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
@@ -22,6 +24,8 @@ interface UploadFormData {
   genres: string[];
   description: string | undefined;
   isExplicit: boolean;
+  releaseDate: Date | undefined;
+  releaseDatePrecision: DatePrecision;
 }
 
 export function UploadTrack() {
@@ -41,6 +45,8 @@ export function UploadTrack() {
         genres: [],
         description: undefined,
         isExplicit: false,
+        releaseDate: undefined,
+        releaseDatePrecision: "DAY",
       },
       onSubmit: async (values) => {
         if (!values.original) {
@@ -59,6 +65,10 @@ export function UploadTrack() {
             genres: values.genres,
             description: values.description,
             isExplicit: values.isExplicit,
+            ...(values.releaseDate && {
+              releaseDate: values.releaseDate.toISOString(),
+              releaseDatePrecision: values.releaseDatePrecision,
+            }),
           })
         );
         formData.append("original", values.original);
@@ -164,6 +174,17 @@ export function UploadTrack() {
               />
             </div>
           </div>
+
+          <FormDateWithPrecision
+            id="releaseDate"
+            value={values.releaseDate}
+            onChange={(date) => handleChange("releaseDate", date)}
+            precision={values.releaseDatePrecision}
+            onPrecisionChange={(precision) =>
+              handleChange("releaseDatePrecision", precision)
+            }
+            max={new Date().toISOString().split("T")[0]}
+          />
 
           <FormTextArea
             id="description"
