@@ -3,6 +3,7 @@ import { FormFieldProps, FormFieldWrapper } from "./FormField";
 import { FormInput } from "./FormInput";
 import { Toggle } from "../Toggle";
 
+// TODO: Retrieve from core-storage
 export type DatePrecision = "YEAR" | "MONTH" | "DAY";
 
 interface FormDateWithPrecisionProps extends Omit<FormFieldProps, "label"> {

@@ -15,6 +15,7 @@ import { prisma } from "../../lib/prisma";
 import { config } from "../../config";
 import { findOrCreateByName } from "../../utils/entityManagement";
 import { authenticateTrackAccess } from "./middleware";
+import { DatePrecision } from "@wavtopia/core-storage";
 
 // TODO: Extend Request type to include user property
 
@@ -32,6 +33,9 @@ export const trackSchema = z.object({
   bpm: z.number().optional(),
   key: z.string().optional(),
   isExplicit: z.boolean().optional(),
+  // Release Information
+  releaseDate: z.string().optional(),
+  releaseDatePrecision: z.nativeEnum(DatePrecision).optional(),
   // Metadata
   description: z.string().optional(),
   // Classification/Taxonomy
@@ -199,6 +203,12 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
           key: data.key,
           isExplicit: data.isExplicit,
           description: data.description,
+          ...(data.releaseDate && data.releaseDatePrecision
+            ? {
+                releaseDate: new Date(data.releaseDate),
+                releaseDatePrecision: data.releaseDatePrecision,
+              }
+            : {}),
           ...(data.genres && data.genres.length > 0
             ? {
                 genres: {
