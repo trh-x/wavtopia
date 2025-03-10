@@ -8,7 +8,7 @@ import {
   FormTagInput,
   FormDateWithPrecision,
   DatePrecision,
-} from "@/components/ui/FormInput";
+} from "@/components/ui/forms";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";

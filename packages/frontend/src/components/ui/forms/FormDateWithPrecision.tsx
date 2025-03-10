@@ -1,6 +1,7 @@
 import { ChangeEvent } from "react";
 import { FormFieldProps, FormFieldWrapper } from "./FormField";
 import { FormInput } from "./FormInput";
+import { Toggle } from "../Toggle";
 
 export type DatePrecision = "YEAR" | "MONTH" | "DAY";
 
@@ -120,17 +121,15 @@ export function FormDateWithPrecision({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {precisionLabel}
           </label>
-          <select
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+          <Toggle
             value={precision}
-            onChange={(e) =>
-              handlePrecisionChange(e.target.value as DatePrecision)
-            }
-          >
-            <option value="DAY">Day</option>
-            <option value="MONTH">Month</option>
-            <option value="YEAR">Year</option>
-          </select>
+            options={[
+              { value: "DAY", label: "Day" },
+              { value: "MONTH", label: "Month" },
+              { value: "YEAR", label: "Year" },
+            ]}
+            onChange={handlePrecisionChange}
+          />
         </div>
       </div>
     </FormFieldWrapper>

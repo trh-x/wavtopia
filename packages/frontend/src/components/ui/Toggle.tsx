@@ -5,7 +5,7 @@ interface ToggleOption<T extends string> {
 
 interface ToggleProps<T extends string> {
   value: T;
-  options: [ToggleOption<T>, ToggleOption<T>];
+  options: ToggleOption<T>[];
   onChange: (value: T) => void;
   className?: string;
 }
@@ -23,7 +23,10 @@ export function Toggle<T extends string>({
       {options.map((option) => (
         <button
           key={option.value}
-          onClick={() => onChange(option.value)}
+          onClick={(e) => {
+            e.preventDefault();
+            onChange(option.value);
+          }}
           className={`relative rounded-md px-3 py-1.5 transition-colors duration-200 ${
             value === option.value
               ? "bg-primary-600 text-white"
