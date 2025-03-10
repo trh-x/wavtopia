@@ -22,8 +22,8 @@ export function FormDateWithPrecision({
   precision,
   onPrecisionChange,
   label = "Release Date",
-  dateLabel = "Date",
-  precisionLabel = "Precision",
+  dateLabel,
+  precisionLabel,
   error,
   max,
   id,
@@ -118,9 +118,11 @@ export function FormDateWithPrecision({
           />
         </div>
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {precisionLabel}
-          </label>
+          {precisionLabel && (
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {precisionLabel}
+            </label>
+          )}
           <Toggle
             value={precision}
             options={[
