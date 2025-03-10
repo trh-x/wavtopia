@@ -1,5 +1,5 @@
 import { InputHTMLAttributes, KeyboardEvent, useState } from "react";
-import { FormFieldProps, FormFieldWrapper } from "./FormField";
+import { FormFieldWrapper } from "./FormField";
 import { cn } from "../../../utils/cn";
 
 interface FormTagInputProps
