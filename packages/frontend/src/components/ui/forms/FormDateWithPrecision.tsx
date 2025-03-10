@@ -112,6 +112,22 @@ export function FormDateWithPrecision({
 
   const placeholderProps = precision === "YEAR" ? { placeholder: "yyyy" } : {};
 
+  const formatMaxDate = () => {
+    if (!max) return undefined;
+    const maxDate = new Date(max);
+    switch (precision) {
+      case "YEAR":
+        return maxDate.getFullYear().toString();
+      case "MONTH":
+        return `${maxDate.getFullYear()}-${String(
+          maxDate.getMonth() + 1
+        ).padStart(2, "0")}`;
+      case "DAY":
+      default:
+        return max;
+    }
+  };
+
   return (
     <FormFieldWrapper label={label} error={error} id={id}>
       <div className="flex gap-4 items-start">
@@ -120,7 +136,7 @@ export function FormDateWithPrecision({
             id={id ? `${id}-date` : undefined}
             type={getDateInputType()}
             value={formatDateValue()}
-            max={max}
+            max={formatMaxDate()}
             onChange={handleDateChange}
             label={dateLabel}
             {...placeholderProps}
