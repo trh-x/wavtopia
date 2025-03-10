@@ -67,7 +67,13 @@ export function FormDateWithPrecision({
     let date: Date;
     switch (precision) {
       case "YEAR":
-        date = new Date(parseInt(inputValue), 0, 1);
+        // We can't use new Date(parseInt(inputValue, 10)) because it
+        // prevents the user from deleting from a 3 digit year.
+        date = new Date();
+        date.setFullYear(parseInt(inputValue, 10));
+        date.setMonth(0);
+        date.setDate(1);
+        date.setHours(0, 0, 0, 0);
         break;
       case "MONTH":
         const [year, month] = inputValue.split("-").map(Number);
