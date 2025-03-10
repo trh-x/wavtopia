@@ -110,6 +110,8 @@ export function FormDateWithPrecision({
     }
   };
 
+  const placeholderProps = precision === "YEAR" ? { placeholder: "yyyy" } : {};
+
   return (
     <FormFieldWrapper label={label} error={error} id={id}>
       <div className="flex gap-4 items-start">
@@ -121,6 +123,7 @@ export function FormDateWithPrecision({
             max={max}
             onChange={handleDateChange}
             label={dateLabel}
+            {...placeholderProps}
           />
         </div>
         <div className="flex-1">
