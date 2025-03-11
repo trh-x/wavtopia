@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from "react";
+import throttle from "lodash/fp/throttle";
 
 interface HeaderDropdownProps {
   trigger: React.ReactNode;
   children: React.ReactNode;
   align?: "left" | "right";
+  mobileOnly?: boolean;
 }
 
 export function HeaderDropdown({
   trigger,
   children,
   align = "right",
+  mobileOnly = false,
 }: HeaderDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -24,9 +27,28 @@ export function HeaderDropdown({
       }
     }
 
+    // Throttle resize handler to run at most once every 150ms
+    const handleResize = throttle(150, () => {
+      if (mobileOnly && window.innerWidth >= 640) {
+        // 640px is the sm breakpoint
+        setIsOpen(false);
+      }
+    });
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (mobileOnly) {
+      window.addEventListener("resize", handleResize);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      if (mobileOnly) {
+        window.removeEventListener("resize", handleResize);
+        // Clean up the throttled function
+        handleResize.cancel();
+      }
+    };
+  }, [mobileOnly]);
 
   return (
     <div className="relative" ref={dropdownRef}>

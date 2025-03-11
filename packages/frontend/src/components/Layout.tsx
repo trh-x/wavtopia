@@ -119,6 +119,7 @@ export function Layout({ children }: LayoutProps) {
                       </svg>
                     </button>
                   }
+                  mobileOnly
                 >
                   {navItems}
                 </HeaderDropdown>
