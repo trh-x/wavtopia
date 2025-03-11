@@ -1,13 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "./NotificationBell";
-import { useState } from "react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/DropdownMenu";
+  HeaderDropdown,
+  HeaderDropdownItem,
+} from "@/components/ui/HeaderDropdown";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,27 +15,26 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
   const isAdmin = user?.role === "ADMIN";
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const getNavItemClass = (path: string, isMobile = false) => {
+  const getNavItemClass = (path: string) => {
     const isActive = location.pathname === path;
-    return isMobile
-      ? `px-6 py-3 text-sm transition-colors duration-150 whitespace-nowrap block ${
-          isActive ? "bg-primary-900" : "hover:bg-primary-700/50"
-        }`
-      : `px-3 py-1 text-sm rounded-lg whitespace-nowrap ${
-          isActive ? "bg-primary-900" : "bg-primary-700 hover:bg-primary-800"
-        }`;
+    return `px-3 py-1 text-sm rounded-lg whitespace-nowrap ${
+      isActive ? "bg-primary-900" : "bg-primary-700 hover:bg-primary-800"
+    }`;
   };
 
-  const navItems = (isMobile = false) => (
+  const navItems = (
     <>
-      <Link to="/my-tracks" className={getNavItemClass("/my-tracks", isMobile)}>
-        My Tracks
-      </Link>
-      <Link to="/upload" className={getNavItemClass("/upload", isMobile)}>
-        Upload Track
-      </Link>
+      <HeaderDropdownItem>
+        <Link to="/my-tracks" className="block">
+          My Tracks
+        </Link>
+      </HeaderDropdownItem>
+      <HeaderDropdownItem>
+        <Link to="/upload" className="block">
+          Upload Track
+        </Link>
+      </HeaderDropdownItem>
     </>
   );
 
@@ -58,74 +54,74 @@ export function Layout({ children }: LayoutProps) {
             {user ? (
               <div className="flex items-center gap-4">
                 <div className="hidden sm:flex items-center gap-4">
-                  {navItems(false)}
+                  <Link
+                    to="/my-tracks"
+                    className={getNavItemClass("/my-tracks")}
+                  >
+                    My Tracks
+                  </Link>
+                  <Link to="/upload" className={getNavItemClass("/upload")}>
+                    Upload Track
+                  </Link>
                 </div>
                 <div className="flex items-center gap-2">
                   <NotificationBell />
-                  <DropdownMenu>
-                    <DropdownMenuTrigger className="flex items-center gap-1 hover:text-primary-200">
-                      <span className="text-sm whitespace-nowrap">
-                        {user.username}
-                      </span>
+                  <HeaderDropdown
+                    trigger={
+                      <button className="flex items-center gap-1 hover:text-primary-200">
+                        <span className="text-sm whitespace-nowrap">
+                          {user.username}
+                        </span>
+                        <svg
+                          className="h-4 w-4"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    }
+                  >
+                    {isAdmin && (
+                      <HeaderDropdownItem>
+                        <Link to="/admin" className="block">
+                          Admin Dashboard
+                        </Link>
+                      </HeaderDropdownItem>
+                    )}
+                    <HeaderDropdownItem onClick={logout}>
+                      Logout
+                    </HeaderDropdownItem>
+                  </HeaderDropdown>
+                </div>
+                <HeaderDropdown
+                  trigger={
+                    <button className="sm:hidden inline-flex items-center justify-center p-2 rounded-md hover:bg-primary-700 focus:outline-none">
+                      <span className="sr-only">Toggle menu</span>
                       <svg
-                        className="h-4 w-4"
+                        className="h-6 w-6"
                         xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
                       >
                         <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 12h16M4 18h16"
                         />
                       </svg>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {isAdmin && (
-                        <DropdownMenuItem asChild>
-                          <Link to="/admin">Admin Dashboard</Link>
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem onClick={logout}>
-                        Logout
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="sm:hidden inline-flex items-center justify-center p-2 rounded-md hover:bg-primary-700 focus:outline-none"
+                    </button>
+                  }
                 >
-                  <span className="sr-only">Toggle menu</span>
-                  <svg
-                    className={`${isMenuOpen ? "hidden" : "block"} h-6 w-6`}
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                  <svg
-                    className={`${isMenuOpen ? "block" : "hidden"} h-6 w-6`}
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                  {navItems}
+                </HeaderDropdown>
               </div>
             ) : (
               !isLoginPage && (
@@ -137,15 +133,6 @@ export function Layout({ children }: LayoutProps) {
                 </Link>
               )
             )}
-          </div>
-
-          {/* Mobile menu overlay */}
-          <div
-            className={`${
-              isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-            } sm:hidden absolute right-0 top-16 min-w-[200px] bg-primary-800 shadow-lg border border-primary-700 rounded-bl-lg transition-opacity duration-200 ease-out mr-4`}
-          >
-            <div className="py-1">{navItems(true)}</div>
           </div>
         </div>
       </nav>
