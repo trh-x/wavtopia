@@ -1,6 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "./NotificationBell";
+import {
+  HeaderDropdown,
+  HeaderDropdownItem,
+} from "@/components/ui/HeaderDropdown";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,60 +16,119 @@ export function Layout({ children }: LayoutProps) {
   const isLoginPage = location.pathname === "/login";
   const isAdmin = user?.role === "ADMIN";
 
+  const getNavItemClass = (path: string) => {
+    const isActive = location.pathname === path;
+    return `px-3 py-1 text-sm rounded-lg whitespace-nowrap ${
+      isActive ? "bg-primary-900" : "bg-primary-700 hover:bg-primary-800"
+    }`;
+  };
+
+  const navItems = (
+    <>
+      <HeaderDropdownItem>
+        <Link to="/my-tracks" className="block">
+          My Tracks
+        </Link>
+      </HeaderDropdownItem>
+      <HeaderDropdownItem>
+        <Link to="/upload" className="block">
+          Upload Track
+        </Link>
+      </HeaderDropdownItem>
+    </>
+  );
+
   return (
     <div className="min-h-screen">
-      <nav className="bg-primary-600 text-white">
+      <nav className="bg-primary-600 text-white relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="text-xl font-bold">
+          <div className="h-16 flex items-center justify-between gap-4">
+            {/* Left - Brand */}
+            <div className="flex-none">
+              <Link to="/" className="text-xl font-bold whitespace-nowrap">
                 Wavtopia
               </Link>
-              {isAdmin && (
-                <div className="flex items-center gap-2 ml-8">
-                  <Link
-                    to="/admin/feature-flags"
-                    className="text-sm hover:text-primary-200"
-                  >
-                    Feature Flags
-                  </Link>
-                  <Link
-                    to="/admin/invite-codes"
-                    className="text-sm hover:text-primary-200"
-                  >
-                    Invite Codes
-                  </Link>
-                </div>
-              )}
             </div>
+
+            {/* Right - User Navigation */}
             {user ? (
               <div className="flex items-center gap-4">
-                <Link
-                  to="/my-tracks"
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                <div className="hidden sm:flex items-center gap-4">
+                  <Link
+                    to="/my-tracks"
+                    className={getNavItemClass("/my-tracks")}
+                  >
+                    My Tracks
+                  </Link>
+                  <Link to="/upload" className={getNavItemClass("/upload")}>
+                    Upload Track
+                  </Link>
+                </div>
+                <div className="flex items-center gap-2">
+                  <NotificationBell />
+                  <HeaderDropdown
+                    trigger={
+                      <button className="flex items-center gap-1 hover:text-primary-200">
+                        <span className="text-sm whitespace-nowrap">
+                          {user.username}
+                        </span>
+                        <svg
+                          className="h-4 w-4"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    }
+                  >
+                    {isAdmin && (
+                      <HeaderDropdownItem>
+                        <Link to="/admin" className="block">
+                          Admin Dashboard
+                        </Link>
+                      </HeaderDropdownItem>
+                    )}
+                    <HeaderDropdownItem onClick={logout}>
+                      Logout
+                    </HeaderDropdownItem>
+                  </HeaderDropdown>
+                </div>
+                <HeaderDropdown
+                  trigger={
+                    <button className="sm:hidden inline-flex items-center justify-center p-2 rounded-md hover:bg-primary-700 focus:outline-none">
+                      <span className="sr-only">Toggle menu</span>
+                      <svg
+                        className="h-6 w-6"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 12h16M4 18h16"
+                        />
+                      </svg>
+                    </button>
+                  }
+                  mobileOnly
                 >
-                  My Tracks
-                </Link>
-                <Link
-                  to="/upload"
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
-                >
-                  Upload Track
-                </Link>
-                <NotificationBell />
-                <span className="text-sm">{user.username}</span>
-                <button
-                  onClick={logout}
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
-                >
-                  Logout
-                </button>
+                  {navItems}
+                </HeaderDropdown>
               </div>
             ) : (
               !isLoginPage && (
                 <Link
                   to="/login"
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
                 >
                   Login
                 </Link>

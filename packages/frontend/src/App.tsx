@@ -13,8 +13,7 @@ import { UploadTrack } from "@/pages/UploadTrack";
 import { MyTracks } from "./pages/MyTracks";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AdminRoute } from "@/components/AdminRoute";
-import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
-import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
+import { Admin } from "@/pages/Admin/Admin";
 import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 import Notifications from "@/pages/Notifications";
 import { BulkUploadTrack } from "./pages/BulkUploadTrack";
@@ -71,18 +70,10 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/admin/feature-flags"
+          path="/admin/*"
           element={
             <AdminRoute>
-              <FeatureFlagsAdmin />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/invite-codes"
-          element={
-            <AdminRoute>
-              <InviteCodesAdmin />
+              <Admin />
             </AdminRoute>
           }
         />
