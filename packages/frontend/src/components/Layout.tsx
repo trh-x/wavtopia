@@ -1,6 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "./NotificationBell";
+import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/DropdownMenu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,66 +18,129 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
   const isAdmin = user?.role === "ADMIN";
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const navItems = (
+    <>
+      <Link
+        to="/my-tracks"
+        className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
+      >
+        My Tracks
+      </Link>
+      <Link
+        to="/upload"
+        className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
+      >
+        Upload Track
+      </Link>
+    </>
+  );
 
   return (
     <div className="min-h-screen">
       <nav className="bg-primary-600 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Link to="/" className="text-xl font-bold">
+          <div className="h-16 flex items-center justify-between gap-4">
+            {/* Left - Brand */}
+            <div className="flex-none">
+              <Link to="/" className="text-xl font-bold whitespace-nowrap">
                 Wavtopia
               </Link>
-              {isAdmin && (
-                <div className="flex items-center gap-2 ml-8">
-                  <Link
-                    to="/admin/feature-flags"
-                    className="text-sm hover:text-primary-200"
-                  >
-                    Feature Flags
-                  </Link>
-                  <Link
-                    to="/admin/invite-codes"
-                    className="text-sm hover:text-primary-200"
-                  >
-                    Invite Codes
-                  </Link>
-                </div>
-              )}
             </div>
+
+            {/* Right - User Navigation */}
             {user ? (
               <div className="flex items-center gap-4">
-                <Link
-                  to="/my-tracks"
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
-                >
-                  My Tracks
-                </Link>
-                <Link
-                  to="/upload"
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
-                >
-                  Upload Track
-                </Link>
-                <NotificationBell />
-                <span className="text-sm">{user.username}</span>
+                <div className="hidden sm:flex items-center gap-4">
+                  {navItems}
+                </div>
+                <div className="flex items-center gap-2">
+                  <NotificationBell />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="flex items-center gap-1 hover:text-primary-200">
+                      <span className="text-sm whitespace-nowrap">
+                        {user.username}
+                      </span>
+                      <svg
+                        className="h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {isAdmin && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin">Admin Dashboard</Link>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={logout}>
+                        Logout
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <button
-                  onClick={logout}
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="sm:hidden inline-flex items-center justify-center p-2 rounded-md hover:bg-primary-700 focus:outline-none"
                 >
-                  Logout
+                  <span className="sr-only">Toggle menu</span>
+                  <svg
+                    className={`${isMenuOpen ? "hidden" : "block"} h-6 w-6`}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                  <svg
+                    className={`${isMenuOpen ? "block" : "hidden"} h-6 w-6`}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
                 </button>
               </div>
             ) : (
               !isLoginPage && (
                 <Link
                   to="/login"
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800"
+                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
                 >
                   Login
                 </Link>
               )
             )}
+          </div>
+
+          {/* Mobile menu */}
+          <div
+            className={`${
+              isMenuOpen ? "block" : "hidden"
+            } sm:hidden py-2 space-y-2`}
+          >
+            <div className="flex flex-col gap-2 items-end">{navItems}</div>
           </div>
         </div>
       </nav>
