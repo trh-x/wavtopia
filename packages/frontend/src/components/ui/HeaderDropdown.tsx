@@ -6,6 +6,7 @@ interface HeaderDropdownProps {
   children: React.ReactNode;
   align?: "left" | "right";
   mobileOnly?: boolean;
+  onOpen?: () => void;
 }
 
 export function HeaderDropdown({
@@ -13,6 +14,7 @@ export function HeaderDropdown({
   children,
   align = "right",
   mobileOnly = false,
+  onOpen,
 }: HeaderDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -50,9 +52,17 @@ export function HeaderDropdown({
     };
   }, [mobileOnly]);
 
+  const handleToggle = () => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    if (newIsOpen && onOpen) {
+      onOpen();
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
-      <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
+      <div onClick={handleToggle}>{trigger}</div>
       <div
         className={`${
           isOpen
