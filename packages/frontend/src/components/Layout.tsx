@@ -20,18 +20,23 @@ export function Layout({ children }: LayoutProps) {
   const isAdmin = user?.role === "ADMIN";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const navItems = (
+  const getNavItemClass = (path: string, isMobile = false) => {
+    const isActive = location.pathname === path;
+    return isMobile
+      ? `px-6 py-3 text-sm transition-colors duration-150 whitespace-nowrap block ${
+          isActive ? "bg-primary-900" : "hover:bg-primary-700/50"
+        }`
+      : `px-3 py-1 text-sm rounded-lg whitespace-nowrap ${
+          isActive ? "bg-primary-900" : "bg-primary-700 hover:bg-primary-800"
+        }`;
+  };
+
+  const navItems = (isMobile = false) => (
     <>
-      <Link
-        to="/my-tracks"
-        className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
-      >
+      <Link to="/my-tracks" className={getNavItemClass("/my-tracks", isMobile)}>
         My Tracks
       </Link>
-      <Link
-        to="/upload"
-        className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
-      >
+      <Link to="/upload" className={getNavItemClass("/upload", isMobile)}>
         Upload Track
       </Link>
     </>
@@ -39,7 +44,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen">
-      <nav className="bg-primary-600 text-white">
+      <nav className="bg-primary-600 text-white relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between gap-4">
             {/* Left - Brand */}
@@ -53,7 +58,7 @@ export function Layout({ children }: LayoutProps) {
             {user ? (
               <div className="flex items-center gap-4">
                 <div className="hidden sm:flex items-center gap-4">
-                  {navItems}
+                  {navItems(false)}
                 </div>
                 <div className="flex items-center gap-2">
                   <NotificationBell />
@@ -134,13 +139,13 @@ export function Layout({ children }: LayoutProps) {
             )}
           </div>
 
-          {/* Mobile menu */}
+          {/* Mobile menu overlay */}
           <div
             className={`${
-              isMenuOpen ? "block" : "hidden"
-            } sm:hidden py-2 space-y-2`}
+              isMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            } sm:hidden absolute right-0 top-16 min-w-[200px] bg-primary-800 shadow-lg border border-primary-700 rounded-bl-lg transition-opacity duration-200 ease-out mr-4`}
           >
-            <div className="flex flex-col gap-2 items-end">{navItems}</div>
+            <div className="py-1">{navItems(true)}</div>
           </div>
         </div>
       </nav>
