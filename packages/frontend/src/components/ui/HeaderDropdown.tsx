@@ -1,23 +1,28 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import throttle from "lodash/fp/throttle";
+import { useHeaderDropdown } from "@/contexts/HeaderDropdownContext";
 
 interface HeaderDropdownProps {
+  id: string;
   trigger: React.ReactNode;
   children: React.ReactNode;
   align?: "left" | "right";
   mobileOnly?: boolean;
-  onOpen?: () => void;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export function HeaderDropdown({
+  id,
   trigger,
   children,
   align = "right",
   mobileOnly = false,
-  onOpen,
+  onOpenChange,
 }: HeaderDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { openDropdownId, setOpenDropdownId } = useHeaderDropdown();
+
+  const isOpen = openDropdownId === id;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -25,7 +30,8 @@ export function HeaderDropdown({
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        setOpenDropdownId(null);
+        onOpenChange?.(false);
       }
     }
 
@@ -33,7 +39,8 @@ export function HeaderDropdown({
     const handleResize = throttle(150, () => {
       if (mobileOnly && window.innerWidth >= 640) {
         // 640px is the sm breakpoint
-        setIsOpen(false);
+        setOpenDropdownId(null);
+        onOpenChange?.(false);
       }
     });
 
@@ -50,14 +57,12 @@ export function HeaderDropdown({
         handleResize.cancel();
       }
     };
-  }, [mobileOnly]);
+  }, [mobileOnly, onOpenChange, setOpenDropdownId]);
 
   const handleToggle = () => {
     const newIsOpen = !isOpen;
-    setIsOpen(newIsOpen);
-    if (newIsOpen && onOpen) {
-      onOpen();
-    }
+    setOpenDropdownId(newIsOpen ? id : null);
+    onOpenChange?.(newIsOpen);
   };
 
   return (

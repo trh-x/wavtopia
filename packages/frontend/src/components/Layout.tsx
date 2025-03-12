@@ -5,16 +5,21 @@ import {
   HeaderDropdown,
   HeaderDropdownItem,
 } from "@/components/ui/HeaderDropdown";
+import {
+  HeaderDropdownProvider,
+  useHeaderDropdown,
+} from "@/contexts/HeaderDropdownContext";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-export function Layout({ children }: LayoutProps) {
+function Header() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
   const isAdmin = user?.role === "ADMIN";
+  const { openDropdownId } = useHeaderDropdown();
 
   const getNavItemClass = (path: string) => {
     const isActive = location.pathname === path;
@@ -39,105 +44,115 @@ export function Layout({ children }: LayoutProps) {
   );
 
   return (
-    <div className="min-h-screen">
-      <nav className="bg-primary-600 text-white relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-16 flex items-center justify-between gap-4">
-            {/* Left - Brand */}
-            <div className="flex-none">
-              <Link to="/" className="text-xl font-bold whitespace-nowrap">
-                Wavtopia
-              </Link>
-            </div>
+    <nav
+      className={`bg-primary-600 text-white relative z-10 ${
+        openDropdownId ? "sticky top-0" : ""
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-16 flex items-center justify-between gap-4">
+          {/* Left - Brand */}
+          <div className="flex-none">
+            <Link to="/" className="text-xl font-bold whitespace-nowrap">
+              Wavtopia
+            </Link>
+          </div>
 
-            {/* Right - User Navigation */}
-            {user ? (
-              <div className="flex items-center gap-4">
-                <div className="hidden sm:flex items-center gap-4">
-                  <Link
-                    to="/my-tracks"
-                    className={getNavItemClass("/my-tracks")}
-                  >
-                    My Tracks
-                  </Link>
-                  <Link to="/upload" className={getNavItemClass("/upload")}>
-                    Upload Track
-                  </Link>
-                </div>
-                <div className="flex items-center gap-2">
-                  <NotificationBell />
-                  <HeaderDropdown
-                    trigger={
-                      <button className="flex items-center gap-1 hover:text-primary-200">
-                        <span className="text-sm whitespace-nowrap">
-                          {user.username}
-                        </span>
-                        <svg
-                          className="h-4 w-4"
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
-                    }
-                  >
-                    {isAdmin && (
-                      <HeaderDropdownItem>
-                        <Link to="/admin" className="block">
-                          Admin Dashboard
-                        </Link>
-                      </HeaderDropdownItem>
-                    )}
-                    <HeaderDropdownItem onClick={logout}>
-                      Logout
-                    </HeaderDropdownItem>
-                  </HeaderDropdown>
-                </div>
+          {/* Right - User Navigation */}
+          {user ? (
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-4">
+                <Link to="/my-tracks" className={getNavItemClass("/my-tracks")}>
+                  My Tracks
+                </Link>
+                <Link to="/upload" className={getNavItemClass("/upload")}>
+                  Upload Track
+                </Link>
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationBell />
                 <HeaderDropdown
+                  id="user-menu"
                   trigger={
-                    <button className="sm:hidden inline-flex items-center justify-center p-2 rounded-md hover:bg-primary-700 focus:outline-none">
-                      <span className="sr-only">Toggle menu</span>
+                    <button className="flex items-center gap-1 hover:text-primary-200">
+                      <span className="text-sm whitespace-nowrap">
+                        {user.username}
+                      </span>
                       <svg
-                        className="h-6 w-6"
+                        className="h-4 w-4"
                         xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
                       >
                         <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M4 6h16M4 12h16M4 18h16"
+                          fillRule="evenodd"
+                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                          clipRule="evenodd"
                         />
                       </svg>
                     </button>
                   }
-                  mobileOnly
                 >
-                  {navItems}
+                  {isAdmin && (
+                    <HeaderDropdownItem>
+                      <Link to="/admin" className="block">
+                        Admin Dashboard
+                      </Link>
+                    </HeaderDropdownItem>
+                  )}
+                  <HeaderDropdownItem onClick={logout}>
+                    Logout
+                  </HeaderDropdownItem>
                 </HeaderDropdown>
               </div>
-            ) : (
-              !isLoginPage && (
-                <Link
-                  to="/login"
-                  className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
-                >
-                  Login
-                </Link>
-              )
-            )}
-          </div>
+              <HeaderDropdown
+                id="mobile-menu"
+                trigger={
+                  <button className="sm:hidden inline-flex items-center justify-center p-2 rounded-md hover:bg-primary-700 focus:outline-none">
+                    <span className="sr-only">Toggle menu</span>
+                    <svg
+                      className="h-6 w-6"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h16"
+                      />
+                    </svg>
+                  </button>
+                }
+                mobileOnly
+              >
+                {navItems}
+              </HeaderDropdown>
+            </div>
+          ) : (
+            !isLoginPage && (
+              <Link
+                to="/login"
+                className="px-3 py-1 text-sm bg-primary-700 rounded-lg hover:bg-primary-800 whitespace-nowrap"
+              >
+                Login
+              </Link>
+            )
+          )}
         </div>
-      </nav>
+      </div>
+    </nav>
+  );
+}
 
+export function Layout({ children }: LayoutProps) {
+  return (
+    <div className="min-h-screen">
+      <HeaderDropdownProvider>
+        <Header />
+      </HeaderDropdownProvider>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>

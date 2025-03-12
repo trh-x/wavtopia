@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { useAuthToken } from "../hooks/useAuthToken";
-import { api } from "../api/client";
-import { Prisma } from "@wavtopia/core-storage";
 import { useNavigate } from "react-router-dom";
-import {
-  HeaderDropdown,
-  HeaderDropdownItem,
-} from "@/components/ui/HeaderDropdown";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAuthToken } from "@/hooks/useAuthToken";
+import { api } from "@/api/client";
+import { Prisma } from "@wavtopia/core-storage";
+import { HeaderDropdown, HeaderDropdownItem } from "./ui/HeaderDropdown";
 
 type Notification = Prisma.NotificationGetPayload<{}>;
 
@@ -85,8 +82,10 @@ export function NotificationBell() {
 
   return (
     <HeaderDropdown
+      id="notifications"
       trigger={
-        <button className="p-2 hover:text-primary-200 rounded-full relative">
+        <button className="relative p-2 hover:text-primary-200 rounded-full">
+          <span className="sr-only">View notifications</span>
           <svg
             className="w-6 h-6"
             fill="none"
@@ -107,7 +106,11 @@ export function NotificationBell() {
           )}
         </button>
       }
-      onOpen={loadNotifications}
+      onOpenChange={(isOpen) => {
+        if (isOpen) {
+          loadNotifications();
+        }
+      }}
     >
       <div className="w-96">
         {unreadCount > 0 && (
