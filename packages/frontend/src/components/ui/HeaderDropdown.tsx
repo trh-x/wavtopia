@@ -22,14 +22,12 @@ export function HeaderDropdown({
   const { openDropdownId, setOpenDropdownId, registerDropdownRef } =
     useHeaderDropdown();
 
-  const dropdownId = mobileOnly ? `mobile-${id}` : id;
-
-  const isOpen = openDropdownId === dropdownId;
+  const isOpen = openDropdownId === id;
 
   useEffect(() => {
-    registerDropdownRef(dropdownId, dropdownRef.current);
+    registerDropdownRef(id, dropdownRef.current, { mobileOnly });
     return () => {
-      registerDropdownRef(dropdownId, null);
+      registerDropdownRef(id, null);
     };
   }, [id, mobileOnly, registerDropdownRef]);
 
@@ -39,7 +37,7 @@ export function HeaderDropdown({
 
   const handleToggle = () => {
     const newIsOpen = !isOpen;
-    setOpenDropdownId(newIsOpen ? dropdownId : null);
+    setOpenDropdownId(newIsOpen ? id : null);
   };
 
   return (

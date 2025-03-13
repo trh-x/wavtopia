@@ -18,7 +18,7 @@ function Header() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN"; // TODO: Get this const from prisma code.
   const { openDropdownId } = useHeaderDropdown();
 
   const getNavItemClass = (path: string) => {

@@ -8,10 +8,19 @@ import {
 } from "react";
 import throttle from "lodash/fp/throttle";
 
+interface DropdownInfo {
+  ref: HTMLDivElement;
+  mobileOnly: boolean;
+}
+
 interface HeaderDropdownContextType {
   openDropdownId: string | null;
   setOpenDropdownId: (id: string | null) => void;
-  registerDropdownRef: (id: string, ref: HTMLDivElement | null) => void;
+  registerDropdownRef: (
+    id: string,
+    ref: HTMLDivElement | null,
+    options?: { mobileOnly?: boolean }
+  ) => void;
 }
 
 const HeaderDropdownContext = createContext<HeaderDropdownContextType | null>(
@@ -30,16 +39,16 @@ export function useHeaderDropdown() {
 
 export function HeaderDropdownProvider({ children }: { children: ReactNode }) {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const dropdownRefs = useRef(new Map<string, HTMLDivElement>());
+  const dropdownRefs = useRef(new Map<string, DropdownInfo>());
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (!openDropdownId) return;
 
-      const activeDropdownRef = dropdownRefs.current.get(openDropdownId);
+      const activeDropdown = dropdownRefs.current.get(openDropdownId);
       if (
-        activeDropdownRef &&
-        !activeDropdownRef.contains(event.target as Node)
+        activeDropdown?.ref &&
+        !activeDropdown.ref.contains(event.target as Node)
       ) {
         setOpenDropdownId(null);
       }
@@ -47,9 +56,12 @@ export function HeaderDropdownProvider({ children }: { children: ReactNode }) {
 
     // Throttle resize handler to run at most once every 150ms
     const handleResize = throttle(150, () => {
-      if (openDropdownId?.startsWith("mobile-") && window.innerWidth >= 640) {
-        // 640px is the sm breakpoint
-        setOpenDropdownId(null);
+      if (openDropdownId) {
+        const activeDropdown = dropdownRefs.current.get(openDropdownId);
+        if (activeDropdown?.mobileOnly && window.innerWidth >= 640) {
+          // 640px is the sm breakpoint
+          setOpenDropdownId(null);
+        }
       }
     });
 
@@ -64,9 +76,13 @@ export function HeaderDropdownProvider({ children }: { children: ReactNode }) {
     };
   }, [openDropdownId]);
 
-  const registerDropdownRef = (id: string, ref: HTMLDivElement | null) => {
+  const registerDropdownRef = (
+    id: string,
+    ref: HTMLDivElement | null,
+    options: { mobileOnly?: boolean } = {}
+  ) => {
     if (ref) {
-      dropdownRefs.current.set(id, ref);
+      dropdownRefs.current.set(id, { ref, mobileOnly: !!options.mobileOnly });
     } else {
       dropdownRefs.current.delete(id);
     }
