@@ -112,14 +112,16 @@ export function NotificationBell() {
         }
       }}
     >
-      <div className="w-96">
+      <div className="w-full max-w-[380px]">
         {unreadCount > 0 && (
-          <div className="p-4 border-b border-primary-700">
+          <div className="p-3 sm:p-4 border-b border-primary-700">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Notifications</h3>
+              <h3 className="text-sm sm:text-base font-semibold">
+                Notifications
+              </h3>
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-sm text-primary-200 hover:text-primary-100"
+                className="text-xs text-primary-200 hover:text-primary-100"
               >
                 Mark all as read
               </button>
@@ -128,31 +130,46 @@ export function NotificationBell() {
         )}
         <div className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (
-            <div className="p-4 text-center text-gray-300">
+            <div className="p-3 sm:p-4 text-center text-gray-300 text-xs">
               No new notifications
             </div>
           ) : (
             notifications.map((notification) => (
               <div
                 key={notification.id}
-                className="p-4 border-b border-primary-700 hover:bg-primary-700/50"
+                className="p-3 sm:p-4 border-b border-primary-700"
               >
-                <div className="flex justify-between items-start gap-3">
-                  <div>
-                    <h4 className="font-semibold">{notification.title}</h4>
-                    <p className="text-sm text-gray-300">
+                <div className="flex justify-between items-start gap-2 sm:gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium">
+                      {notification.title}
+                    </h4>
+                    <p className="text-xs text-gray-300 break-words">
                       {notification.message}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-[11px] text-gray-400 mt-1">
                       {new Date(notification.createdAt).toLocaleString()}
                     </p>
                   </div>
                   {!notification.isRead && (
                     <button
                       onClick={() => handleMarkAsRead(notification.id)}
-                      className="text-xs text-primary-200 hover:text-primary-100"
+                      className="text-primary-200 hover:text-primary-100 p-1 rounded-full hover:bg-primary-700/50"
+                      title="Mark as read"
                     >
-                      Mark as read
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
                     </button>
                   )}
                 </div>
