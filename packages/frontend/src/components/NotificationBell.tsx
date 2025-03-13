@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthToken } from "@/hooks/useAuthToken";
@@ -78,6 +78,12 @@ export function NotificationBell() {
     navigate("/notifications");
   };
 
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    if (isOpen) {
+      loadNotifications();
+    }
+  }, []);
+
   if (!user) return null;
 
   return (
@@ -106,11 +112,7 @@ export function NotificationBell() {
           )}
         </button>
       }
-      onOpenChange={(isOpen) => {
-        if (isOpen) {
-          loadNotifications();
-        }
-      }}
+      onOpenChange={handleOpenChange}
     >
       <div className="w-full max-w-[380px] max-h-[calc(100vh-80px)] flex flex-col">
         {unreadCount > 0 && (
