@@ -1,5 +1,4 @@
 import { useRef, useEffect } from "react";
-import throttle from "lodash/fp/throttle";
 import { useHeaderDropdown } from "@/contexts/HeaderDropdownContext";
 
 interface HeaderDropdownProps {
@@ -20,49 +19,27 @@ export function HeaderDropdown({
   onOpenChange,
 }: HeaderDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { openDropdownId, setOpenDropdownId } = useHeaderDropdown();
+  const { openDropdownId, setOpenDropdownId, registerDropdownRef } =
+    useHeaderDropdown();
 
-  const isOpen = openDropdownId === id;
+  const dropdownId = mobileOnly ? `mobile-${id}` : id;
+
+  const isOpen = openDropdownId === dropdownId;
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setOpenDropdownId(null);
-        onOpenChange?.(false);
-      }
-    }
-
-    // Throttle resize handler to run at most once every 150ms
-    const handleResize = throttle(150, () => {
-      if (mobileOnly && window.innerWidth >= 640) {
-        // 640px is the sm breakpoint
-        setOpenDropdownId(null);
-        onOpenChange?.(false);
-      }
-    });
-
-    document.addEventListener("mousedown", handleClickOutside);
-    if (mobileOnly) {
-      window.addEventListener("resize", handleResize);
-    }
-
+    registerDropdownRef(dropdownId, dropdownRef.current);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      if (mobileOnly) {
-        window.removeEventListener("resize", handleResize);
-        // Clean up the throttled function
-        handleResize.cancel();
-      }
+      registerDropdownRef(dropdownId, null);
     };
-  }, [mobileOnly, onOpenChange, setOpenDropdownId]);
+  }, [id, mobileOnly, registerDropdownRef]);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   const handleToggle = () => {
     const newIsOpen = !isOpen;
-    setOpenDropdownId(newIsOpen ? id : null);
-    onOpenChange?.(newIsOpen);
+    setOpenDropdownId(newIsOpen ? dropdownId : null);
   };
 
   return (

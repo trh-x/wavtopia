@@ -1,8 +1,17 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useRef,
+  useEffect,
+} from "react";
+import throttle from "lodash/fp/throttle";
 
 interface HeaderDropdownContextType {
   openDropdownId: string | null;
   setOpenDropdownId: (id: string | null) => void;
+  registerDropdownRef: (id: string, ref: HTMLDivElement | null) => void;
 }
 
 const HeaderDropdownContext = createContext<HeaderDropdownContextType | null>(
@@ -21,12 +30,54 @@ export function useHeaderDropdown() {
 
 export function HeaderDropdownProvider({ children }: { children: ReactNode }) {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const dropdownRefs = useRef(new Map<string, HTMLDivElement>());
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!openDropdownId) return;
+
+      const activeDropdownRef = dropdownRefs.current.get(openDropdownId);
+      if (
+        activeDropdownRef &&
+        !activeDropdownRef.contains(event.target as Node)
+      ) {
+        setOpenDropdownId(null);
+      }
+    }
+
+    // Throttle resize handler to run at most once every 150ms
+    const handleResize = throttle(150, () => {
+      if (openDropdownId?.startsWith("mobile-") && window.innerWidth >= 640) {
+        // 640px is the sm breakpoint
+        setOpenDropdownId(null);
+      }
+    });
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", handleResize);
+      // Clean up the throttled function
+      handleResize.cancel();
+    };
+  }, [openDropdownId]);
+
+  const registerDropdownRef = (id: string, ref: HTMLDivElement | null) => {
+    if (ref) {
+      dropdownRefs.current.set(id, ref);
+    } else {
+      dropdownRefs.current.delete(id);
+    }
+  };
 
   return (
     <HeaderDropdownContext.Provider
       value={{
         openDropdownId,
         setOpenDropdownId,
+        registerDropdownRef,
       }}
     >
       {children}
