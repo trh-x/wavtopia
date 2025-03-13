@@ -112,9 +112,9 @@ export function NotificationBell() {
         }
       }}
     >
-      <div className="w-full max-w-[380px]">
+      <div className="w-full max-w-[380px] max-h-[calc(100vh-80px)] flex flex-col">
         {unreadCount > 0 && (
-          <div className="p-3 sm:p-4 border-b border-primary-700">
+          <div className="p-3 sm:p-4 border-b border-primary-700 flex-none">
             <div className="flex justify-between items-center">
               <h3 className="text-sm sm:text-base font-semibold">
                 Notifications
@@ -128,7 +128,7 @@ export function NotificationBell() {
             </div>
           </div>
         )}
-        <div className="max-h-96 overflow-y-auto">
+        <div className="overflow-y-auto min-h-0 flex-1">
           {notifications.length === 0 ? (
             <div className="p-3 sm:p-4 text-center text-gray-300 text-xs">
               No new notifications
