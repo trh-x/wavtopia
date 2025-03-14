@@ -44,14 +44,7 @@ export function HeaderDropdownProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (!openDropdownId) return;
-
-      const activeDropdown = dropdownRefs.current.get(openDropdownId);
-      if (
-        activeDropdown?.ref &&
-        !activeDropdown.ref.contains(event.target as Node)
-      ) {
-        setOpenDropdownId(null);
-      }
+      setOpenDropdownId(null);
     }
 
     // Throttle resize handler to run at most once every 150ms
