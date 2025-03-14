@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { useHeaderDropdown } from "@/contexts/HeaderDropdownContext";
+import { cn } from "@/utils/cn";
 
 interface HeaderDropdownProps {
   id: string;
@@ -52,15 +53,15 @@ export function HeaderDropdown({
            - Formula: max(1rem, (viewport - header-max-width) / 2 + padding)
       */}
       <div
-        className={`${
+        className={cn(
+          "fixed top-16 min-w-[200px] bg-primary-800 shadow-lg border border-primary-700 rounded-b-lg transition-all duration-200 ease-out",
           isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        } fixed ${
+            ? "opacity-100 pointer-events-auto visible"
+            : "opacity-0 pointer-events-none invisible",
           align === "right"
             ? "right-4 sm:right-6 lg:right-8"
             : "left-4 sm:left-6 lg:left-8"
-        } top-16 min-w-[200px] bg-primary-800 shadow-lg border border-primary-700 rounded-b-lg transition-opacity duration-200 ease-out`}
+        )}
         style={{
           maxWidth: "calc(100vw - 2rem)",
           [align === "right" ? "right" : "left"]:
