@@ -64,6 +64,11 @@ export function HeaderDropdownMenu({
       )}
       style={{
         maxWidth: "calc(100vw - 2rem)",
+        // Aligns the dropdown with the header's max-width container (80rem):
+        // - On smaller screens (<82rem), keeps dropdown 1rem from screen edge
+        // - On larger screens, aligns with the header's content by calculating
+        //   the space between viewport edge and header container (100vw - 80rem)/2,
+        //   then adding 2rem to match header's padding
         [align === "right" ? "right" : "left"]:
           "max(1rem, calc((100vw - 80rem) / 2 + 2rem))",
       }}
