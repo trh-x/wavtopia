@@ -42,7 +42,7 @@ export function HeaderDropdownProvider({ children }: { children: ReactNode }) {
   const dropdownRefs = useRef(new Map<string, DropdownInfo>());
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside() {
       if (!openDropdownId) return;
       setOpenDropdownId(null);
     }
