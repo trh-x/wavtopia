@@ -49,6 +49,7 @@ function Header() {
       className={`bg-primary-600 text-white relative z-10 ${
         openDropdownId ? "sticky top-0" : ""
       }`}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between gap-4">

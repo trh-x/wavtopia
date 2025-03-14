@@ -56,7 +56,7 @@ export function HeaderDropdownMenu({
     <div
       className={cn(
         "absolute min-w-[200px] bg-primary-800 shadow-lg border border-primary-700 rounded-b-lg",
-        "top-full mt-1",
+        "top-[calc(100%-1px)]",
         "transition-[opacity,visibility] duration-200 ease-out",
         isOpen
           ? "opacity-100 pointer-events-auto visible"
@@ -82,19 +82,9 @@ export function HeaderDropdownItem({
   onClick?: () => void;
   className?: string;
 }) {
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClick?.();
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
   return (
     <div
-      onClick={handleClick}
-      onMouseDown={handleMouseDown}
+      onClick={onClick}
       className={cn(
         "px-6 py-3 text-sm transition-colors duration-150 whitespace-nowrap block hover:bg-primary-700/50 cursor-pointer",
         className
