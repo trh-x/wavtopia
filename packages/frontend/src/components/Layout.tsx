@@ -20,7 +20,7 @@ function Header() {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
   const isAdmin = user?.role === "ADMIN"; // TODO: Get this const from prisma code.
-  const { openDropdownId } = useHeaderDropdown();
+  const { openDropdownId, setOpenDropdownId } = useHeaderDropdown();
 
   const getNavItemClass = (path: string) => {
     const isActive = location.pathname === path;
@@ -49,7 +49,14 @@ function Header() {
       className={`bg-primary-600 text-white relative z-10 ${
         openDropdownId ? "sticky top-0" : ""
       }`}
-      onMouseDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => {
+        e.stopPropagation();
+      }}
+      onClick={() => {
+        if (openDropdownId) {
+          setOpenDropdownId(null);
+        }
+      }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between gap-4">

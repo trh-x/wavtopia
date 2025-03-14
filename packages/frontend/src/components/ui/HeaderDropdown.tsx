@@ -12,6 +12,7 @@ interface HeaderDropdownMenuProps {
   id: string;
   children: React.ReactNode;
   align?: "left" | "right";
+  closeOnClick?: boolean;
 }
 
 export function HeaderDropdownTrigger({
@@ -32,7 +33,8 @@ export function HeaderDropdownTrigger({
     };
   }, [id, mobileOnly, registerDropdownRef]);
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const newIsOpen = !isOpen;
     setOpenDropdownId(newIsOpen ? id : null);
   };
@@ -48,6 +50,7 @@ export function HeaderDropdownMenu({
   id,
   children,
   align = "right",
+  closeOnClick = true,
 }: HeaderDropdownMenuProps) {
   const { openDropdownId } = useHeaderDropdown();
   const isOpen = openDropdownId === id;
@@ -71,6 +74,13 @@ export function HeaderDropdownMenu({
         //   then adding 2rem to match header's padding
         [align === "right" ? "right" : "left"]:
           "max(1rem, calc((100vw - 80rem) / 2 + 2rem))",
+      }}
+      onClick={(e) => {
+        if (!closeOnClick) {
+          // Stop the click event from bubbling up to the parent elements, as the Header
+          // will otherwise close the dropdown.
+          e.stopPropagation();
+        }
       }}
     >
       {children}

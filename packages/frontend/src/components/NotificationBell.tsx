@@ -19,7 +19,7 @@ export function NotificationBell() {
   const { user } = useAuth();
   const { getToken } = useAuthToken();
   const navigate = useNavigate();
-  const { openDropdownId } = useHeaderDropdown();
+  const { openDropdownId, setOpenDropdownId } = useHeaderDropdown();
   const isOpen = openDropdownId === "notifications";
 
   useEffect(() => {
@@ -89,6 +89,7 @@ export function NotificationBell() {
 
   const handleViewAll = () => {
     navigate("/notifications");
+    setOpenDropdownId(null);
   };
 
   if (!user) return null;
@@ -121,7 +122,7 @@ export function NotificationBell() {
           </button>
         }
       />
-      <HeaderDropdownMenu id="notifications">
+      <HeaderDropdownMenu id="notifications" closeOnClick={false}>
         <div className="w-full max-w-[380px] max-h-[calc(100vh-80px)] flex flex-col">
           {unreadCount > 0 && (
             <div className="p-3 sm:p-4 border-b border-primary-700 flex-none">
