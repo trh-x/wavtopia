@@ -2,7 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationBell } from "./NotificationBell";
 import {
-  HeaderDropdown,
+  HeaderDropdownTrigger,
+  HeaderDropdownMenu,
   HeaderDropdownItem,
 } from "@/components/ui/HeaderDropdown";
 import {
@@ -71,7 +72,7 @@ function Header() {
               </div>
               <div className="flex items-center gap-2">
                 <NotificationBell />
-                <HeaderDropdown
+                <HeaderDropdownTrigger
                   id="user-menu"
                   trigger={
                     <button className="flex items-center gap-1 hover:text-primary-200">
@@ -92,7 +93,8 @@ function Header() {
                       </svg>
                     </button>
                   }
-                >
+                />
+                <HeaderDropdownMenu id="user-menu">
                   {isAdmin && (
                     <HeaderDropdownItem>
                       <Link to="/admin" className="block">
@@ -103,9 +105,9 @@ function Header() {
                   <HeaderDropdownItem onClick={logout}>
                     Logout
                   </HeaderDropdownItem>
-                </HeaderDropdown>
+                </HeaderDropdownMenu>
               </div>
-              <HeaderDropdown
+              <HeaderDropdownTrigger
                 id="mobile-menu"
                 trigger={
                   <button className="sm:hidden inline-flex items-center justify-center p-2 rounded-md hover:bg-primary-700 focus:outline-none">
@@ -127,9 +129,10 @@ function Header() {
                   </button>
                 }
                 mobileOnly
-              >
+              />
+              <HeaderDropdownMenu id="mobile-menu">
                 {navItems}
-              </HeaderDropdown>
+              </HeaderDropdownMenu>
             </div>
           ) : (
             !isLoginPage && (
