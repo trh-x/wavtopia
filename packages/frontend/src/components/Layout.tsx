@@ -50,10 +50,19 @@ function Header() {
         openDropdownId ? "sticky top-0" : ""
       }`}
       onMouseDown={(e) => {
-        e.stopPropagation();
+        if (openDropdownId) {
+          // Stop the click event from bubbling up to the parent elements, to
+          // prevent the header from being made unsticky prematurely due to a
+          // click on the document.
+          // @see https://github.com/trh-x/wavtopia/blob/f3cf3881ae1dbd932054ac15612bd2b03fd1566f/packages/frontend/src/contexts/HeaderDropdownContext.tsx#L61-L62
+          e.stopPropagation();
+        }
       }}
       onClick={() => {
         if (openDropdownId) {
+          // Close any open dropdown when the header is clicked. The individual
+          // dropdowns will stop propagation of the click event before it bubbles
+          // up to the header, to ensure they don't close.
           setOpenDropdownId(null);
         }
       }}
