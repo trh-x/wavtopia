@@ -252,18 +252,17 @@ export function UploadTrack() {
             </label>
             <Select
               value={values.licenseId}
+              required
               onValueChange={(value: string) =>
                 handleChange("licenseId", value)
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue>
-                  {values.licenseId ? (
+                <SelectValue placeholder="Select a license">
+                  {values.licenseId && (
                     <div className="font-medium text-gray-900">
                       {licenses?.find((l) => l.id === values.licenseId)?.name}
                     </div>
-                  ) : (
-                    <span className="text-gray-500">Select a license</span>
                   )}
                 </SelectValue>
               </SelectTrigger>
