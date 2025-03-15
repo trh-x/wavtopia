@@ -285,7 +285,7 @@ export function UploadTrack() {
                         </div>
                       )}
                       {(license.usageRestrictions || license.customTerms) && (
-                        <div className="text-xs text-amber-600 mt-1.5">
+                        <div className="text-xs text-blue-600 mt-1.5">
                           {license.usageRestrictions || license.customTerms}
                         </div>
                       )}
@@ -300,7 +300,7 @@ export function UploadTrack() {
                   {selectedLicense.description}
                 </p>
                 {selectedLicense.usageRestrictions && (
-                  <p className="text-sm text-amber-600">
+                  <p className="text-sm text-blue-600">
                     {selectedLicense.usageRestrictions}
                   </p>
                 )}
