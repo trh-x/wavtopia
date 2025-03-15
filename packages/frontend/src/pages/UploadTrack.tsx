@@ -257,20 +257,57 @@ export function UploadTrack() {
               }
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a license" />
+                <SelectValue>
+                  {values.licenseId ? (
+                    <div className="font-medium text-gray-900">
+                      {licenses?.find((l) => l.id === values.licenseId)?.name}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">Select a license</span>
+                  )}
+                </SelectValue>
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[400px]">
                 {licenses?.map((license) => (
-                  <SelectItem key={license.id} value={license.id}>
-                    {license.name}
+                  <SelectItem
+                    key={license.id}
+                    value={license.id}
+                    className="focus:bg-gray-50"
+                  >
+                    <div className="py-2">
+                      <div className="font-medium text-gray-900">
+                        {license.name}
+                      </div>
+                      {license.description && (
+                        <div className="text-sm text-gray-500 mt-1.5">
+                          {license.description}
+                        </div>
+                      )}
+                      {(license.usageRestrictions || license.customTerms) && (
+                        <div className="text-xs text-amber-600 mt-1.5">
+                          {license.usageRestrictions || license.customTerms}
+                        </div>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {licenses?.find((l) => l.id === values.licenseId)?.description && (
-              <p className="mt-1 text-sm text-gray-500">
-                {licenses.find((l) => l.id === values.licenseId)?.description}
-              </p>
+              <div className="mt-2 space-y-2">
+                <p className="text-sm text-gray-600">
+                  {licenses.find((l) => l.id === values.licenseId)?.description}
+                </p>
+                {licenses.find((l) => l.id === values.licenseId)
+                  ?.usageRestrictions && (
+                  <p className="text-sm text-amber-600">
+                    {
+                      licenses.find((l) => l.id === values.licenseId)
+                        ?.usageRestrictions
+                    }
+                  </p>
+                )}
+              </div>
             )}
           </div>
 
