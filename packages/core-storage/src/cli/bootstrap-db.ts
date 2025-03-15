@@ -69,16 +69,6 @@ async function bootstrap(username: string, email: string, password: string) {
       email: user.email,
     });
 
-    // Create and enable EARLY_ACCESS_REQUIRED feature flag
-    const flag = await prisma.featureFlag.create({
-      data: {
-        name: "EARLY_ACCESS_REQUIRED",
-        description: "Requires users to have an invite code to register",
-        isEnabled: true,
-      },
-    });
-    console.log("Created and enabled feature flag:", flag.name);
-
     await prisma.$disconnect();
   } catch (error) {
     console.error("Error bootstrapping database:", error);

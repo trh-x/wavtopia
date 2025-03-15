@@ -1,11 +1,15 @@
 /// <reference types="node" />
 import { PrismaClient } from ".prisma/client";
+import { seedFeatureFlags } from "./seeds/feature-flags";
 import { seedLicenses } from "./seeds/licenses";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Starting database seeding...");
+
+  // Seed feature flags
+  await seedFeatureFlags();
 
   // Seed licenses
   await seedLicenses();
