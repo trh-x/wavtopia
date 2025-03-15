@@ -182,7 +182,7 @@ enum LicenseType {
 // License - Legal terms for track usage
 model License {
   id                    String    @id @default(uuid())
-  name                  String
+  name                  String    @unique
   type                  LicenseType
   description           String?
   customTerms           String?                   @map("custom_terms")            // For custom license terms

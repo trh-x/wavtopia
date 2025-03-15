@@ -162,20 +162,11 @@ export async function seedLicenses() {
   console.log("Seeding licenses...");
 
   for (const license of licenses) {
-    const existing = await prisma.license.findFirst({
+    await prisma.license.upsert({
       where: { name: license.name },
+      update: license,
+      create: license,
     });
-
-    if (existing) {
-      await prisma.license.update({
-        where: { id: existing.id },
-        data: license,
-      });
-    } else {
-      await prisma.license.create({
-        data: license,
-      });
-    }
   }
 
   console.log("License seeding completed.");
