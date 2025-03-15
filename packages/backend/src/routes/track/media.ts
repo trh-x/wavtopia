@@ -36,6 +36,13 @@ router.get(
       // Stream the file directly from MinIO
       const fileStream = await getObject(track.coverArt);
       res.setHeader("Content-Type", contentType);
+      // Set cache control headers
+      // Cache expiry set to 2 minutes, for testing. TODO: Increase expiry time
+      res.setHeader("Cache-Control", "public, max-age=120");
+      res.setHeader(
+        "Expires",
+        new Date(Date.now() + 2 * 60 * 1000).toUTCString()
+      );
       fileStream.pipe(res);
     } catch (error) {
       next(error);
@@ -204,6 +211,13 @@ router.get(
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="${track.title}.${track.originalFormat}"`
+      );
+      // Set cache control headers
+      // Cache expiry set to 2 minutes, for testing. TODO: Increase expiry time
+      res.setHeader("Cache-Control", "public, max-age=120");
+      res.setHeader(
+        "Expires",
+        new Date(Date.now() + 2 * 60 * 1000).toUTCString()
       );
       fileStream.pipe(res);
     } catch (error) {

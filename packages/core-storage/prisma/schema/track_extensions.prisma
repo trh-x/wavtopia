@@ -167,15 +167,41 @@ model TrackTag {
   @@map("track_tags")
 }
 
+// License types for track usage
+enum LicenseType {
+  CC_BY           // Attribution
+  CC_BY_SA        // Attribution-ShareAlike
+  CC_BY_NC        // Attribution-NonCommercial
+  CC_BY_NC_SA     // Attribution-NonCommercial-ShareAlike
+  CC_BY_ND        // Attribution-NoDerivs
+  CC_BY_NC_ND     // Attribution-NonCommercial-NoDerivs
+  ALL_RIGHTS_RESERVED
+  CUSTOM          // For custom licensing terms
+}
+
 // License - Legal terms for track usage
 model License {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  description String?
-  terms       String?
-  tracks      Track[]
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  
+  id                    String    @id @default(uuid())
+  name                  String    @unique
+  type                  LicenseType
+  description           String?
+  customTerms           String?                   @map("custom_terms")            // For custom license terms
+  allowsRemixing        Boolean   @default(false) @map("allows_remixing")
+  allowsSharing         Boolean   @default(false) @map("allows_sharing")
+  requiresAttribution   Boolean   @default(true)  @map("requires_attribution")
+  allowsCommercialUse   Boolean   @default(false) @map("allows_commercial_use")
+  // Additional music-specific fields
+  allowsStemSeparation  Boolean   @default(false) @map("allows_stem_separation")
+  allowsStemSharing     Boolean   @default(false) @map("allows_stem_sharing")
+  requiresCredit        Boolean   @default(true)  @map("requires_credit")
+  creditFormat          String?                   @map("credit_format")           // Template for how credit should be given
+  territoryRestrictions String?                   @map("territory_restrictions")  // Comma-separated list of restricted territories
+  usageRestrictions     String?                   @map("usage_restrictions")      // Any specific usage restrictions
+  royaltyTerms          String?                   @map("royalty_terms")           // Terms for commercial usage if allowed
+  enabled               Boolean   @default(false) @map("enabled")                 // Whether this license is available for users to select
+  tracks                Track[]
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt      @map("updated_at")
+
   @@map("licenses")
-} 
+}

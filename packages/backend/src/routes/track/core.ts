@@ -34,12 +34,14 @@ export const trackSchema = z.object({
   key: z.string().optional(),
   isExplicit: z.boolean().optional(),
   // Release Information
-  releaseDate: z.string().optional(),
+  releaseDate: z.string().datetime().optional(),
   releaseDatePrecision: z.nativeEnum(DatePrecision).optional(),
   // Metadata
   description: z.string().optional(),
   // Classification/Taxonomy
-  genres: z.array(z.string()).optional(),
+  genres: z.array(z.string()),
+  // License
+  licenseId: z.string().uuid("License ID must be a valid UUID"),
 });
 
 // Get single track
@@ -203,6 +205,7 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
           key: data.key,
           isExplicit: data.isExplicit,
           description: data.description,
+          licenseId: data.licenseId,
           ...(data.releaseDate && data.releaseDatePrecision
             ? {
                 releaseDate: new Date(data.releaseDate),
