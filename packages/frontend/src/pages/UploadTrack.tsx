@@ -13,6 +13,36 @@ import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
 
+const GENRE_PLACEHOLDERS = [
+  "Electronic, House, Techno",
+  "House, Techno, Ambient",
+  "Drum & Bass, Dubstep, Garage",
+  "Deep House, Tech House, Progressive",
+  "Downtempo, Chill, Lo-fi",
+  "Bass, Breaks, Electronica",
+  "Hip Hop, Rock, House",
+  "Jazz, Electronic, Folk",
+  "R&B, Pop, Techno",
+  "Classical, Ambient, Soul",
+  "Indie, Metal, Electronica",
+  "Blues, Funk, Drum & Bass",
+  "Latin, Reggae, House",
+  "Country, Pop, Lo-fi",
+  "Soul, R&B, Gospel",
+  "Jazz, Bebop, Swing",
+  "Metal, Hard Rock, Punk",
+  "Folk, Bluegrass, Country",
+  "Reggae, Ska, Rocksteady",
+  "Hip Hop, Trap, Grime",
+  "Blues, Delta Blues, Chicago Blues",
+  "Classical, Chamber, Baroque",
+  "Salsa, Merengue, Bachata",
+  "Indie Rock, Post-Rock, Shoegaze",
+];
+
+const GENRE_PLACEHOLDER =
+  GENRE_PLACEHOLDERS[Math.floor(Math.random() * GENRE_PLACEHOLDERS.length)];
+
 interface UploadFormData {
   title: string;
   primaryArtistName: string;
@@ -127,7 +157,7 @@ export function UploadTrack() {
           <FormTagInput
             id="genres"
             label="Genres"
-            placeholder="e.g., Electronic, House, Techno"
+            placeholder={GENRE_PLACEHOLDER}
             value={values.genres}
             onChange={(newGenres: string[]) =>
               handleChange("genres", newGenres)
