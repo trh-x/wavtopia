@@ -4,6 +4,9 @@
   "private": true,
   "main": "dist/index.js",
   "types": "types/index.d.ts",
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rimraf dist types",
@@ -13,7 +16,8 @@
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "postinstall": "pnpm generate",
-    "bootstrap": "ts-node src/cli/bootstrap-db.ts"
+    "bootstrap": "ts-node src/cli/bootstrap-db.ts",
+    "db:seed": "prisma db seed"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
