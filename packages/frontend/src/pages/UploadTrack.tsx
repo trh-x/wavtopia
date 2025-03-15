@@ -138,6 +138,8 @@ export function UploadTrack() {
       },
     });
 
+  const selectedLicense = licenses?.find((l) => l.id === values.licenseId);
+
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: "original" | "coverArt"
@@ -259,9 +261,9 @@ export function UploadTrack() {
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a license">
-                  {values.licenseId && (
+                  {selectedLicense && (
                     <div className="font-medium text-gray-900">
-                      {licenses?.find((l) => l.id === values.licenseId)?.name}
+                      {selectedLicense.name}
                     </div>
                   )}
                 </SelectValue>
@@ -292,20 +294,25 @@ export function UploadTrack() {
                 ))}
               </SelectContent>
             </Select>
-            {licenses?.find((l) => l.id === values.licenseId)?.description && (
+            {selectedLicense ? (
               <div className="mt-2 space-y-2">
                 <p className="text-sm text-gray-600">
-                  {licenses.find((l) => l.id === values.licenseId)?.description}
+                  {selectedLicense.description}
                 </p>
-                {licenses.find((l) => l.id === values.licenseId)
-                  ?.usageRestrictions && (
+                {selectedLicense.usageRestrictions && (
                   <p className="text-sm text-amber-600">
-                    {
-                      licenses.find((l) => l.id === values.licenseId)
-                        ?.usageRestrictions
-                    }
+                    {selectedLicense.usageRestrictions}
                   </p>
                 )}
+              </div>
+            ) : (
+              <div className="mt-2 space-y-2">
+                <p className="text-sm text-gray-600">
+                  Consider choosing a Creative Commons license to allow others
+                  to remix and build upon your work. This helps foster
+                  collaboration and enables other artists to legally use your
+                  stems in their projects while ensuring you get proper credit.
+                </p>
               </div>
             )}
           </div>
