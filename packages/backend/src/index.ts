@@ -10,6 +10,7 @@ import { initializeStorage } from "./services/storage";
 import { config } from "./config";
 import adminRoutes from "./routes/admin";
 import { notificationRoutes } from "./routes/notifications";
+import licenseRoutes from "./routes/licenses";
 
 const app = express();
 
@@ -27,7 +28,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/track", trackRoutes);
 app.use("/api/tracks", tracksRoutes);
 app.use("/api/admin", adminRoutes);
+// TODO: notifications can go under /api/user
 app.use("/api/notifications", notificationRoutes);
+// TODO: licenses can go under /api/settings
+app.use("/api/licenses", licenseRoutes);
 
 // Error handling
 app.use(errorHandler);

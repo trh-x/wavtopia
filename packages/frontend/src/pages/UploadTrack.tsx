@@ -9,9 +9,18 @@ import {
   FormDateWithPrecision,
   DatePrecision,
 } from "@/components/ui/forms";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/Select";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
+import { useQuery } from "@tanstack/react-query";
+import type { License } from "@wavtopia/core-storage";
 
 const GENRE_PLACEHOLDERS = [
   "Electronic, House, Techno",
@@ -56,11 +65,24 @@ interface UploadFormData {
   isExplicit: boolean;
   releaseDate: Date | undefined;
   releaseDatePrecision: DatePrecision;
+  licenseId: string | undefined;
 }
 
 export function UploadTrack() {
   const navigate = useNavigate();
   const { getToken } = useAuthToken();
+
+  const { data: licenses } = useQuery<License[]>({
+    queryKey: ["licenses"],
+    queryFn: async () => {
+      const response = await fetch("/api/licenses", {
+        headers: {
+          Authorization: `Bearer ${getToken()!}`,
+        },
+      });
+      return response.json();
+    },
+  });
 
   const { values, handleChange, handleSubmit, isSubmitting, submitError } =
     useForm<UploadFormData>({
@@ -77,10 +99,14 @@ export function UploadTrack() {
         isExplicit: false,
         releaseDate: undefined,
         releaseDatePrecision: "DAY",
+        licenseId: undefined,
       },
       onSubmit: async (values) => {
         if (!values.original) {
           throw new Error("Original track file is required");
+        }
+        if (!values.licenseId) {
+          throw new Error("License selection is required");
         }
 
         const formData = new FormData();
@@ -95,6 +121,7 @@ export function UploadTrack() {
             genres: values.genres,
             description: values.description,
             isExplicit: values.isExplicit,
+            licenseId: values.licenseId,
             ...(values.releaseDate && {
               releaseDate: values.releaseDate.toISOString(),
               releaseDatePrecision: values.releaseDatePrecision,
@@ -215,6 +242,37 @@ export function UploadTrack() {
             }
             max={new Date().toISOString().split("T")[0]}
           />
+
+          <div className="space-y-2">
+            <label
+              htmlFor="license"
+              className="block text-sm font-medium text-gray-700"
+            >
+              License
+            </label>
+            <Select
+              value={values.licenseId}
+              onValueChange={(value: string) =>
+                handleChange("licenseId", value)
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a license" />
+              </SelectTrigger>
+              <SelectContent>
+                {licenses?.map((license) => (
+                  <SelectItem key={license.id} value={license.id}>
+                    {license.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {licenses?.find((l) => l.id === values.licenseId)?.description && (
+              <p className="mt-1 text-sm text-gray-500">
+                {licenses.find((l) => l.id === values.licenseId)?.description}
+              </p>
+            )}
+          </div>
 
           <FormTextArea
             id="description"
