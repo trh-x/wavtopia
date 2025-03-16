@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "./Select";
 import type { License } from "@wavtopia/core-storage";
+import { LicenseGrid } from "./license/LicenseGrid";
 
 interface LicenseSelectProps {
   value?: string;
@@ -26,63 +20,41 @@ export function LicenseSelect({
   const selectedLicense = licenses?.find((l) => l.id === value);
 
   return (
-    <div className="space-y-2">
-      <label
-        htmlFor="license"
-        className="block text-sm font-medium text-gray-700"
-      >
-        License
-      </label>
-      <Select
-        value={value}
-        required={required}
-        onValueChange={onChange}
-        disabled={disabled}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select a license">
-            {selectedLicense && (
-              <div className="font-medium text-gray-900">
-                {selectedLicense.name}
-              </div>
-            )}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="max-h-[min(500px,60vh)] w-[min(calc(100vw-32px),672px)] overflow-y-auto">
-          {licenses?.map((license) => (
-            <SelectItem
-              key={license.id}
-              value={license.id}
-              className="focus:bg-gray-50"
-            >
-              <div className="py-2">
-                <div className="font-medium text-gray-900">{license.name}</div>
-                {license.description && (
-                  <div className="text-sm text-gray-500 mt-1.5">
-                    {license.description}
-                  </div>
-                )}
-                {(license.usageRestrictions || license.customTerms) && (
-                  <div className="text-xs text-blue-600 mt-1.5">
-                    {license.usageRestrictions || license.customTerms}
-                  </div>
-                )}
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="space-y-4">
+      <div className="flex items-baseline justify-between">
+        <label className="block text-sm font-medium text-gray-700">
+          License {required && <span className="text-red-500">*</span>}
+        </label>
+        {!value && (
+          <span className="text-sm text-gray-500">
+            Please select a license for your track
+          </span>
+        )}
+      </div>
+
+      <LicenseGrid
+        licenses={licenses}
+        selectedLicenseId={value}
+        onLicenseSelect={onChange}
+        className={disabled ? "opacity-50 pointer-events-none" : ""}
+      />
+
       {selectedLicense ? (
-        <div className="mt-2 space-y-2">
+        <div className="mt-4 space-y-2">
           <p className="text-sm text-gray-600">{selectedLicense.description}</p>
           {selectedLicense.usageRestrictions && (
             <p className="text-sm text-blue-600">
               {selectedLicense.usageRestrictions}
             </p>
           )}
+          {selectedLicense.customTerms && (
+            <p className="text-sm text-gray-600">
+              {selectedLicense.customTerms}
+            </p>
+          )}
         </div>
       ) : (
-        <div className="mt-2 space-y-2">
+        <div className="mt-4 space-y-2">
           <p className="text-sm text-gray-600">
             Consider choosing a Creative Commons license to allow others to
             remix and build upon your work. This helps foster collaboration and
