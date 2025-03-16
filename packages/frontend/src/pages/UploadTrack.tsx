@@ -163,8 +163,13 @@ export function UploadTrack() {
         {submitError && <FormError message={submitError} />}
 
         <DropZone
-          label="Drop files here"
-          sublabel="Track file (.xm, .it, .mod) and optional cover art"
+          label="Drop track files here"
+          sublabel={
+            <div className="space-y-1.5">
+              <p>.xm, .it, .mod files and optional cover art</p>
+              <p className="text-gray-400">Click to select files</p>
+            </div>
+          }
           accept=".xm,.it,.mod,image/*"
           multiple={true}
           onFileSelect={(files) => {

@@ -6,12 +6,16 @@ interface DropZoneProps {
   onFileSelect: (files: File[]) => void;
   disabled?: boolean;
   isDragging?: boolean;
+  label?: string;
+  sublabel?: string;
 }
 
 export function DropZone({
   onFileSelect,
   disabled,
   isDragging,
+  label = "Drop track files here",
+  sublabel = ".xm, .it, .mod files and optional cover art • Click to select files",
 }: DropZoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isDragging: isLocalDragging, handlers } =
@@ -54,10 +58,14 @@ export function DropZone({
         disabled={disabled}
       />
       <div className="space-y-2">
-        <p className="text-lg font-medium">
-          Drop track files (.xm, .it, .mod) and cover art here
-        </p>
-        <p className="text-sm text-gray-500">or click to select files</p>
+        <p className="text-lg font-medium">{label}</p>
+        <div className="space-y-1">
+          {sublabel.split("\n").map((line, i) => (
+            <p key={i} className="text-sm text-gray-500">
+              {line}
+            </p>
+          ))}
+        </div>
       </div>
     </div>
   );
