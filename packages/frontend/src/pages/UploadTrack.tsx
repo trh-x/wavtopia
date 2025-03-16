@@ -9,13 +9,7 @@ import {
   FormDateWithPrecision,
   DatePrecision,
 } from "@/components/ui/forms";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/Select";
+import { LicenseSelect } from "@/components/ui/LicenseSelect";
 import { DropZone } from "@/components/ui/DropZone";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
@@ -138,8 +132,6 @@ export function UploadTrack() {
         navigate(`/track/${data.id}`);
       },
     });
-
-  const selectedLicense = licenses?.find((l) => l.id === values.licenseId);
 
   const handleFileSelect = (files: File[], field: "original" | "coverArt") => {
     const file = files[0] || null;
@@ -285,77 +277,13 @@ export function UploadTrack() {
             max={new Date().toISOString().split("T")[0]}
           />
 
-          <div className="space-y-2">
-            <label
-              htmlFor="license"
-              className="block text-sm font-medium text-gray-700"
-            >
-              License
-            </label>
-            <Select
-              value={values.licenseId}
-              required
-              onValueChange={(value: string) =>
-                handleChange("licenseId", value)
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a license">
-                  {selectedLicense && (
-                    <div className="font-medium text-gray-900">
-                      {selectedLicense.name}
-                    </div>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px]">
-                {licenses?.map((license) => (
-                  <SelectItem
-                    key={license.id}
-                    value={license.id}
-                    className="focus:bg-gray-50"
-                  >
-                    <div className="py-2">
-                      <div className="font-medium text-gray-900">
-                        {license.name}
-                      </div>
-                      {license.description && (
-                        <div className="text-sm text-gray-500 mt-1.5">
-                          {license.description}
-                        </div>
-                      )}
-                      {(license.usageRestrictions || license.customTerms) && (
-                        <div className="text-xs text-blue-600 mt-1.5">
-                          {license.usageRestrictions || license.customTerms}
-                        </div>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedLicense ? (
-              <div className="mt-2 space-y-2">
-                <p className="text-sm text-gray-600">
-                  {selectedLicense.description}
-                </p>
-                {selectedLicense.usageRestrictions && (
-                  <p className="text-sm text-blue-600">
-                    {selectedLicense.usageRestrictions}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="mt-2 space-y-2">
-                <p className="text-sm text-gray-600">
-                  Consider choosing a Creative Commons license to allow others
-                  to remix and build upon your work. This helps foster
-                  collaboration and enables other artists to legally use your
-                  stems in their projects while ensuring you get proper credit.
-                </p>
-              </div>
-            )}
-          </div>
+          <LicenseSelect
+            value={values.licenseId}
+            onChange={(value) => handleChange("licenseId", value)}
+            licenses={licenses}
+            disabled={isSubmitting}
+            required
+          />
 
           <FormTextArea
             id="description"

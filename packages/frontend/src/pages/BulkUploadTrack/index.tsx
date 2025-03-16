@@ -6,6 +6,9 @@ import { DropZone } from "./components/DropZone";
 import { UploadList } from "./components/UploadList";
 import { UnmatchedArt } from "./components/UnmatchedArt";
 import { UploadProgress } from "./components/UploadProgress";
+import { LicenseSelect } from "@/components/ui/LicenseSelect";
+import { useQuery } from "@tanstack/react-query";
+import type { License } from "@wavtopia/core-storage";
 
 export function BulkUploadTrack() {
   const { getToken } = useAuthToken();
@@ -23,12 +26,29 @@ export function BulkUploadTrack() {
       handleClearAll,
       removeUnmatchedArt,
       setDefaultArtist,
+      setDefaultLicense,
     },
   } = useFileProcessing(getToken);
+
+  const { data: licenses } = useQuery<License[]>({
+    queryKey: ["licenses"],
+    queryFn: async () => {
+      const response = await fetch("/api/licenses", {
+        headers: {
+          Authorization: `Bearer ${getToken()!}`,
+        },
+      });
+      return response.json();
+    },
+  });
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (state.matches.length === 0) return;
+    if (!state.defaultLicenseId) {
+      // The license input is required, so we shouldn't get here
+      return;
+    }
 
     const pendingUploads = state.matches.filter((m) => !m.uploaded);
     if (pendingUploads.length === 0) return;
@@ -65,6 +85,14 @@ export function BulkUploadTrack() {
           value={state.defaultArtistName}
           onChange={(e) => setDefaultArtist(e.target.value)}
           disabled={isUploadInProgress}
+        />
+
+        <LicenseSelect
+          value={state.defaultLicenseId}
+          onChange={setDefaultLicense}
+          licenses={licenses}
+          disabled={isUploadInProgress}
+          required
         />
 
         <UploadList

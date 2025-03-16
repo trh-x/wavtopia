@@ -1,6 +1,5 @@
-import React, { useRef, useState, useEffect } from "react";
-import { cn } from "@/utils/cn";
-import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+import React, { useState, useEffect } from "react";
+import { BaseDropZone } from "./BaseDropZone";
 
 interface DropZoneProps {
   onFileSelect: (files: File[]) => void;
@@ -31,46 +30,48 @@ export function DropZone({
   error,
   showPreview = true,
 }: DropZoneProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isDragging: isLocalDragging, handlers } =
-    useDragAndDrop(onFileSelect);
-  const effectiveDragging = isDragging ?? isLocalDragging;
+  const [preview, setPreview] = useState<string>();
+
+  // Handle image preview
+  useEffect(() => {
+    const imageFile = selectedFiles.find((file) =>
+      file?.type.startsWith("image/")
+    );
+    if (showPreview && imageFile) {
+      const previewUrl = URL.createObjectURL(imageFile);
+      setPreview(previewUrl);
+      return () => URL.revokeObjectURL(previewUrl);
+    } else if (!imageFile) {
+      setPreview(undefined);
+    }
+    return () => {
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [selectedFiles, showPreview]);
 
   return (
-    <div
-      id="drop-zone"
-      className={cn(
-        "cursor-pointer border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-        effectiveDragging
-          ? "border-primary-500 bg-primary-50"
-          : "border-gray-300 hover:border-primary-500",
-        disabled && "opacity-50 pointer-events-none",
-        className
-      )}
-      onClick={() => fileInputRef.current?.click()}
-      onDragEnter={handlers.handleDragIn}
-      onDragLeave={handlers.handleDragOut}
-      onDragOver={handlers.handleDragOver}
-      onDrop={handlers.handleDrop}
+    <BaseDropZone
+      onFileSelect={onFileSelect}
+      disabled={disabled}
+      isDragging={isDragging}
+      accept={accept}
+      multiple={multiple}
+      className={className}
     >
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        multiple={multiple}
-        accept={accept}
-        onChange={(e) => {
-          const files = Array.from(e.target.files || []);
-          onFileSelect(files);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-          }
-        }}
-        disabled={disabled}
-      />
       <div className="space-y-3">
         <p className="text-xl font-medium">{label}</p>
         <div className="text-sm text-gray-500">{sublabel}</div>
+        {showPreview && preview && (
+          <div className="mt-4">
+            <img
+              src={preview}
+              alt="Preview"
+              className="max-h-32 mx-auto rounded-lg object-contain"
+            />
+          </div>
+        )}
         {selectedFiles.filter(Boolean).length > 0 && showPreview && (
           <div className="mt-4 space-y-2">
             {selectedFiles.filter(Boolean).map((file, index) => (
@@ -85,6 +86,9 @@ export function DropZone({
                     className="text-red-500 hover:text-red-700"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (file?.type.startsWith("image/")) {
+                        setPreview(undefined);
+                      }
                       onFileRemove(
                         file!.name.toLowerCase().match(/\.(xm|it|mod)$/)
                           ? "track"
@@ -101,6 +105,6 @@ export function DropZone({
         )}
         {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
       </div>
-    </div>
+    </BaseDropZone>
   );
 }

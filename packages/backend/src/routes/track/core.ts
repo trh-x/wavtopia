@@ -39,7 +39,7 @@ export const trackSchema = z.object({
   // Metadata
   description: z.string().optional(),
   // Classification/Taxonomy
-  genres: z.array(z.string()),
+  genres: z.array(z.string()).optional(),
   // License
   licenseId: z.string().uuid("License ID must be a valid UUID"),
 });
