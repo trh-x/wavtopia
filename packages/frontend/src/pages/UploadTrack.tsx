@@ -16,6 +16,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/Select";
+import { DropZone } from "@/components/ui/DropZone";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
@@ -140,11 +141,8 @@ export function UploadTrack() {
 
   const selectedLicense = licenses?.find((l) => l.id === values.licenseId);
 
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: "original" | "coverArt"
-  ) => {
-    const file = e.target.files?.[0] || null;
+  const handleFileSelect = (files: File[], field: "original" | "coverArt") => {
+    const file = files[0] || null;
     if (file && field === "original") {
       const format = file.name.split(".").pop()?.toLowerCase();
       if (format === "it") {
@@ -163,6 +161,35 @@ export function UploadTrack() {
       <h1 className="text-3xl font-bold mb-8">Upload Track</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         {submitError && <FormError message={submitError} />}
+
+        <DropZone
+          label="Drop files here"
+          sublabel="Track file (.xm, .it, .mod) and optional cover art"
+          accept=".xm,.it,.mod,image/*"
+          multiple={true}
+          onFileSelect={(files) => {
+            // First process any image files to ensure they're handled first for preview
+            const imageFiles = files.filter((file) =>
+              file.type.startsWith("image/")
+            );
+            const trackFiles = files.filter((file) =>
+              file.name.toLowerCase().match(/\.(xm|it|mod)$/)
+            );
+
+            // Always update with the latest files
+            if (imageFiles.length > 0) {
+              handleFileSelect([imageFiles[0]], "coverArt");
+            }
+
+            if (trackFiles.length > 0) {
+              handleFileSelect([trackFiles[0]], "original");
+            }
+          }}
+          disabled={isSubmitting}
+          selectedFiles={[values.original, values.coverArt]}
+          error={submitError || undefined}
+          showPreview={true}
+        />
 
         <div className="space-y-4">
           <FormInput
@@ -326,23 +353,6 @@ export function UploadTrack() {
             onChange={(e) =>
               handleChange("description", e.target.value || null)
             }
-          />
-
-          <FormInput
-            id="original"
-            type="file"
-            label="Original Track File (.xm, .it, .mod)"
-            required
-            accept=".xm,.it,.mod"
-            onChange={(e) => handleFileChange(e, "original")}
-          />
-
-          <FormInput
-            id="coverArt"
-            type="file"
-            label="Cover Art (optional)"
-            accept="image/*"
-            onChange={(e) => handleFileChange(e, "coverArt")}
           />
         </div>
 

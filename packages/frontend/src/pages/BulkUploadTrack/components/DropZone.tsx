@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { cn } from "@/utils/cn";
-import { useDragAndDrop } from "../hooks/useDragAndDrop";
+import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 
 interface DropZoneProps {
   onFileSelect: (files: File[]) => void;
