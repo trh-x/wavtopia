@@ -4,6 +4,7 @@ import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 
 interface DropZoneProps {
   onFileSelect: (files: File[]) => void;
+  onFileRemove: (fileType: "track" | "image") => void;
   disabled?: boolean;
   isDragging?: boolean;
   multiple?: boolean;
@@ -18,6 +19,7 @@ interface DropZoneProps {
 
 export function DropZone({
   onFileSelect,
+  onFileRemove,
   disabled,
   isDragging,
   multiple = false,
@@ -32,9 +34,6 @@ export function DropZone({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
-  const [draggedFileValid, setDraggedFileValid] = useState<boolean | null>(
-    null
-  );
   const { isDragging: isLocalDragging, handlers } = useDragAndDrop((files) => {
     handleFiles(files);
   });
@@ -44,12 +43,23 @@ export function DropZone({
       const acceptedTypes = accept.split(",");
       const fileType = file.type;
       const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
-      return acceptedTypes.some(
-        (type) =>
-          type === fileType ||
-          type === fileExtension ||
-          (type.endsWith("/*") && fileType.startsWith(type.replace("/*", "")))
-      );
+
+      // Check each accepted type
+      for (const type of acceptedTypes) {
+        // Handle image types
+        if (type === "image/*" && fileType.startsWith("image/")) {
+          return true;
+        }
+        // Handle exact file extensions
+        if (type === fileExtension) {
+          return true;
+        }
+        // Handle exact mime types
+        if (type === fileType) {
+          return true;
+        }
+      }
+      return false;
     }
     return true;
   };
@@ -105,20 +115,6 @@ export function DropZone({
     ...handlers,
     handleDragOver: (e: React.DragEvent<HTMLDivElement>) => {
       handlers.handleDragOver(e);
-      // Check if the dragged file would be valid
-      const items = Array.from(e.dataTransfer.items);
-      const wouldBeValid = items.some((item) => {
-        if (item.kind === "file") {
-          const file = item.getAsFile();
-          return file && validateFile(file);
-        }
-        return false;
-      });
-      setDraggedFileValid(wouldBeValid);
-    },
-    handleDragLeave: (e: React.DragEvent<HTMLDivElement>) => {
-      handlers.handleDragOut(e);
-      setDraggedFileValid(null);
     },
   };
 
@@ -150,9 +146,7 @@ export function DropZone({
       <div
         className={cn(
           "relative cursor-pointer border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-          effectiveDragging && draggedFileValid === false
-            ? "border-red-500 bg-red-50"
-            : effectiveDragging
+          effectiveDragging
             ? "border-primary-500 bg-primary-50"
             : "border-gray-300 hover:border-primary-500",
           disabled && "opacity-50 pointer-events-none",
@@ -160,7 +154,7 @@ export function DropZone({
         )}
         onClick={() => fileInputRef.current?.click()}
         onDragEnter={enhancedHandlers.handleDragIn}
-        onDragLeave={enhancedHandlers.handleDragLeave}
+        onDragLeave={handlers.handleDragOut}
         onDragOver={enhancedHandlers.handleDragOver}
         onDrop={enhancedHandlers.handleDrop}
         role="button"
@@ -184,13 +178,7 @@ export function DropZone({
 
         {/* Overlay for drag state */}
         {effectiveDragging && (
-          <div className="absolute inset-0 flex items-center justify-center bg-primary-500 bg-opacity-10 rounded-lg">
-            <div className="text-lg font-medium text-primary-700">
-              {draggedFileValid === false
-                ? "Invalid file type"
-                : "Drop to upload"}
-            </div>
-          </div>
+          <div className="absolute inset-0 rounded-lg bg-primary-500 bg-opacity-10" />
         )}
 
         <div className="space-y-2">
@@ -224,10 +212,14 @@ export function DropZone({
                 className="text-red-500 hover:text-red-700"
                 onClick={(e) => {
                   e.stopPropagation();
-                  const newFiles = selectedFiles.filter((_, i) => i !== index);
-                  onFileSelect(newFiles.filter(Boolean) as File[]);
-                  if (file?.type.startsWith("image/")) {
+                  if (
+                    file?.type.startsWith("image/") ||
+                    !file?.name.toLowerCase().match(/\.(xm|it|mod)$/)
+                  ) {
                     setPreview(undefined);
+                    onFileRemove("image");
+                  } else {
+                    onFileRemove("track");
                   }
                 }}
               >

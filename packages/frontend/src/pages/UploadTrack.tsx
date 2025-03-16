@@ -185,6 +185,14 @@ export function UploadTrack() {
               handleFileSelect([trackFiles[0]], "original");
             }
           }}
+          onFileRemove={(fileType) => {
+            if (fileType === "track") {
+              handleChange("original", null);
+              handleChange("originalFormat", null);
+            } else {
+              handleChange("coverArt", null);
+            }
+          }}
           disabled={isSubmitting}
           selectedFiles={[values.original, values.coverArt]}
           error={submitError || undefined}
