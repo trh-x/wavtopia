@@ -9,13 +9,8 @@ import {
   FormDateWithPrecision,
   DatePrecision,
 } from "@/components/ui/forms";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/Select";
+import { LicenseSelect } from "@/components/ui/LicenseSelect";
+import { DropZone } from "@/components/ui/DropZone";
 import { useForm } from "@/hooks/useForm";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
@@ -138,13 +133,8 @@ export function UploadTrack() {
       },
     });
 
-  const selectedLicense = licenses?.find((l) => l.id === values.licenseId);
-
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: "original" | "coverArt"
-  ) => {
-    const file = e.target.files?.[0] || null;
+  const handleFileSelect = (files: File[], field: "original" | "coverArt") => {
+    const file = files[0] || null;
     if (file && field === "original") {
       const format = file.name.split(".").pop()?.toLowerCase();
       if (format === "it") {
@@ -163,6 +153,48 @@ export function UploadTrack() {
       <h1 className="text-3xl font-bold mb-8">Upload Track</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         {submitError && <FormError message={submitError} />}
+
+        <DropZone
+          label="Drop track files here"
+          sublabel={
+            <div className="space-y-1.5">
+              <p>.xm, .it, .mod files and optional cover art</p>
+              <p className="text-gray-400">Click to select files</p>
+            </div>
+          }
+          accept=".xm,.it,.mod,image/*"
+          multiple={true}
+          onFileSelect={(files) => {
+            // First process any image files to ensure they're handled first for preview
+            const imageFiles = files.filter((file) =>
+              file.type.startsWith("image/")
+            );
+            const trackFiles = files.filter((file) =>
+              file.name.toLowerCase().match(/\.(xm|it|mod)$/)
+            );
+
+            // Always update with the latest files
+            if (imageFiles.length > 0) {
+              handleFileSelect([imageFiles[0]], "coverArt");
+            }
+
+            if (trackFiles.length > 0) {
+              handleFileSelect([trackFiles[0]], "original");
+            }
+          }}
+          onFileRemove={(fileType) => {
+            if (fileType === "track") {
+              handleChange("original", null);
+              handleChange("originalFormat", null);
+            } else {
+              handleChange("coverArt", null);
+            }
+          }}
+          disabled={isSubmitting}
+          selectedFiles={[values.original, values.coverArt]}
+          error={submitError || undefined}
+          showPreview={true}
+        />
 
         <div className="space-y-4">
           <FormInput
@@ -245,77 +277,13 @@ export function UploadTrack() {
             max={new Date().toISOString().split("T")[0]}
           />
 
-          <div className="space-y-2">
-            <label
-              htmlFor="license"
-              className="block text-sm font-medium text-gray-700"
-            >
-              License
-            </label>
-            <Select
-              value={values.licenseId}
-              required
-              onValueChange={(value: string) =>
-                handleChange("licenseId", value)
-              }
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a license">
-                  {selectedLicense && (
-                    <div className="font-medium text-gray-900">
-                      {selectedLicense.name}
-                    </div>
-                  )}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent className="max-h-[400px]">
-                {licenses?.map((license) => (
-                  <SelectItem
-                    key={license.id}
-                    value={license.id}
-                    className="focus:bg-gray-50"
-                  >
-                    <div className="py-2">
-                      <div className="font-medium text-gray-900">
-                        {license.name}
-                      </div>
-                      {license.description && (
-                        <div className="text-sm text-gray-500 mt-1.5">
-                          {license.description}
-                        </div>
-                      )}
-                      {(license.usageRestrictions || license.customTerms) && (
-                        <div className="text-xs text-blue-600 mt-1.5">
-                          {license.usageRestrictions || license.customTerms}
-                        </div>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedLicense ? (
-              <div className="mt-2 space-y-2">
-                <p className="text-sm text-gray-600">
-                  {selectedLicense.description}
-                </p>
-                {selectedLicense.usageRestrictions && (
-                  <p className="text-sm text-blue-600">
-                    {selectedLicense.usageRestrictions}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="mt-2 space-y-2">
-                <p className="text-sm text-gray-600">
-                  Consider choosing a Creative Commons license to allow others
-                  to remix and build upon your work. This helps foster
-                  collaboration and enables other artists to legally use your
-                  stems in their projects while ensuring you get proper credit.
-                </p>
-              </div>
-            )}
-          </div>
+          <LicenseSelect
+            value={values.licenseId}
+            onChange={(value) => handleChange("licenseId", value)}
+            licenses={licenses}
+            disabled={isSubmitting}
+            required
+          />
 
           <FormTextArea
             id="description"
@@ -326,23 +294,6 @@ export function UploadTrack() {
             onChange={(e) =>
               handleChange("description", e.target.value || null)
             }
-          />
-
-          <FormInput
-            id="original"
-            type="file"
-            label="Original Track File (.xm, .it, .mod)"
-            required
-            accept=".xm,.it,.mod"
-            onChange={(e) => handleFileChange(e, "original")}
-          />
-
-          <FormInput
-            id="coverArt"
-            type="file"
-            label="Cover Art (optional)"
-            accept="image/*"
-            onChange={(e) => handleFileChange(e, "coverArt")}
           />
         </div>
 

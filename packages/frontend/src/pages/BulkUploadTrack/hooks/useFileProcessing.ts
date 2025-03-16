@@ -6,6 +6,7 @@ import { processFiles } from "../utils/fileMatching";
 export function useFileProcessing(getToken: () => string | null) {
   const [state, setState] = useState<BulkUploadState>({
     defaultArtistName: "",
+    defaultLicenseId: undefined,
     matches: [],
     currentUploadIndex: -1,
     uploadedTracks: [],
@@ -56,12 +57,9 @@ export function useFileProcessing(getToken: () => string | null) {
 
       return {
         ...prev,
-        matches: prev.matches.map((m) => {
-          if (m.path === path) {
-            return { ...m, coverArt: undefined };
-          }
-          return m;
-        }),
+        matches: prev.matches.map((m) =>
+          m.path === path ? { ...m, coverArt: undefined } : m
+        ),
         unmatchedCoverArt: [...prev.unmatchedCoverArt, match.coverArt],
       };
     });
@@ -72,31 +70,31 @@ export function useFileProcessing(getToken: () => string | null) {
       if (!draggedCoverArt) return;
 
       setState((prev) => {
-        const isFromUnmatched =
-          draggedCoverArt.sourceId.startsWith("unmatched-");
-        const newUnmatchedCoverArt = isFromUnmatched
+        // If dragging from unmatched art, remove from unmatched
+        const newUnmatchedArt = draggedCoverArt.sourceId.startsWith(
+          "unmatched-"
+        )
           ? prev.unmatchedCoverArt.filter((f) => f !== draggedCoverArt.file)
           : prev.unmatchedCoverArt;
 
-        const targetTrack = prev.matches.find((m) => m.path === targetPath);
-        const existingCoverArt = targetTrack?.coverArt;
+        // If dragging from another track, remove from that track
+        const newMatches = prev.matches.map((match) => {
+          if (match.path === draggedCoverArt.sourceId) {
+            return { ...match, coverArt: undefined };
+          }
+          if (match.path === targetPath) {
+            return { ...match, coverArt: draggedCoverArt.file };
+          }
+          return match;
+        });
 
         return {
           ...prev,
-          matches: prev.matches.map((match) => {
-            if (match.path === targetPath) {
-              return { ...match, coverArt: draggedCoverArt.file };
-            }
-            if (!isFromUnmatched && match.path === draggedCoverArt.sourceId) {
-              return { ...match, coverArt: undefined };
-            }
-            return match;
-          }),
-          unmatchedCoverArt: existingCoverArt
-            ? [...newUnmatchedCoverArt, existingCoverArt]
-            : newUnmatchedCoverArt,
+          matches: newMatches,
+          unmatchedCoverArt: newUnmatchedArt,
         };
       });
+
       setDraggedCoverArt(null);
     },
     [draggedCoverArt]
@@ -143,6 +141,7 @@ export function useFileProcessing(getToken: () => string | null) {
             primaryArtistName:
               state.defaultArtistName.trim() || "Unknown Artist",
             originalFormat,
+            licenseId: state.defaultLicenseId,
           })
         );
 
@@ -171,11 +170,17 @@ export function useFileProcessing(getToken: () => string | null) {
         throw error;
       }
     }
-  }, [state.matches, state.defaultArtistName, getToken]);
+  }, [
+    state.matches,
+    state.defaultArtistName,
+    state.defaultLicenseId,
+    getToken,
+  ]);
 
   const handleClearAll = useCallback(() => {
     setState({
       defaultArtistName: "",
+      defaultLicenseId: undefined,
       matches: [],
       currentUploadIndex: -1,
       uploadedTracks: [],
@@ -205,6 +210,8 @@ export function useFileProcessing(getToken: () => string | null) {
       removeUnmatchedArt,
       setDefaultArtist: (value: string) =>
         setState((prev) => ({ ...prev, defaultArtistName: value })),
+      setDefaultLicense: (value: string) =>
+        setState((prev) => ({ ...prev, defaultLicenseId: value })),
     },
   };
 }
