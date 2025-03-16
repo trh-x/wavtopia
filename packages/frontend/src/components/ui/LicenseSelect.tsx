@@ -48,7 +48,7 @@ export function LicenseSelect({
             )}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent className="max-h-[400px]">
+        <SelectContent className="max-h-[min(500px,60vh)] w-[min(calc(100vw-32px),672px)] overflow-y-auto">
           {licenses?.map((license) => (
             <SelectItem
               key={license.id}
