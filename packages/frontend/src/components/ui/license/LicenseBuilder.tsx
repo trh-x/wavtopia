@@ -225,6 +225,31 @@ export function LicenseBuilder({
         >
           {licenseType === "cc" && (
             <div className="space-y-3 pt-1">
+              <div className="flex items-start gap-3">
+                <div className="flex flex-shrink-0 justify-right w-8 mt-1">
+                  <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+                    <svg
+                      className="w-2.5 h-2.5 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-gray-900">
+                    Requires attribution
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    Others must give you credit when using your work
+                  </div>
+                </div>
+              </div>
               <Toggle
                 label="Allow commercial use"
                 description="Others can use your work for commercial purposes"
@@ -233,7 +258,7 @@ export function LicenseBuilder({
                 disabled={disabled}
               />
               <Toggle
-                label="Require ShareAlike"
+                label="Require share-alike"
                 description="Others must share their work under the same terms"
                 checked={requireShareAlike}
                 onChange={handleRequireShareAlikeChange}
