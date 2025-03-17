@@ -237,7 +237,7 @@ export function LicenseBuilder({
           {licenseType === "cc" && (
             <div className="space-y-3">
               <Toggle
-                label="Requires attribution"
+                label="Require attribution"
                 description="Others must give you credit when using your work"
                 checked={true}
                 onChange={() => {}}
