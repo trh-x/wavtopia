@@ -277,14 +277,6 @@ export function UploadTrack() {
             max={new Date().toISOString().split("T")[0]}
           />
 
-          <LicenseSelect
-            value={values.licenseId}
-            onChange={(value) => handleChange("licenseId", value)}
-            licenses={licenses}
-            disabled={isSubmitting}
-            required
-          />
-
           <FormTextArea
             id="description"
             label="Description"
@@ -294,6 +286,14 @@ export function UploadTrack() {
             onChange={(e) =>
               handleChange("description", e.target.value || null)
             }
+          />
+
+          <LicenseSelect
+            value={values.licenseId}
+            onChange={(value) => handleChange("licenseId", value)}
+            licenses={licenses}
+            disabled={isSubmitting}
+            required
           />
         </div>
 
