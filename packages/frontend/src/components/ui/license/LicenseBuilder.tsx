@@ -146,40 +146,59 @@ export function LicenseBuilder({
   onChange,
   disabled,
 }: LicenseBuilderProps) {
-  const isInternalUpdate = useRef(false);
+  // const isInternalUpdate = useRef(false);
 
   const license = value ? findLicense(licenses, value) : null;
 
   console.log(license?.name);
 
-  const [licenseType, setLicenseType] = useState<"cc" | "reserved" | null>(
-    () => {
-      if (!license) return null;
-      return license.type === "ALL_RIGHTS_RESERVED" ? "reserved" : "cc";
-    }
-  );
-  const [allowCommercial, setAllowCommercial] = useState(false);
-  const [requireShareAlike, setRequireShareAlike] = useState(true);
+  // const [licenseType, setLicenseType] = useState<"cc" | "reserved" | null>(
+  //   () => {
+  //     if (!license) return null;
+  //     return license.type === "ALL_RIGHTS_RESERVED" ? "reserved" : "cc";
+  //   }
+  // );
+  // const [allowCommercial, setAllowCommercial] = useState(false);
+  // const [requireShareAlike, setRequireShareAlike] = useState(true);
 
-  // Initialize state from value prop
-  useEffect(() => {
-    if (!licenses || !value || isInternalUpdate.current) {
-      isInternalUpdate.current = false;
-      return;
-    }
+  // // Initialize state from value prop
+  // useEffect(() => {
+  //   if (!licenses || !value || isInternalUpdate.current) {
+  //     isInternalUpdate.current = false;
+  //     return;
+  //   }
 
-    if (!license) return;
+  //   if (!license) return;
 
-    if (license.type === "ALL_RIGHTS_RESERVED") {
-      setLicenseType("reserved");
-    } else {
-      setLicenseType("cc");
-      setAllowCommercial(license.allowsCommercialUse);
-      setRequireShareAlike(license.type.includes("SA"));
-    }
-  }, [value, licenses]);
+  //   if (license.type === "ALL_RIGHTS_RESERVED") {
+  //     setLicenseType("reserved");
+  //   } else {
+  //     setLicenseType("cc");
+  //     setAllowCommercial(license.allowsCommercialUse);
+  //     setRequireShareAlike(license.type.includes("SA"));
+  //   }
+  // }, [value, licenses
+
+  function getLicenseProps() {
+    if (!license)
+      return {
+        licenseType: null,
+        allowCommercial: false,
+        requireShareAlike: true,
+      };
+
+    const licenseType =
+      license.type === "ALL_RIGHTS_RESERVED" ? "reserved" : "cc";
+
+    const allowCommercial = license.allowsCommercialUse;
+    const requireShareAlike =
+      licenseType === "cc" && license.type.includes("SA");
+
+    return { licenseType, allowCommercial, requireShareAlike };
+  }
 
   // Handle internal state changes
+  /*
   const updateLicense = () => {
     if (!licenses) return;
 
@@ -198,8 +217,35 @@ export function LicenseBuilder({
       onChange(license.id);
     }
   };
+  */
+
+  const licenseProps = getLicenseProps();
+
+  const { licenseType, allowCommercial, requireShareAlike } = licenseProps;
+
+  console.log(licenseProps);
+
+  function getLicenseForProps(props: ReturnType<typeof getLicenseProps>) {
+    console.log(props);
+    if (!licenses) return null;
+
+    let targetType: LicenseType;
+    if (props.licenseType === "reserved") {
+      targetType = "ALL_RIGHTS_RESERVED";
+    } else if (props.allowCommercial) {
+      // TODO: Need to enable CC_BY_SA in seed data
+      targetType = props.requireShareAlike ? "CC_BY_SA" : "CC_BY";
+    } else {
+      targetType = props.requireShareAlike ? "CC_BY_NC_SA" : "CC_BY_NC";
+    }
+
+    console.log(targetType);
+
+    return findLicense(licenses, targetType);
+  }
 
   // Custom handlers for state changes
+  /*
   const handleLicenseTypeChange = (type: "cc" | "reserved") => {
     setLicenseType(type);
     // Update immediately for better UX
@@ -213,15 +259,39 @@ export function LicenseBuilder({
       updateLicense();
     }
   };
+  */
+
+  function handleLicenseTypeChange(type: "cc" | "reserved") {
+    const license = getLicenseForProps({
+      licenseType: type,
+      allowCommercial,
+      requireShareAlike,
+    });
+    if (license) {
+      onChange(license.id);
+    }
+  }
 
   const handleAllowCommercialChange = (checked: boolean) => {
-    setAllowCommercial(checked);
-    setTimeout(updateLicense, 0);
+    const license = getLicenseForProps({
+      licenseType: licenseType,
+      allowCommercial: checked,
+      requireShareAlike: requireShareAlike,
+    });
+    if (license) {
+      onChange(license.id);
+    }
   };
 
   const handleRequireShareAlikeChange = (checked: boolean) => {
-    setRequireShareAlike(checked);
-    setTimeout(updateLicense, 0);
+    const license = getLicenseForProps({
+      licenseType: licenseType,
+      allowCommercial: allowCommercial,
+      requireShareAlike: checked,
+    });
+    if (license) {
+      onChange(license.id);
+    }
   };
 
   return (
@@ -235,7 +305,12 @@ export function LicenseBuilder({
           recommended
         >
           {licenseType === "cc" && (
-            <div className="space-y-3">
+            <div
+              className="space-y-3"
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
               <Toggle
                 label="Require attribution"
                 description="Others must give you credit when using your work"

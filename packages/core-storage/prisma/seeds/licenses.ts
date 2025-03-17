@@ -37,7 +37,7 @@ export async function seedLicenses() {
       requiresCredit: true,
       creditFormat:
         'Track "{title}" by {artist} is licensed under CC BY-SA 4.0. Remix must be shared under the same license.',
-      enabled: false,
+      enabled: true,
     },
 
     // CC BY-NC - Attribution-NonCommercial (Recommended for most users)
