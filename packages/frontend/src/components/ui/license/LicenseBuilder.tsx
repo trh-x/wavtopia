@@ -146,38 +146,7 @@ export function LicenseBuilder({
   onChange,
   disabled,
 }: LicenseBuilderProps) {
-  // const isInternalUpdate = useRef(false);
-
   const license = value ? findLicense(licenses, value) : null;
-
-  console.log(license?.name);
-
-  // const [licenseType, setLicenseType] = useState<"cc" | "reserved" | null>(
-  //   () => {
-  //     if (!license) return null;
-  //     return license.type === "ALL_RIGHTS_RESERVED" ? "reserved" : "cc";
-  //   }
-  // );
-  // const [allowCommercial, setAllowCommercial] = useState(false);
-  // const [requireShareAlike, setRequireShareAlike] = useState(true);
-
-  // // Initialize state from value prop
-  // useEffect(() => {
-  //   if (!licenses || !value || isInternalUpdate.current) {
-  //     isInternalUpdate.current = false;
-  //     return;
-  //   }
-
-  //   if (!license) return;
-
-  //   if (license.type === "ALL_RIGHTS_RESERVED") {
-  //     setLicenseType("reserved");
-  //   } else {
-  //     setLicenseType("cc");
-  //     setAllowCommercial(license.allowsCommercialUse);
-  //     setRequireShareAlike(license.type.includes("SA"));
-  //   }
-  // }, [value, licenses
 
   function getLicenseProps() {
     if (!license)
@@ -197,38 +166,11 @@ export function LicenseBuilder({
     return { licenseType, allowCommercial, requireShareAlike };
   }
 
-  // Handle internal state changes
-  /*
-  const updateLicense = () => {
-    if (!licenses) return;
-
-    let targetType: LicenseType;
-    if (licenseType === "reserved") {
-      targetType = "ALL_RIGHTS_RESERVED";
-    } else if (allowCommercial) {
-      targetType = requireShareAlike ? "CC_BY_SA" : "CC_BY";
-    } else {
-      targetType = requireShareAlike ? "CC_BY_NC_SA" : "CC_BY_NC";
-    }
-
-    const license = findLicense(licenses, targetType);
-    if (license) {
-      isInternalUpdate.current = true;
-      onChange(license.id);
-    }
-  };
-  */
-
   const licenseProps = getLicenseProps();
 
   const { licenseType, allowCommercial, requireShareAlike } = licenseProps;
 
-  console.log(licenseProps);
-
   function getLicenseForProps(props: ReturnType<typeof getLicenseProps>) {
-    console.log(props);
-    if (!licenses) return null;
-
     let targetType: LicenseType;
     if (props.licenseType === "reserved") {
       targetType = "ALL_RIGHTS_RESERVED";
@@ -239,27 +181,8 @@ export function LicenseBuilder({
       targetType = props.requireShareAlike ? "CC_BY_NC_SA" : "CC_BY_NC";
     }
 
-    console.log(targetType);
-
     return findLicense(licenses, targetType);
   }
-
-  // Custom handlers for state changes
-  /*
-  const handleLicenseTypeChange = (type: "cc" | "reserved") => {
-    setLicenseType(type);
-    // Update immediately for better UX
-    if (type === "reserved") {
-      const reservedLicense = findLicense(licenses, "ALL_RIGHTS_RESERVED");
-      if (reservedLicense) {
-        isInternalUpdate.current = true;
-        onChange(reservedLicense.id);
-      }
-    } else {
-      updateLicense();
-    }
-  };
-  */
 
   function handleLicenseTypeChange(type: "cc" | "reserved") {
     const license = getLicenseForProps({

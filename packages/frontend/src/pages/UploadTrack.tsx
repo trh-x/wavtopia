@@ -290,10 +290,7 @@ export function UploadTrack() {
 
           <LicenseSelect
             value={values.licenseId}
-            onChange={(value) => {
-              console.log("onChange licenseId", value);
-              handleChange("licenseId", value);
-            }}
+            onChange={(value) => handleChange("licenseId", value)}
             licenses={licenses}
             disabled={isSubmitting}
             required
