@@ -175,7 +175,6 @@ export function LicenseBuilder({
     if (props.licenseType === "reserved") {
       targetType = "ALL_RIGHTS_RESERVED";
     } else if (props.allowCommercial) {
-      // TODO: Need to enable CC_BY_SA in seed data
       targetType = props.requireShareAlike ? "CC_BY_SA" : "CC_BY";
     } else {
       targetType = props.requireShareAlike ? "CC_BY_NC_SA" : "CC_BY_NC";

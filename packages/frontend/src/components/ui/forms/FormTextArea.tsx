@@ -17,7 +17,7 @@ export function FormTextArea({
       <textarea
         {...props}
         className={cn(
-          "block w-full px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm",
+          "block w-full min-h-[2.5rem] px-4 py-2 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm",
           error && "border-red-500",
           className
         )}

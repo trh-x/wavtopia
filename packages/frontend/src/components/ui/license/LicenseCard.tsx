@@ -1,3 +1,4 @@
+// TODO: Review this file for changes that might be worth keeping in some form, and remove the rest
 import React, { useState } from "react";
 import type { License } from "@wavtopia/core-storage";
 import { cn } from "@/utils/cn";
