@@ -218,7 +218,7 @@ export function UploadTrack() {
           <FormTagInput
             id="genres"
             label="Genres"
-            placeholder={GENRE_PLACEHOLDER}
+            placeholder={`e.g., ${GENRE_PLACEHOLDER}`}
             value={values.genres}
             onChange={(newGenres: string[]) =>
               handleChange("genres", newGenres)

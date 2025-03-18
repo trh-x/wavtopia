@@ -1,12 +1,5 @@
-import React from "react";
 import type { License } from "@wavtopia/core-storage";
 import { LicenseBuilder } from "./license/LicenseBuilder";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./Tooltip";
 import { FormFieldWrapper } from "./forms/FormField";
 
 interface LicenseSelectProps {
