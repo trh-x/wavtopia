@@ -204,6 +204,7 @@ export function UploadTrack() {
             required
             value={values.title}
             onChange={(e) => handleChange("title", e.target.value)}
+            disabled={isSubmitting}
           />
 
           <FormInput
@@ -213,16 +214,18 @@ export function UploadTrack() {
             required
             value={values.primaryArtistName}
             onChange={(e) => handleChange("primaryArtistName", e.target.value)}
+            disabled={isSubmitting}
           />
 
           <FormTagInput
             id="genres"
             label="Genres"
-            placeholder={GENRE_PLACEHOLDER}
+            placeholder={`e.g., ${GENRE_PLACEHOLDER}`}
             value={values.genres}
             onChange={(newGenres: string[]) =>
               handleChange("genres", newGenres)
             }
+            disabled={isSubmitting}
           />
 
           <div className="flex gap-4">
@@ -241,6 +244,7 @@ export function UploadTrack() {
                     e.target.value ? parseFloat(e.target.value) : null
                   )
                 }
+                disabled={isSubmitting}
               />
             </div>
             <div className="flex-1">
@@ -251,6 +255,7 @@ export function UploadTrack() {
                 placeholder="e.g., C major, Am"
                 value={values.key || ""}
                 onChange={(e) => handleChange("key", e.target.value || null)}
+                disabled={isSubmitting}
               />
             </div>
             <div className="flex-1">
@@ -262,6 +267,7 @@ export function UploadTrack() {
                   handleChange("isExplicit", checked)
                 }
                 description={values.isExplicit ? "Yes" : "No"}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -275,14 +281,7 @@ export function UploadTrack() {
               handleChange("releaseDatePrecision", precision)
             }
             max={new Date().toISOString().split("T")[0]}
-          />
-
-          <LicenseSelect
-            value={values.licenseId}
-            onChange={(value) => handleChange("licenseId", value)}
-            licenses={licenses}
             disabled={isSubmitting}
-            required
           />
 
           <FormTextArea
@@ -294,6 +293,15 @@ export function UploadTrack() {
             onChange={(e) =>
               handleChange("description", e.target.value || null)
             }
+            disabled={isSubmitting}
+          />
+
+          <LicenseSelect
+            value={values.licenseId}
+            onChange={(value) => handleChange("licenseId", value)}
+            licenses={licenses}
+            disabled={isSubmitting}
+            required
           />
         </div>
 

@@ -28,6 +28,7 @@ export function FormDateWithPrecision({
   error,
   max,
   id,
+  disabled,
 }: FormDateWithPrecisionProps) {
   const getDateInputType = () => {
     switch (precision) {
@@ -140,24 +141,23 @@ export function FormDateWithPrecision({
             max={formatMaxDate()}
             onChange={handleDateChange}
             label={dateLabel}
+            disabled={disabled}
             {...placeholderProps}
           />
         </div>
         <div className="flex-1">
-          {precisionLabel && (
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {precisionLabel}
-            </label>
-          )}
-          <Toggle
-            value={precision}
-            options={[
-              { value: "DAY", label: "Day" },
-              { value: "MONTH", label: "Month" },
-              { value: "YEAR", label: "Year" },
-            ]}
-            onChange={handlePrecisionChange}
-          />
+          <FormFieldWrapper label={precisionLabel}>
+            <Toggle
+              value={precision}
+              options={[
+                { value: "DAY", label: "Day" },
+                { value: "MONTH", label: "Month" },
+                { value: "YEAR", label: "Year" },
+              ]}
+              onChange={handlePrecisionChange}
+              disabled={disabled}
+            />
+          </FormFieldWrapper>
         </div>
       </div>
     </FormFieldWrapper>

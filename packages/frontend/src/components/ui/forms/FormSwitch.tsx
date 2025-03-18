@@ -13,6 +13,7 @@ export function FormSwitch({
   checked,
   onCheckedChange,
   description,
+  disabled,
   ...props
 }: FormSwitchProps) {
   return (
@@ -21,6 +22,7 @@ export function FormSwitch({
         <Switch
           checked={checked}
           onCheckedChange={onCheckedChange}
+          disabled={disabled}
           {...props}
         />
         {description && (
