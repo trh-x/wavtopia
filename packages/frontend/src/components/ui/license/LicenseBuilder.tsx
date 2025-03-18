@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import type { License, LicenseType } from "@wavtopia/core-storage";
 import { cn } from "@/utils/cn";
 
@@ -9,6 +9,7 @@ interface LicenseOptionProps {
   description: string;
   recommended?: boolean;
   children?: React.ReactNode;
+  disabled?: boolean;
 }
 
 function LicenseOption({
@@ -18,15 +19,17 @@ function LicenseOption({
   description,
   recommended,
   children,
+  disabled,
 }: LicenseOptionProps) {
   return (
     <div
       onClick={onClick}
       className={cn(
-        "relative rounded-lg border cursor-pointer transition-all overflow-hidden",
+        "relative rounded-lg border transition-all overflow-hidden",
         selected
           ? "border-blue-500 bg-blue-50"
-          : "border-gray-200 bg-white hover:border-gray-300"
+          : "border-gray-200 bg-white hover:border-gray-300",
+        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
       )}
     >
       <div className="p-4">
@@ -37,7 +40,8 @@ function LicenseOption({
                 "w-4 h-4 rounded-full border-2 transition-colors",
                 selected
                   ? "border-blue-500 bg-blue-500"
-                  : "border-gray-300 bg-white"
+                  : "border-gray-300 bg-white",
+                disabled && "opacity-50"
               )}
             >
               {selected && (
@@ -87,7 +91,7 @@ interface ToggleProps {
   label: string;
   description: string;
   checked: boolean;
-  onChange: (checked: boolean) => void;
+  onChange?: (checked: boolean) => void;
   disabled?: boolean;
 }
 
@@ -100,15 +104,18 @@ function Toggle({
 }: ToggleProps) {
   return (
     <div
-      className="flex items-start gap-3"
-      onClick={() => !disabled && onChange(!checked)}
+      className={cn(
+        "flex items-start gap-3",
+        disabled ? "cursor-not-allowed" : "cursor-pointer"
+      )}
+      onClick={() => !disabled && onChange?.(!checked)}
     >
       <div className="flex-shrink-0 mt-1">
         <div
           className={cn(
             "relative w-8 h-4 rounded-full transition-colors",
             checked ? "bg-blue-500" : "bg-gray-200",
-            disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+            disabled && "opacity-50"
           )}
         >
           <div
@@ -119,7 +126,7 @@ function Toggle({
           />
         </div>
       </div>
-      <div>
+      <div className={cn(disabled && "opacity-50")}>
         <div className="text-sm font-medium text-gray-900">{label}</div>
         <div className="text-xs text-gray-600">{description}</div>
       </div>
@@ -225,6 +232,7 @@ export function LicenseBuilder({
           title="Creative Commons"
           description="Allow others to use your work under certain conditions"
           recommended
+          disabled={disabled}
         >
           {licenseType === "cc" && (
             <div
@@ -236,9 +244,8 @@ export function LicenseBuilder({
               <Toggle
                 label="Require attribution"
                 description="Others must give you credit when using your work"
-                checked={true}
-                onChange={() => {}}
-                disabled={true}
+                checked
+                disabled
               />
               <Toggle
                 label="Require share-alike"
@@ -263,6 +270,7 @@ export function LicenseBuilder({
           onClick={() => !disabled && handleLicenseTypeChange("reserved")}
           title="All Rights Reserved"
           description="Retain all rights to your work. Others must ask for permission to use it."
+          disabled={disabled}
         />
       </div>
 

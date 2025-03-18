@@ -12,6 +12,7 @@ export interface FormFieldProps {
   error?: string;
   id?: string;
   required?: boolean;
+  disabled?: boolean;
 }
 
 interface FormFieldWrapperProps extends FormFieldProps {
