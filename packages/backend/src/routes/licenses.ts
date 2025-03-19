@@ -58,6 +58,7 @@ router.get(
       where: { id },
       select: {
         id: true,
+        name: true,
         type: true,
         description: true,
         allowsCommercialUse: true,
