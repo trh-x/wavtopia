@@ -61,6 +61,7 @@ router.get(
         name: true,
         type: true,
         description: true,
+        usageDescription: true,
         allowsCommercialUse: true,
       },
     });

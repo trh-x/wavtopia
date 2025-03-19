@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { ShieldCheckIcon } from "@heroicons/react/24/solid";
+import {
+  ShieldCheckIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/solid";
 import { cn } from "../../utils/cn";
 import { api } from "../../api/client";
 import { License } from "/Users/snarf/git-public/trh-x/wavtopia/packages/frontend/src/types";
@@ -41,11 +44,17 @@ export function LicenseInfo({ licenseType, licenseId }: LicenseInfoProps) {
       ? "All Rights Reserved"
       : "Creative Commons";
 
+  const getLicenseUrl = (type: string) => {
+    // Convert CC_BY_NC_SA to by-nc-sa
+    const urlPath = type.toLowerCase().replace(/_/g, "-").substring(3);
+    return `https://creativecommons.org/licenses/${urlPath}/4.0/`;
+  };
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild onMouseEnter={loadLicenseDetails}>
-          <button className="text-sm flex items-center gap-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+          <button className="text-sm flex items-center gap-1.5 text-gray-400 hover:text-gray-300 transition-colors">
             <ShieldCheckIcon className="w-4 h-4 flex-shrink-0" />
             <span>{displayType}</span>
           </button>
@@ -56,13 +65,19 @@ export function LicenseInfo({ licenseType, licenseId }: LicenseInfoProps) {
           ) : license ? (
             <div className="space-y-2 text-sm">
               {licenseType !== "ALL_RIGHTS_RESERVED" && (
-                <p className="font-medium">{license.name}</p>
+                <>
+                  <p className="font-medium">{license.name}</p>
+                  <a
+                    href={getLicenseUrl(license.type)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    View full license text
+                  </a>
+                </>
               )}
-              <p>{license.description}</p>
-              <div className="text-xs">
-                Commercial use:{" "}
-                {license.allowsCommercialUse ? "Allowed" : "Not allowed"}
-              </div>
+              <p>{license.usageDescription}</p>
             </div>
           ) : (
             <div>License details unavailable</div>
