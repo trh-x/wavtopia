@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { authenticate } from "../middleware/auth";
 import { LicenseType } from "@wavtopia/core-storage";
+import { z } from "zod";
 
 const router = Router();
 
@@ -42,5 +43,34 @@ router.get("/", authenticate, async (req, res) => {
 
   res.json(sortedLicenses);
 });
+
+const getLicenseParams = z.object({
+  id: z.string().uuid(),
+});
+
+router.get(
+  "/:id",
+  // TODO: authenticate track access?
+  async (req, res) => {
+    const { id } = getLicenseParams.parse(req.params);
+
+    const license = await prisma.license.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        type: true,
+        description: true,
+        allowsCommercialUse: true,
+      },
+    });
+
+    if (!license) {
+      res.status(404).json({ error: "License not found" });
+      return;
+    }
+
+    res.json(license);
+  }
+);
 
 export default router;

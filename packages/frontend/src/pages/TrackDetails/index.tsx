@@ -12,6 +12,7 @@ import { api } from "../../api/client";
 import { TrackSharingControls } from "../../components/track-details/TrackSharingControls";
 import { useAuth } from "@/contexts/AuthContext";
 import { TrackDetailsPlaybackProvider } from "./contexts/PlaybackContext";
+import { LicenseInfo } from "../../components/track-details/LicenseInfo";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
@@ -57,6 +58,10 @@ export function TrackDetails() {
           duration={track.duration}
         />
         <FullTrackSection track={track} />
+        <LicenseInfo
+          licenseType={track.licenseType ?? null}
+          licenseId={track.licenseId ?? null}
+        />
         <StemsSection
           track={track}
           viewMode={viewMode}

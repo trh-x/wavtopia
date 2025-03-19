@@ -1,4 +1,10 @@
-import { PaginationParams, Track, User, PaginatedResponse } from "../types";
+import {
+  PaginationParams,
+  Track,
+  User,
+  PaginatedResponse,
+  License,
+} from "../types";
 
 const API_URL = "/api";
 
@@ -244,6 +250,12 @@ export const api = {
         contentType: "application/json",
         body: JSON.stringify({ trackIds: ids }),
       });
+    },
+  },
+
+  licenses: {
+    get: async (id: string) => {
+      return apiRequest(`/licenses/${id}`) as Promise<License>;
     },
   },
 
