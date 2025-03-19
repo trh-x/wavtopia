@@ -56,12 +56,10 @@ export function TrackDetails() {
           coverArt={track.coverArt}
           trackId={track.id}
           duration={track.duration}
-        />
-        <FullTrackSection track={track} />
-        <LicenseInfo
           licenseType={track.licenseType ?? null}
           licenseId={track.licenseId ?? null}
         />
+        <FullTrackSection track={track} />
         <StemsSection
           track={track}
           viewMode={viewMode}
