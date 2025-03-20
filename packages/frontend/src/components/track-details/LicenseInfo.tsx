@@ -1,32 +1,29 @@
 import { useState } from "react";
-import {
-  ShieldCheckIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/solid";
-import { cn } from "../../utils/cn";
+import { ShieldCheckIcon } from "@heroicons/react/24/solid";
 import { api } from "../../api/client";
-import { License } from "/Users/snarf/git-public/trh-x/wavtopia/packages/frontend/src/types";
+import { License } from "@/types";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/Tooltip";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 
-interface LicenseInfoProps {
-  licenseType: string | null;
-  licenseId: string | null;
-}
-
-export function LicenseInfo({ licenseType, licenseId }: LicenseInfoProps) {
+export function LicenseInfo() {
   const [license, setLicense] = useState<License | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
+  const { track } = useTrack();
+
+  const isOwner = user?.id === track.userId;
 
   const loadLicenseDetails = async () => {
-    if (licenseId && !license && !isLoading) {
+    if (track.licenseId && !license && !isLoading) {
       setIsLoading(true);
       try {
-        const details = await api.licenses.get(licenseId);
+        const details = await api.licenses.get(track.licenseId);
         setLicense(details);
       } catch (error) {
         console.error("Failed to load license details:", error);
@@ -36,11 +33,11 @@ export function LicenseInfo({ licenseType, licenseId }: LicenseInfoProps) {
     }
   };
 
-  if (!licenseType) return null;
+  if (!track.licenseType) return null;
 
   // Convert license type to more readable format
   const displayType =
-    licenseType === "ALL_RIGHTS_RESERVED"
+    track.licenseType === "ALL_RIGHTS_RESERVED"
       ? "All Rights Reserved"
       : "Creative Commons";
 
@@ -64,7 +61,7 @@ export function LicenseInfo({ licenseType, licenseId }: LicenseInfoProps) {
             <div className="animate-pulse">Loading...</div>
           ) : license ? (
             <div className="space-y-2 text-sm">
-              {licenseType !== "ALL_RIGHTS_RESERVED" && (
+              {track.licenseType !== "ALL_RIGHTS_RESERVED" && (
                 <>
                   <p className="font-medium">{license.name}</p>
                   <a
@@ -77,7 +74,7 @@ export function LicenseInfo({ licenseType, licenseId }: LicenseInfoProps) {
                   </a>
                 </>
               )}
-              <p>{license.usageDescription}</p>
+              <p>{isOwner ? license.description : license.usageDescription}</p>
             </div>
           ) : (
             <div>License details unavailable</div>
