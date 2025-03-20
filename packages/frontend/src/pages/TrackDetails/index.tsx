@@ -52,16 +52,12 @@ export function TrackDetails() {
       <TrackProvider value={{ track, isLoading, error, refetch }}>
         <div>
           <TrackHeader />
-          <FullTrackSection track={track} />
-          <StemsSection
-            track={track}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-          />
+          <FullTrackSection />
+          <StemsSection viewMode={viewMode} onViewModeChange={setViewMode} />
 
           {/* If the current user doesn't own the track, don't render the sharing controls */}
           {token && user && track.userId === user.id && (
-            <TrackSharingControls track={track} token={token} />
+            <TrackSharingControls token={token} />
           )}
         </div>
       </TrackProvider>

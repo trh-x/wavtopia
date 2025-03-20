@@ -1,16 +1,18 @@
-import { Track, Stem } from "@/types";
+import { Stem } from "@/types";
+import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetailsWaveform";
 import { StemDownloadButtons } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 
-interface StemTrackProps {
+interface TrackStemProps {
   stem: Stem;
-  track: Track;
   isGridView: boolean;
 }
 
-export function StemTrack({ stem, track, isGridView }: StemTrackProps) {
+export function TrackStem({ stem, isGridView }: TrackStemProps) {
+  const { track } = useTrack();
+
   return (
     <div
       className={`${styles.container.card} ${
