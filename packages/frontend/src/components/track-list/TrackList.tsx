@@ -307,7 +307,7 @@ export function TrackList({
                     </div>
                     <p
                       className="text-sm font-medium text-gray-700 truncate"
-                      title={track.primaryArtistName}
+                      title={track.primaryArtistName ?? ""}
                     >
                       {track.primaryArtistName}
                     </p>
