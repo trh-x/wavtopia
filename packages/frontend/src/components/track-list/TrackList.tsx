@@ -311,17 +311,47 @@ export function TrackList({
 
                     <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
                       {track.originalFormat && (
-                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-medium">
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium inline-flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="w-3 h-3"
+                          >
+                            <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm0-9a3 3 0 100 6 3 3 0 000-6z" />
+                            <circle cx="10" cy="10" r="1" />
+                          </svg>
                           {track.originalFormat.toUpperCase()}
                         </span>
                       )}
                       {track.bpm && (
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-medium">
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium inline-flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="w-3 h-3"
+                          >
+                            <path d="M13.92 3.845a19.361 19.361 0 0 1-6.3 1.98C6.765 5.942 5.89 6 5 6a4 4 0 0 0-.504.044.75.75 0 0 0-.489 1.243l3.622 3.622-2.65 2.65a.75.75 0 0 0 1.061 1.06l2.65-2.65 3.622 3.623a.75.75 0 0 0 1.243-.49A4 4 0 0 0 14 13c0-.89.058-1.766.174-2.62a19.361 19.361 0 0 1 1.98-6.3.75.75 0 0 0-.334-1.001.75.75 0 0 0-.9.146Z" />
+                          </svg>
                           {track.bpm} BPM
                         </span>
                       )}
                       {track.key && (
-                        <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-medium">
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium inline-flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="w-3 h-3"
+                          >
+                            <path
+                              d="M12 4v12M8 4v12M6.5 7h7M6.5 13h7"
+                              strokeWidth="2"
+                              stroke="currentColor"
+                              fill="none"
+                            />
+                          </svg>
                           {track.key}
                         </span>
                       )}
@@ -331,7 +361,7 @@ export function TrackList({
                         {track.genreNames.map((genre) => (
                           <span
                             key={genre}
-                            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                            className="text-xs text-blue-500 hover:text-blue-600 transition-colors"
                           >
                             #{genre}
                           </span>
