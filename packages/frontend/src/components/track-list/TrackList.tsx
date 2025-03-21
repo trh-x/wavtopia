@@ -287,7 +287,14 @@ export function TrackList({
                   />
                   <div className="flex-1">
                     <div className="flex justify-between items-center">
-                      <h3 className="font-medium">{track.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium">{track.title}</h3>
+                        {track.isExplicit && (
+                          <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
+                            Explicit
+                          </span>
+                        )}
+                      </div>
                       <span className="text-sm text-gray-500 ml-2">
                         {formatDuration(track.duration)}
                       </span>
@@ -298,6 +305,33 @@ export function TrackList({
                     <p className="text-xs text-gray-500">
                       by {track.user.username}
                     </p>
+
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                      {track.originalFormat && (
+                        <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                          {track.originalFormat.toUpperCase()}
+                        </span>
+                      )}
+                      {track.bpm && (
+                        <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                          {track.bpm} BPM
+                        </span>
+                      )}
+                      {track.key && (
+                        <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                          {track.key}
+                        </span>
+                      )}
+                    </div>
+                    {track.genreNames && track.genreNames.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {track.genreNames.map((genre) => (
+                          <span key={genre} className="text-xs text-gray-600">
+                            #{genre}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
