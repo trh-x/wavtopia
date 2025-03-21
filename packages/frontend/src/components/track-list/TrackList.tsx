@@ -276,7 +276,7 @@ export function TrackList({
                 <TrackCardMenu onDelete={() => onDeleteTrack(track.id)} />
               )}
             </div>
-            <Link to={`/track/${track.id}`} className="block">
+            <Link to={`/track/${track.id}`} className="block group">
               <div className="flex flex-col space-y-4">
                 <div className="flex items-center space-x-4">
                   <TrackCoverArt
@@ -284,49 +284,55 @@ export function TrackList({
                     trackId={track.id}
                     title={track.title}
                     size="sm"
+                    className="transition-transform group-hover:scale-105"
                   />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{track.title}</h3>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h3 className="font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
+                          {track.title}
+                        </h3>
                         {track.isExplicit && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
+                          <span className="shrink-0 px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
                             Explicit
                           </span>
                         )}
                       </div>
-                      <span className="text-sm text-gray-500 ml-2">
+                      <span className="text-sm text-gray-500 ml-2 shrink-0">
                         {formatDuration(track.duration)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm font-medium text-gray-700 truncate">
                       {track.primaryArtistName}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 truncate">
                       by {track.user.username}
                     </p>
 
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
                       {track.originalFormat && (
-                        <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-medium">
                           {track.originalFormat.toUpperCase()}
                         </span>
                       )}
                       {track.bpm && (
-                        <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-full font-medium">
                           {track.bpm} BPM
                         </span>
                       )}
                       {track.key && (
-                        <span className="px-2 py-0.5 bg-gray-100 rounded-full">
+                        <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full font-medium">
                           {track.key}
                         </span>
                       )}
                     </div>
                     {track.genreNames && track.genreNames.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {track.genreNames.map((genre) => (
-                          <span key={genre} className="text-xs text-gray-600">
+                          <span
+                            key={genre}
+                            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                          >
                             #{genre}
                           </span>
                         ))}
