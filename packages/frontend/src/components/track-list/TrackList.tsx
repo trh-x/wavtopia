@@ -287,36 +287,38 @@ export function TrackList({
                     className="transition-transform group-hover:scale-105"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1 min-w-0">
                         <h3
                           className="font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors"
                           title={track.title}
                         >
                           {track.title}
                         </h3>
+                        <p
+                          className="text-sm font-medium text-gray-700 truncate"
+                          title={track.primaryArtistName ?? ""}
+                        >
+                          {track.primaryArtistName}
+                        </p>
+                        <p
+                          className="text-xs text-gray-500 truncate"
+                          title={`by ${track.user.username}`}
+                        >
+                          by {track.user.username}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
                         {track.isExplicit && (
                           <span className="shrink-0 px-1.5 py-0.5 bg-red-50 text-red-600 rounded text-xs font-medium">
                             Explicit
                           </span>
                         )}
+                        <span className="text-sm text-gray-500 shrink-0">
+                          {formatDuration(track.duration)}
+                        </span>
                       </div>
-                      <span className="text-sm text-gray-500 ml-2 shrink-0">
-                        {formatDuration(track.duration)}
-                      </span>
                     </div>
-                    <p
-                      className="text-sm font-medium text-gray-700 truncate"
-                      title={track.primaryArtistName ?? ""}
-                    >
-                      {track.primaryArtistName}
-                    </p>
-                    <p
-                      className="text-xs text-gray-500 truncate"
-                      title={`by ${track.user.username}`}
-                    >
-                      by {track.user.username}
-                    </p>
 
                     <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
                       {track.originalFormat && (
