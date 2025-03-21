@@ -289,7 +289,10 @@ export function TrackList({
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">
+                        <h3
+                          className="font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors"
+                          title={track.title}
+                        >
                           {track.title}
                         </h3>
                         {track.isExplicit && (
@@ -302,26 +305,41 @@ export function TrackList({
                         {formatDuration(track.duration)}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-gray-700 truncate">
+                    <p
+                      className="text-sm font-medium text-gray-700 truncate"
+                      title={track.primaryArtistName}
+                    >
                       {track.primaryArtistName}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p
+                      className="text-xs text-gray-500 truncate"
+                      title={`by ${track.user.username}`}
+                    >
                       by {track.user.username}
                     </p>
 
                     <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
                       {track.originalFormat && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
+                        <span
+                          className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium"
+                          title="Track Format"
+                        >
                           {track.originalFormat.toUpperCase()}
                         </span>
                       )}
                       {track.bpm && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
+                        <span
+                          className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium"
+                          title="Tempo"
+                        >
                           {track.bpm} BPM
                         </span>
                       )}
                       {track.key && (
-                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium">
+                        <span
+                          className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full font-medium"
+                          title="Musical Key"
+                        >
                           {track.key}
                         </span>
                       )}
