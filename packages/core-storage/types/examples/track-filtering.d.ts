@@ -74,6 +74,7 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         recordingLocation: string | null;
         recordLabelId: string | null;
         licenseId: string | null;
+        licenseType: import(".prisma/client").$Enums.LicenseType | null;
         genreNames: string[];
         moodNames: string[];
         tagNames: string[];

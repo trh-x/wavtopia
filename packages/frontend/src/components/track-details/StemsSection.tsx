@@ -1,20 +1,20 @@
-import { Track } from "@/types";
+import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { PlayModeToggle } from "./PlayModeToggle";
 import { ViewModeToggle, ViewMode } from "./ViewModeToggle";
-import { StemTrack } from "./StemTrack";
+import { TrackStem } from "./TrackStem";
 import { styles } from "../../styles/common";
 
 interface StemsSectionProps {
-  track: Track;
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
 }
 
 export function StemsSection({
-  track,
   viewMode,
   onViewModeChange,
 }: StemsSectionProps) {
+  const { track } = useTrack();
+
   return (
     <div className={styles.layout.stack}>
       <div className={styles.container.flexBetween}>
@@ -36,10 +36,9 @@ export function StemsSection({
         {track.stems
           .sort((a, b) => a.index - b.index)
           .map((stem) => (
-            <StemTrack
+            <TrackStem
               key={stem.id}
               stem={stem}
-              track={track}
               isGridView={viewMode === "grid"}
             />
           ))}

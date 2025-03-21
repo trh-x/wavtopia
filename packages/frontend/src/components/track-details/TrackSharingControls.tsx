@@ -1,20 +1,17 @@
 import { useState } from "react";
-import { Track } from "@/types";
 import { api } from "../../api/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Switch } from "../ui/Switch";
+import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 
 interface TrackSharingControlsProps {
-  track: Track;
   token: string;
 }
 
-export function TrackSharingControls({
-  track,
-  token,
-}: TrackSharingControlsProps) {
+export function TrackSharingControls({ token }: TrackSharingControlsProps) {
+  const { track } = useTrack();
   const [userEmail, setUserEmail] = useState("");
   const queryClient = useQueryClient();
 

@@ -12,6 +12,7 @@ import { api } from "../../api/client";
 import { TrackSharingControls } from "../../components/track-details/TrackSharingControls";
 import { useAuth } from "@/contexts/AuthContext";
 import { TrackDetailsPlaybackProvider } from "./contexts/PlaybackContext";
+import { TrackProvider } from "./contexts/TrackContext";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
@@ -48,26 +49,18 @@ export function TrackDetails() {
 
   return (
     <TrackDetailsPlaybackProvider>
-      <div>
-        <TrackHeader
-          title={track.title}
-          artistName={track.primaryArtistName}
-          coverArt={track.coverArt}
-          trackId={track.id}
-          duration={track.duration}
-        />
-        <FullTrackSection track={track} />
-        <StemsSection
-          track={track}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
+      <TrackProvider value={{ track, isLoading, error, refetch }}>
+        <div>
+          <TrackHeader />
+          <FullTrackSection />
+          <StemsSection viewMode={viewMode} onViewModeChange={setViewMode} />
 
-        {/* If the current user doesn't own the track, don't render the sharing controls */}
-        {token && user && track.userId === user.id && (
-          <TrackSharingControls track={track} token={token} />
-        )}
-      </div>
+          {/* If the current user doesn't own the track, don't render the sharing controls */}
+          {token && user && track.userId === user.id && (
+            <TrackSharingControls token={token} />
+          )}
+        </div>
+      </TrackProvider>
     </TrackDetailsPlaybackProvider>
   );
 }

@@ -4,6 +4,7 @@ import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
 import { TrackWaveformPlaceholder } from "../track-list/TrackList";
 import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetailsWaveform";
+import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 
 interface AudioFileDownloadButtonProps {
   track: Track;
@@ -37,11 +38,9 @@ function AudioFileDownloadButton({
   );
 }
 
-interface FullTrackSectionProps {
-  track: Track;
-}
+export function FullTrackSection() {
+  const { track } = useTrack();
 
-export function FullTrackSection({ track }: FullTrackSectionProps) {
   return (
     <div className={styles.container.section}>
       <div className={styles.container.card}>

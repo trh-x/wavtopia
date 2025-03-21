@@ -172,6 +172,10 @@ model Track {
   recordLabel         RecordLabel? @relation(fields: [recordLabelId], references: [id])
   licenseId           String?      @map("license_id")
   license             License?     @relation(fields: [licenseId], references: [id])
+  // licenseType is denormalized from License
+  // See packages/core-storage/prisma/migrations/20250304005246_add_license_type_to_tracks/migration.sql
+  // for the trigger that keeps the licenseType field in sync with the licenseId field.
+  licenseType         LicenseType?      @map("license_type")
   
   // Many-to-many relationships, plus denormalized arrays for efficient filtering
   // See packages/core-storage/prisma/migrations/20250304005244_add_denormalized_arrays/migration.sql
@@ -215,6 +219,7 @@ model Track {
   @@index([tagNames], type: Gin)
   @@index([searchVector], type: Gin)
   @@index([searchConfigHash])
+  @@index([licenseType])
   @@map("tracks")
 }
 

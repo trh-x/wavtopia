@@ -11,6 +11,8 @@ export async function seedLicenses() {
       type: LicenseType.CC_BY,
       description:
         "This license lets others distribute, remix, adapt, and build upon your work, even commercially, as long as they credit you for the original creation.",
+      usageDescription:
+        "You can distribute, remix, adapt, and build upon this work, even commercially, as long as you credit the original creator.",
       allowsRemixing: true,
       allowsSharing: true,
       requiresAttribution: true,
@@ -28,6 +30,8 @@ export async function seedLicenses() {
       type: LicenseType.CC_BY_SA,
       description:
         "This license lets others remix, adapt, and build upon your work even for commercial purposes, as long as they credit you and license their new creations under identical terms.",
+      usageDescription:
+        "You can remix, adapt, and build upon this work even for commercial purposes, as long as you credit the creator and license your new creations under identical terms.",
       allowsRemixing: true,
       allowsSharing: true,
       requiresAttribution: true,
@@ -46,6 +50,8 @@ export async function seedLicenses() {
       type: LicenseType.CC_BY_NC,
       description:
         "This license lets others remix, adapt, and build upon your work non-commercially with attribution.",
+      usageDescription:
+        "You can remix, adapt, and build upon this work non-commercially, as long as you credit the creator.",
       allowsRemixing: true,
       allowsSharing: true,
       requiresAttribution: true,
@@ -66,6 +72,8 @@ export async function seedLicenses() {
       type: LicenseType.CC_BY_NC_SA,
       description:
         "This license lets others remix, adapt, and build upon your work non-commercially, as long as they credit you and license their new creations under identical terms.",
+      usageDescription:
+        "You can remix, adapt, and build upon this work non-commercially, as long as you credit the creator and license your new creations under identical terms.",
       allowsRemixing: true,
       allowsSharing: true,
       requiresAttribution: true,
@@ -86,6 +94,8 @@ export async function seedLicenses() {
       type: LicenseType.CC_BY_ND,
       description:
         "This license allows for redistribution, commercial and non-commercial, as long as it is passed along unchanged and in whole, with credit to you.",
+      usageDescription:
+        "You can redistribute this work, commercially and non-commercially, as long as it is passed along unchanged and in whole, with credit to the creator.",
       allowsRemixing: false,
       allowsSharing: true,
       requiresAttribution: true,
@@ -105,6 +115,8 @@ export async function seedLicenses() {
       type: LicenseType.CC_BY_NC_ND,
       description:
         "This license is the most restrictive of the six main CC licenses, only allowing others to download your works and share them with others as long as they credit you, but they can't change them in any way or use them commercially.",
+      usageDescription:
+        "You can download and share this work with others as long as you credit the creator, but you can't change it in any way or use it commercially.",
       allowsRemixing: false,
       allowsSharing: true,
       requiresAttribution: true,
@@ -125,6 +137,8 @@ export async function seedLicenses() {
       type: LicenseType.ALL_RIGHTS_RESERVED,
       description:
         "Traditional copyright. All rights are reserved and protected.",
+      usageDescription:
+        "All rights are reserved by the creator. No use is permitted without explicit permission.",
       allowsRemixing: false,
       allowsSharing: false,
       requiresAttribution: true,
@@ -143,6 +157,8 @@ export async function seedLicenses() {
       type: LicenseType.CUSTOM,
       description:
         "Custom license for stem sharing with specific terms for commercial usage.",
+      usageDescription:
+        "Stems can be used with attribution. Commercial use requires explicit permission and may be subject to royalty payments.",
       allowsRemixing: true,
       allowsSharing: true,
       requiresAttribution: true,

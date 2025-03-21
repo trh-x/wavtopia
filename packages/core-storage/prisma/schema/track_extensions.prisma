@@ -184,7 +184,8 @@ model License {
   id                    String    @id @default(uuid())
   name                  String    @unique
   type                  LicenseType
-  description           String?
+  description           String
+  usageDescription      String                    @map("usage_description")
   customTerms           String?                   @map("custom_terms")            // For custom license terms
   allowsRemixing        Boolean   @default(false) @map("allows_remixing")
   allowsSharing         Boolean   @default(false) @map("allows_sharing")

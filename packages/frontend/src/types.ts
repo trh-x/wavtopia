@@ -5,4 +5,5 @@ export type {
   User,
   Stem,
   TrackShare,
+  License,
 } from "@wavtopia/core-storage";
