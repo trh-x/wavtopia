@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ShieldCheckIcon } from "@heroicons/react/24/solid";
 import { api } from "../../api/client";
-import { License } from "@/types";
 import {
   Tooltip,
   TooltipContent,
