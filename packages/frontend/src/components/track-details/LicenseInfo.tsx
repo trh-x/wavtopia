@@ -10,28 +10,20 @@ import {
 } from "../ui/Tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
+import { useQuery } from "@tanstack/react-query";
 
 export function LicenseInfo() {
-  const [license, setLicense] = useState<License | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [hasHovered, setHasHovered] = useState(false);
   const { user } = useAuth();
   const { track } = useTrack();
 
   const isOwner = user?.id === track.userId;
 
-  const loadLicenseDetails = async () => {
-    if (track.licenseId && !license && !isLoading) {
-      setIsLoading(true);
-      try {
-        const details = await api.licenses.get(track.licenseId);
-        setLicense(details);
-      } catch (error) {
-        console.error("Failed to load license details:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
+  const { data: license, isLoading } = useQuery({
+    queryKey: ["license", track.licenseId],
+    queryFn: () => api.licenses.get(track.licenseId!),
+    enabled: hasHovered,
+  });
 
   if (!track.licenseType) return null;
 
@@ -50,7 +42,7 @@ export function LicenseInfo() {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild onMouseEnter={loadLicenseDetails}>
+        <TooltipTrigger asChild onMouseEnter={() => setHasHovered(true)}>
           <button className="text-sm flex items-center gap-1.5 text-gray-400 hover:text-gray-300 transition-colors">
             <ShieldCheckIcon className="w-4 h-4 flex-shrink-0" />
             <span>{displayType}</span>
