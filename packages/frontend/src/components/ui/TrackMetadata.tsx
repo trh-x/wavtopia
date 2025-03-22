@@ -84,19 +84,6 @@ export function GenreTag({ genre, size = "md", className }: GenreTagProps) {
   );
 }
 
-interface ExplicitBadgeProps {
-  size?: Size;
-  className?: string;
-}
-
-export function ExplicitBadge({ size = "md", className }: ExplicitBadgeProps) {
-  return (
-    <MetadataPill size={size} variant="red" className={className}>
-      Explicit
-    </MetadataPill>
-  );
-}
-
 interface TrackMetadataProps {
   format?: string;
   bpm?: number;

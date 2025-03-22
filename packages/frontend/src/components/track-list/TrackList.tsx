@@ -312,21 +312,15 @@ export function TrackList({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <div className="flex items-center gap-1">
-                          <LicenseInfo
-                            track={track}
-                            showText={false}
-                            size="sm"
-                          />
-                          <span className="text-sm text-gray-500 shrink-0">
-                            {formatDuration(track.duration)}
-                          </span>
-                        </div>
+                        <span className="text-sm text-gray-500 shrink-0">
+                          {formatDuration(track.duration)}
+                        </span>
                         <ReleaseDate
                           date={track.releaseDate}
                           precision={track.releaseDatePrecision}
                           size="sm"
                         />
+                        <LicenseInfo track={track} showText={false} size="sm" />
                       </div>
                     </div>
 

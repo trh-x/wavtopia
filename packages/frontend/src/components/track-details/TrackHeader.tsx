@@ -31,22 +31,20 @@ export function TrackHeader() {
 
           {/* License, explicit badge, and duration */}
           <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-3 sm:gap-2 shrink-0">
-            <div className="flex items-center gap-3">
-              <LicenseInfo track={track} />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-base sm:text-lg text-gray-500 hover:text-gray-400 transition-colors cursor-default">
-                    {formatDuration(track.duration)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Track duration</TooltipContent>
-              </Tooltip>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-base sm:text-lg text-gray-500 hover:text-gray-400 transition-colors cursor-default">
+                  {formatDuration(track.duration)}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>Track duration</TooltipContent>
+            </Tooltip>
             <ReleaseDate
               date={track.releaseDate}
               precision={track.releaseDatePrecision}
               size="sm"
             />
+            <LicenseInfo track={track} />
           </div>
         </div>
 
