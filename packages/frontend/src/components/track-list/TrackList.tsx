@@ -9,7 +9,7 @@ import { cn } from "@/utils/cn";
 import { Checkbox } from "../ui/Checkbox";
 import { TrackCardMenu } from "./TrackCardMenu";
 import { useEffect, useRef, useCallback } from "react";
-import { ExplicitBadge, TrackMetadata, GenreList } from "../ui/TrackMetadata";
+import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
 import {
   Select,
   SelectContent,
@@ -312,7 +312,10 @@ export function TrackList({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-sm text-gray-500 shrink-0">
+                        <span
+                          title="Track duration"
+                          className="text-sm text-gray-500 shrink-0"
+                        >
                           {formatDuration(track.duration)}
                         </span>
                         <ReleaseDate

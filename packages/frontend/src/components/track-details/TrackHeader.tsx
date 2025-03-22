@@ -2,7 +2,7 @@ import { TrackCoverArt } from "../track-list/TrackList";
 import { formatDuration } from "@/utils/formatDuration";
 import { LicenseInfo } from "./LicenseInfo";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
-import { ExplicitBadge, TrackMetadata, GenreList } from "../ui/TrackMetadata";
+import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/Tooltip";
 import { ReleaseDate } from "../ui/ReleaseDate";
 
@@ -31,18 +31,16 @@ export function TrackHeader() {
 
           {/* License, explicit badge, and duration */}
           <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-3 sm:gap-2 shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-base sm:text-lg text-gray-500 hover:text-gray-400 transition-colors cursor-default">
-                  {formatDuration(track.duration)}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>Track duration</TooltipContent>
-            </Tooltip>
+            <span
+              title="Track duration"
+              className="text-base sm:text-lg text-gray-500 hover:text-gray-400 transition-colors cursor-default"
+            >
+              {formatDuration(track.duration)}
+            </span>
             <ReleaseDate
               date={track.releaseDate}
               precision={track.releaseDatePrecision}
-              size="sm"
+              size="md"
             />
             <LicenseInfo track={track} />
           </div>

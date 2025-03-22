@@ -104,7 +104,7 @@ export function TrackMetadata({
   return (
     <div className={cn("flex flex-wrap", sizeStyles[size].gap, className)}>
       {format && (
-        <MetadataPill title="Track Format" size={size}>
+        <MetadataPill title="Track format" size={size}>
           {format.toUpperCase()}
         </MetadataPill>
       )}
@@ -114,12 +114,16 @@ export function TrackMetadata({
         </MetadataPill>
       )}
       {musicalKey && (
-        <MetadataPill title="Musical Key" size={size}>
+        <MetadataPill title="Musical key" size={size}>
           {musicalKey}
         </MetadataPill>
       )}
       {isExplicit && (
-        <MetadataPill title="Explicit" size={size} variant="red">
+        <MetadataPill
+          title="Contains explicit content"
+          size={size}
+          variant="red"
+        >
           Explicit
         </MetadataPill>
       )}
