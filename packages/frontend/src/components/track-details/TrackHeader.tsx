@@ -40,7 +40,7 @@ export function TrackHeader() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-base sm:text-lg text-gray-500 cursor-help">
+                    <span className="text-base sm:text-lg text-gray-500 hover:text-gray-400 transition-colors cursor-pointer">
                       {formatDuration(track.duration)}
                     </span>
                   </TooltipTrigger>

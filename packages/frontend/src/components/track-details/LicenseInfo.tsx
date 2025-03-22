@@ -1,18 +1,13 @@
 import { useState } from "react";
 import { ShieldCheckIcon } from "@heroicons/react/24/solid";
 import { api } from "../../api/client";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/Tooltip";
+import { ControlledTooltip, TooltipContent, TooltipLink } from "../ui/Tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { useQuery } from "@tanstack/react-query";
 
 export function LicenseInfo() {
-  const [hasHovered, setHasHovered] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const { track } = useTrack();
 
@@ -21,7 +16,7 @@ export function LicenseInfo() {
   const { data: license, isLoading } = useQuery({
     queryKey: ["license", track.licenseId],
     queryFn: () => api.licenses.get(track.licenseId!),
-    enabled: hasHovered,
+    enabled: isOpen,
   });
 
   if (!track.licenseType) return null;
@@ -39,39 +34,37 @@ export function LicenseInfo() {
   };
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild onMouseEnter={() => setHasHovered(true)}>
-          <button className="text-sm flex items-center gap-1.5 text-gray-400 hover:text-gray-300 transition-colors">
-            <ShieldCheckIcon className="w-4 h-4 flex-shrink-0" />
-            <span>{displayType}</span>
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          {isLoading ? (
-            <div className="animate-pulse">Loading...</div>
-          ) : license ? (
-            <div className="space-y-2 text-sm">
-              {track.licenseType !== "ALL_RIGHTS_RESERVED" && (
-                <>
-                  <p className="font-medium">{license.name}</p>
-                  <a
-                    href={getLicenseUrl(license.type)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-400 hover:text-blue-300"
-                  >
-                    View full license text
-                  </a>
-                </>
-              )}
-              <p>{isOwner ? license.description : license.usageDescription}</p>
-            </div>
-          ) : (
-            <div>License details unavailable</div>
-          )}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <ControlledTooltip onOpenChange={setIsOpen}>
+      <button
+        type="button"
+        className="text-sm flex items-center gap-1.5 text-gray-400 hover:text-gray-300 transition-colors"
+      >
+        <ShieldCheckIcon className="w-4 h-4 flex-shrink-0" />
+        <span>{displayType}</span>
+      </button>
+      <TooltipContent side="top" className="max-w-xs">
+        {isLoading ? (
+          <div className="animate-pulse">Loading...</div>
+        ) : license ? (
+          <div className="space-y-2 text-sm">
+            {track.licenseType !== "ALL_RIGHTS_RESERVED" && (
+              <>
+                <p className="font-medium">{license.name}</p>
+                <TooltipLink
+                  to={getLicenseUrl(license.type)}
+                  external
+                  className="text-xs"
+                >
+                  View full license text
+                </TooltipLink>
+              </>
+            )}
+            <p>{isOwner ? license.description : license.usageDescription}</p>
+          </div>
+        ) : (
+          <div>License details unavailable</div>
+        )}
+      </TooltipContent>
+    </ControlledTooltip>
   );
 }
