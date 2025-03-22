@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/Select";
+import { LicenseInfo } from "../track-details/LicenseInfo";
 
 interface SortOption {
   label: string;
@@ -311,9 +312,16 @@ export function TrackList({
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         {track.isExplicit && <ExplicitBadge size="sm" />}
-                        <span className="text-sm text-gray-500 shrink-0">
-                          {formatDuration(track.duration)}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <LicenseInfo
+                            track={track}
+                            showText={false}
+                            size="sm"
+                          />
+                          <span className="text-sm text-gray-500 shrink-0">
+                            {formatDuration(track.duration)}
+                          </span>
+                        </div>
                       </div>
                     </div>
 

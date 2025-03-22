@@ -31,7 +31,7 @@ export function TrackHeader() {
           {/* License, explicit badge, and duration */}
           <div className="flex flex-row sm:flex-col-reverse items-start sm:items-end gap-3 sm:gap-2 shrink-0">
             <div className="flex items-center gap-3">
-              <LicenseInfo />
+              <LicenseInfo track={track} />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="text-base sm:text-lg text-gray-500 hover:text-gray-400 transition-colors cursor-default">

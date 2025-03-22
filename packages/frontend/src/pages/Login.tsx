@@ -9,7 +9,6 @@ import {
   TooltipContent,
   TooltipLink,
 } from "@/components/ui/Tooltip";
-import { useState } from "react";
 
 interface LoginData {
   email: string;
@@ -36,7 +35,6 @@ export function Login() {
   const { login } = useAuth();
   const { isFeatureEnabled } = useFeatureFlags();
   const isEarlyAccessRequired = isFeatureEnabled("EARLY_ACCESS_REQUIRED");
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
   const {
     values,
