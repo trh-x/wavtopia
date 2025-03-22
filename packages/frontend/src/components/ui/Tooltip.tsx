@@ -125,7 +125,14 @@ const ControlledTooltip = ({
   };
 
   return (
-    <Tooltip open={isOpen} onOpenChange={handleOpenChange} {...props}>
+    <Tooltip
+      open={isOpen}
+      onOpenChange={handleOpenChange}
+      // `delayDuration` is needed for the links to work, otherwise the tooltip
+      // will immediately close in response to the blur event on the trigger
+      delayDuration={0}
+      {...props}
+    >
       <TooltipTrigger asChild={triggerAsChild} onClick={handleTriggerClick}>
         {trigger}
       </TooltipTrigger>
