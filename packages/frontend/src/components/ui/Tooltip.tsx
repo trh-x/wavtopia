@@ -9,12 +9,12 @@ const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
-const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
+const TooltipContent = ({
+  className,
+  sideOffset = 4,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>) => (
   <TooltipPrimitive.Content
-    ref={ref}
     sideOffset={sideOffset}
     className={cn(
       "z-50 max-w-xs overflow-hidden rounded-md bg-gray-900 px-3 py-2 text-sm text-white shadow-lg animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
@@ -22,7 +22,7 @@ const TooltipContent = React.forwardRef<
     )}
     {...props}
   />
-));
+);
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 // Component for handling links within tooltips
@@ -31,87 +31,101 @@ interface TooltipLinkProps extends LinkProps {
   external?: boolean;
 }
 
-const TooltipLink = React.forwardRef<HTMLAnchorElement, TooltipLinkProps>(
-  ({ to, className, external, children, onClick, ...props }, ref) => {
-    const navigate = useNavigate();
+const TooltipLink = ({
+  to,
+  className,
+  external,
+  children,
+  onClick,
+  ...props
+}: TooltipLinkProps) => {
+  const navigate = useNavigate();
 
-    const handleInteraction = (e: React.MouseEvent | React.TouchEvent) => {
-      e.stopPropagation();
-      if (onClick) {
-        onClick(e as any);
-      }
-    };
-
-    const handleTouchEnd = (e: React.TouchEvent) => {
-      e.stopPropagation();
-      if (external) {
-        window.open(to.toString(), "_blank", "noopener,noreferrer");
-      } else {
-        navigate(to);
-      }
-    };
-
-    const linkProps = {
-      className: cn(
-        "text-primary-300 hover:text-primary-200 underline font-medium",
-        className
-      ),
-      onClick: handleInteraction,
-      onTouchStart: handleInteraction,
-      onTouchEnd: handleTouchEnd,
-      ref,
-      ...props,
-    };
-
-    if (external) {
-      return (
-        <a
-          href={to.toString()}
-          target="_blank"
-          rel="noopener noreferrer"
-          {...linkProps}
-        >
-          {children}
-        </a>
-      );
+  const handleInteraction = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    if (onClick) {
+      onClick(e as any);
     }
+  };
 
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (external) {
+      window.open(to.toString(), "_blank", "noopener,noreferrer");
+    } else {
+      navigate(to);
+    }
+  };
+
+  const linkProps = {
+    className: cn(
+      "text-primary-300 hover:text-primary-200 underline font-medium",
+      className
+    ),
+    onClick: handleInteraction,
+    onTouchStart: handleInteraction,
+    onTouchEnd: handleTouchEnd,
+    ...props,
+  };
+
+  if (external) {
     return (
-      <Link to={to} {...linkProps}>
+      <a
+        href={to.toString()}
+        target="_blank"
+        rel="noopener noreferrer"
+        {...linkProps}
+      >
         {children}
-      </Link>
+      </a>
     );
   }
-);
+
+  return (
+    <Link to={to} {...linkProps}>
+      {children}
+    </Link>
+  );
+};
+
 TooltipLink.displayName = "TooltipLink";
 
 // Controlled tooltip component that handles its own state
 interface ControlledTooltipProps extends React.ComponentProps<typeof Tooltip> {
   children: [React.ReactElement, React.ReactElement]; // Enforce exactly two children: trigger and content
   triggerAsChild?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const ControlledTooltip = React.forwardRef<
-  HTMLDivElement,
-  ControlledTooltipProps
->(({ children: [trigger, content], triggerAsChild = true, ...props }, ref) => {
+const ControlledTooltip = ({
+  children: [trigger, content],
+  triggerAsChild = true,
+  onOpenChange,
+  ...props
+}: ControlledTooltipProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    onOpenChange?.(open);
+  };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsOpen(true);
+    handleOpenChange(true);
   };
 
   return (
-    <Tooltip open={isOpen} onOpenChange={setIsOpen} {...props}>
+    <Tooltip open={isOpen} onOpenChange={handleOpenChange} {...props}>
       <TooltipTrigger asChild={triggerAsChild} onClick={handleTriggerClick}>
         {trigger}
       </TooltipTrigger>
       {content}
     </Tooltip>
   );
-});
+};
+
 ControlledTooltip.displayName = "ControlledTooltip";
 
 export {
