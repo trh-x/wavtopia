@@ -3,6 +3,12 @@ import { formatDuration } from "@/utils/formatDuration";
 import { LicenseInfo } from "./LicenseInfo";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { ExplicitBadge, TrackMetadata, GenreList } from "../ui/TrackMetadata";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/Tooltip";
 
 export function TrackHeader() {
   const { track } = useTrack();
@@ -31,9 +37,16 @@ export function TrackHeader() {
           <div className="flex flex-row sm:flex-col-reverse items-start sm:items-end gap-3 sm:gap-2 shrink-0">
             <div className="flex items-center gap-3">
               <LicenseInfo />
-              <span className="text-base sm:text-lg text-gray-500">
-                {formatDuration(track.duration)}
-              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-base sm:text-lg text-gray-500 cursor-help">
+                      {formatDuration(track.duration)}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Track duration</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             {track.isExplicit && <ExplicitBadge size="md" />}
           </div>
