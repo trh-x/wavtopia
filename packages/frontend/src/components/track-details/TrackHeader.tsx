@@ -9,14 +9,12 @@ export function TrackHeader() {
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
-      <div className="shrink-0">
-        <TrackCoverArt
-          coverArt={track.coverArt}
-          trackId={track.id}
-          title={track.title}
-          size="lg"
-        />
-      </div>
+      <TrackCoverArt
+        coverArt={track.coverArt}
+        trackId={track.id}
+        title={track.title}
+        size="lg"
+      />
       <div className="flex-1 min-w-0">
         {/* Title section */}
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">

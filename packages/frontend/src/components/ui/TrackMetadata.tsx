@@ -44,7 +44,7 @@ export function MetadataPill({
   return (
     <span
       className={cn(
-        "bg-blue-50 text-blue-700 rounded-full font-medium",
+        "bg-blue-100 text-blue-800 rounded-full font-medium",
         sizeStyles[size].pill,
         className
       )}
@@ -65,7 +65,7 @@ export function GenreTag({ genre, size = "md", className }: GenreTagProps) {
   return (
     <span
       className={cn(
-        "text-blue-500 hover:text-blue-600 transition-colors",
+        "text-blue-600 hover:text-blue-700 transition-colors",
         sizeStyles[size].tag,
         className
       )}
@@ -84,7 +84,7 @@ export function ExplicitBadge({ size = "md", className }: ExplicitBadgeProps) {
   return (
     <span
       className={cn(
-        "shrink-0 bg-red-50 text-red-600 rounded font-medium",
+        "shrink-0 bg-red-100 text-red-700 rounded font-medium",
         sizeStyles[size].pill,
         className
       )}
