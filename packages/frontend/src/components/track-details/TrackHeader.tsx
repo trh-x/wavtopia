@@ -2,6 +2,7 @@ import { TrackCoverArt } from "../track-list/TrackList";
 import { formatDuration } from "@/utils/formatDuration";
 import { LicenseInfo } from "./LicenseInfo";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
+import { ExplicitBadge, TrackMetadata, GenreList } from "../ui/TrackMetadata";
 
 export function TrackHeader() {
   const { track } = useTrack();
@@ -30,11 +31,7 @@ export function TrackHeader() {
 
           {/* License, explicit badge, and duration */}
           <div className="flex flex-col items-end gap-2 shrink-0">
-            {track.isExplicit && (
-              <span className="shrink-0 px-2 py-0.5 bg-red-50 text-red-600 rounded text-sm font-medium">
-                Explicit
-              </span>
-            )}
+            {track.isExplicit && <ExplicitBadge size="md" />}
             <div className="flex items-center gap-3 sm:gap-4">
               <LicenseInfo />
               <span className="text-base sm:text-lg text-gray-500">
@@ -46,45 +43,14 @@ export function TrackHeader() {
 
         {/* Metadata section */}
         <div className="mt-6 mb-6">
-          <div className="flex flex-wrap gap-2 mb-3">
-            {track.originalFormat && (
-              <span
-                className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium text-sm"
-                title="Track Format"
-              >
-                {track.originalFormat.toUpperCase()}
-              </span>
-            )}
-            {track.bpm && (
-              <span
-                className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium text-sm"
-                title="Tempo"
-              >
-                {track.bpm} BPM
-              </span>
-            )}
-            {track.key && (
-              <span
-                className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full font-medium text-sm"
-                title="Musical Key"
-              >
-                {track.key}
-              </span>
-            )}
-          </div>
-
-          {track.genreNames && track.genreNames.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {track.genreNames.map((genre) => (
-                <span
-                  key={genre}
-                  className="text-sm text-blue-500 hover:text-blue-600 transition-colors"
-                >
-                  #{genre}
-                </span>
-              ))}
-            </div>
-          )}
+          <TrackMetadata
+            format={track.originalFormat}
+            bpm={track.bpm ?? undefined}
+            musicalKey={track.key ?? undefined}
+            size="lg"
+            className="mb-3"
+          />
+          <GenreList genres={track.genreNames} size="md" />
         </div>
       </div>
     </div>
