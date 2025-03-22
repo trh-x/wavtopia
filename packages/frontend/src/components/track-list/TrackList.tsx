@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "../ui/Select";
 import { LicenseInfo } from "../track-details/LicenseInfo";
+import { ReleaseDate } from "../ui/ReleaseDate";
 
 interface SortOption {
   label: string;
@@ -322,6 +323,11 @@ export function TrackList({
                             {formatDuration(track.duration)}
                           </span>
                         </div>
+                        <ReleaseDate
+                          date={track.releaseDate}
+                          precision={track.releaseDatePrecision}
+                          size="sm"
+                        />
                       </div>
                     </div>
 
