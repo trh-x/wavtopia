@@ -4,6 +4,7 @@ import { LicenseInfo } from "./LicenseInfo";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { ExplicitBadge, TrackMetadata, GenreList } from "../ui/TrackMetadata";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/Tooltip";
+import { ReleaseDate } from "../ui/ReleaseDate";
 
 export function TrackHeader() {
   const { track } = useTrack();
@@ -29,7 +30,7 @@ export function TrackHeader() {
           </div>
 
           {/* License, explicit badge, and duration */}
-          <div className="flex flex-row sm:flex-col-reverse items-start sm:items-end gap-3 sm:gap-2 shrink-0">
+          <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-3 sm:gap-2 shrink-0">
             <div className="flex items-center gap-3">
               <LicenseInfo track={track} />
               <Tooltip>
@@ -41,7 +42,11 @@ export function TrackHeader() {
                 <TooltipContent>Track duration</TooltipContent>
               </Tooltip>
             </div>
-            {track.isExplicit && <ExplicitBadge size="md" />}
+            <ReleaseDate
+              date={track.releaseDate}
+              precision={track.releaseDatePrecision}
+              size="sm"
+            />
           </div>
         </div>
 
@@ -51,6 +56,7 @@ export function TrackHeader() {
             format={track.originalFormat}
             bpm={track.bpm ?? undefined}
             musicalKey={track.key ?? undefined}
+            isExplicit={track.isExplicit}
             size="lg"
             className="mb-3"
           />

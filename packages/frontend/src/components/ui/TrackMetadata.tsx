@@ -1,6 +1,7 @@
 import { cn } from "@/utils/cn";
 
 type Size = "sm" | "md" | "lg";
+type Variant = "default" | "red";
 
 const sizeStyles: Record<
   Size,
@@ -28,10 +29,16 @@ const sizeStyles: Record<
   },
 };
 
+const variantStyles: Record<Variant, string> = {
+  default: "bg-blue-100 text-blue-800",
+  red: "bg-red-100 text-red-700",
+};
+
 interface MetadataPillProps {
   children: React.ReactNode;
   title?: string;
   size?: Size;
+  variant?: Variant;
   className?: string;
 }
 
@@ -39,12 +46,14 @@ export function MetadataPill({
   children,
   title,
   size = "md",
+  variant = "default",
   className,
 }: MetadataPillProps) {
   return (
     <span
       className={cn(
-        "bg-blue-100 text-blue-800 rounded-full font-medium",
+        "rounded-full font-medium",
+        variantStyles[variant],
         sizeStyles[size].pill,
         className
       )}
@@ -82,15 +91,9 @@ interface ExplicitBadgeProps {
 
 export function ExplicitBadge({ size = "md", className }: ExplicitBadgeProps) {
   return (
-    <span
-      className={cn(
-        "shrink-0 bg-red-100 text-red-700 rounded font-medium",
-        sizeStyles[size].pill,
-        className
-      )}
-    >
+    <MetadataPill size={size} variant="red" className={className}>
       Explicit
-    </span>
+    </MetadataPill>
   );
 }
 
@@ -98,6 +101,7 @@ interface TrackMetadataProps {
   format?: string;
   bpm?: number;
   musicalKey?: string;
+  isExplicit?: boolean;
   size?: Size;
   className?: string;
 }
@@ -106,6 +110,7 @@ export function TrackMetadata({
   format,
   bpm,
   musicalKey,
+  isExplicit,
   size = "md",
   className,
 }: TrackMetadataProps) {
@@ -124,6 +129,11 @@ export function TrackMetadata({
       {musicalKey && (
         <MetadataPill title="Musical Key" size={size}>
           {musicalKey}
+        </MetadataPill>
+      )}
+      {isExplicit && (
+        <MetadataPill title="Explicit" size={size} variant="red">
+          Explicit
         </MetadataPill>
       )}
     </div>

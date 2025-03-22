@@ -312,7 +312,6 @@ export function TrackList({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        {track.isExplicit && <ExplicitBadge size="sm" />}
                         <div className="flex items-center gap-1">
                           <LicenseInfo
                             track={track}
@@ -335,6 +334,7 @@ export function TrackList({
                       format={track.originalFormat}
                       bpm={track.bpm ?? undefined}
                       musicalKey={track.key ?? undefined}
+                      isExplicit={track.isExplicit}
                       size="sm"
                       className="mt-2"
                     />
