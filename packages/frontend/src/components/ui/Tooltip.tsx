@@ -105,15 +105,20 @@ const ControlledTooltip = ({
 }: ControlledTooltipProps) => {
   // Slightly funky state management to ensure the tooltip is toggled when the trigger is clicked.
   // This is necessary for mobile as Radix's Tooltip component doesn't support touch events.
+  // TODO: Find a better way to handle this.
   const [isOpen, setIsOpen] = React.useState(false);
   const [isOpenFromTrigger, setIsOpenFromTrigger] = React.useState(false);
 
   const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-    onOpenChange?.(open);
-    if (!open) {
-      setIsOpenFromTrigger(false);
-    }
+    // This timeout is needed for content links to work, otherwise the tooltip
+    // will immediately close in response to the blur event on the trigger
+    setTimeout(() => {
+      setIsOpen(open);
+      onOpenChange?.(open);
+      if (!open) {
+        setIsOpenFromTrigger(false);
+      }
+    }, 0);
   };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
@@ -125,14 +130,7 @@ const ControlledTooltip = ({
   };
 
   return (
-    <Tooltip
-      open={isOpen}
-      onOpenChange={handleOpenChange}
-      // `delayDuration` is needed for the links to work, otherwise the tooltip
-      // will immediately close in response to the blur event on the trigger
-      delayDuration={0}
-      {...props}
-    >
+    <Tooltip open={isOpen} onOpenChange={handleOpenChange} {...props}>
       <TooltipTrigger asChild={triggerAsChild} onClick={handleTriggerClick}>
         {trigger}
       </TooltipTrigger>
