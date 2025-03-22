@@ -103,17 +103,25 @@ const ControlledTooltip = ({
   onOpenChange,
   ...props
 }: ControlledTooltipProps) => {
+  // Slightly funky state management to ensure the tooltip is toggled when the trigger is clicked.
+  // This is necessary for mobile as Radix's Tooltip component doesn't support touch events.
   const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpenFromTrigger, setIsOpenFromTrigger] = React.useState(false);
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     onOpenChange?.(open);
+    if (!open) {
+      setIsOpenFromTrigger(false);
+    }
   };
 
   const handleTriggerClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    handleOpenChange(true);
+    const newIsOpen = !isOpenFromTrigger;
+    setIsOpenFromTrigger(newIsOpen);
+    handleOpenChange(newIsOpen);
   };
 
   return (
