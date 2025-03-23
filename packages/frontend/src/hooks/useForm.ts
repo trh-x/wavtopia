@@ -95,6 +95,13 @@ export function useForm<T extends object>({
     [values, onSubmit, validateForm]
   );
 
+  // Reset form to a new set of values
+  const reset = useCallback((newValues: T) => {
+    setValues(newValues);
+    setErrors({});
+    setSubmitError(null);
+  }, []);
+
   return {
     values,
     errors,
@@ -102,5 +109,6 @@ export function useForm<T extends object>({
     handleSubmit,
     isSubmitting,
     submitError,
+    reset,
   };
 }

@@ -198,6 +198,30 @@ export const api = {
         body: formData,
       }) as Promise<Track>;
     },
+
+    update: async (
+      id: string,
+      data: {
+        title: string;
+        primaryArtistName: string;
+        bpm?: number;
+        key?: string;
+        genres?: string[];
+        description?: string;
+        isExplicit: boolean;
+        licenseId: string;
+        releaseDate?: string;
+        releaseDatePrecision?: string;
+      },
+      token: string
+    ) => {
+      return apiRequest(`/track/${id}`, {
+        method: "PATCH",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      }) as Promise<Track>;
+    },
   },
 
   tracks: {

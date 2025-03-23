@@ -13,6 +13,7 @@ import { TrackSharingControls } from "../../components/track-details/TrackSharin
 import { useAuth } from "@/contexts/AuthContext";
 import { TrackDetailsPlaybackProvider } from "./contexts/PlaybackContext";
 import { TrackProvider } from "./contexts/TrackContext";
+import { Link } from "react-router-dom";
 
 export function TrackDetails() {
   const { id } = useParams<{ id: string }>();
@@ -57,7 +58,17 @@ export function TrackDetails() {
 
           {/* If the current user doesn't own the track, don't render the sharing controls */}
           {token && user && track.userId === user.id && (
-            <TrackSharingControls token={token} />
+            <div className="space-y-4">
+              <TrackSharingControls token={token} />
+              <div className="flex justify-end">
+                <Link
+                  to={`/track/${track.id}/edit`}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                >
+                  Edit Track
+                </Link>
+              </div>
+            </div>
           )}
         </div>
       </TrackProvider>

@@ -67,7 +67,7 @@ export function UploadTrack() {
   const navigate = useNavigate();
   const { getToken } = useAuthToken();
 
-  const { data: licenses } = useQuery<License[]>({
+  const { data: licenses, isLoading: isLoadingLicenses } = useQuery<License[]>({
     queryKey: ["licenses"],
     queryFn: async () => {
       const response = await fetch("/api/licenses", {
@@ -302,6 +302,7 @@ export function UploadTrack() {
             licenses={licenses}
             disabled={isSubmitting}
             required
+            isLoading={isLoadingLicenses}
           />
         </div>
 

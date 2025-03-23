@@ -20,6 +20,7 @@ import { BulkUploadTrack } from "./pages/BulkUploadTrack";
 import { useInitializeFeatureFlags } from "./hooks/useFeatureFlags";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { TooltipProvider } from "@/components/ui/Tooltip";
+import { EditTrack } from "@/pages/EditTrack";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -44,6 +45,14 @@ function AppRoutes() {
         <Route path="/request-early-access" element={<RequestEarlyAccess />} />
         <Route path="/" element={<Home />} />
         <Route path="/track/:id" element={<TrackDetails />} />
+        <Route
+          path="/track/:id/edit"
+          element={
+            <PrivateRoute>
+              <EditTrack />
+            </PrivateRoute>
+          }
+        />
         <Route path="/my-tracks" element={<MyTracks />} />
         <Route
           path="/notifications"
