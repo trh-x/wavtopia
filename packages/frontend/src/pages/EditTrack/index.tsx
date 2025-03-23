@@ -55,7 +55,7 @@ export function EditTrack() {
         primaryArtistName: values.primaryArtistName,
         bpm: values.bpm,
         key: values.key,
-        genres: values.genres,
+        genreNames: values.genreNames,
         description: values.description,
         isExplicit: values.isExplicit,
         licenseId: values.licenseId,

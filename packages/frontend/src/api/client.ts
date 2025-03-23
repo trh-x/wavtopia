@@ -206,7 +206,7 @@ export const api = {
         primaryArtistName: string;
         bpm?: number;
         key?: string;
-        genres?: string[];
+        genreNames?: string[];
         description?: string;
         isExplicit: boolean;
         licenseId: string;
