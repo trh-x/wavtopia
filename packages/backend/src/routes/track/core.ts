@@ -39,7 +39,7 @@ export const trackSchema = z.object({
   // Metadata
   description: z.string().optional(),
   // Classification/Taxonomy
-  genres: z.array(z.string()).optional(),
+  genreNames: z.array(z.string()).optional(),
   // License
   licenseId: z.string().uuid("License ID must be a valid UUID"),
 });
@@ -203,7 +203,7 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
         data.primaryArtistName
       );
 
-      const genres = await findOrCreateGenres(data.genres || []);
+      const genres = await findOrCreateGenres(data.genreNames || []);
 
       const track = await prisma.track.create({
         data: {
@@ -225,7 +225,7 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
                 releaseDatePrecision: data.releaseDatePrecision,
               }
             : {}),
-          ...(data.genres && data.genres.length > 0
+          ...(data.genreNames && data.genreNames.length > 0
             ? {
                 genres: {
                   create: genres.map((genre) => ({

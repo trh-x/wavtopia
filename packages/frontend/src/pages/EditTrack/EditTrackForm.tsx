@@ -17,7 +17,7 @@ interface EditTrackFormData {
   primaryArtistName: string;
   bpm: number | undefined;
   key: string | undefined;
-  genres: string[];
+  genreNames: string[];
   description: string | undefined;
   isExplicit: boolean;
   releaseDate: Date | undefined;
@@ -47,7 +47,7 @@ export function EditTrackForm({
         primaryArtistName: track.primaryArtistName ?? "",
         bpm: track.bpm ?? undefined,
         key: track.key ?? undefined,
-        genres: track.genreNames || [],
+        genreNames: track.genreNames || [],
         description: track.description ?? undefined,
         isExplicit: track.isExplicit,
         releaseDate: track.releaseDate
@@ -81,10 +81,12 @@ export function EditTrackForm({
       />
 
       <FormTagInput
-        id="genres"
+        id="genreNames"
         label="Genres"
-        value={values.genres}
-        onChange={(genres: string[]) => handleChange("genres", genres)}
+        value={values.genreNames}
+        onChange={(genreNames: string[]) =>
+          handleChange("genreNames", genreNames)
+        }
         placeholder="Add a genre"
       />
 

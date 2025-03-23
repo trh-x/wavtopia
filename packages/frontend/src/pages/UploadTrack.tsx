@@ -55,7 +55,7 @@ interface UploadFormData {
   coverArt: File | null;
   bpm: number | undefined;
   key: string | undefined;
-  genres: string[];
+  genreNames: string[];
   description: string | undefined;
   isExplicit: boolean;
   releaseDate: Date | undefined;
@@ -89,7 +89,7 @@ export function UploadTrack() {
         coverArt: null,
         bpm: undefined,
         key: undefined,
-        genres: [],
+        genreNames: [],
         description: undefined,
         isExplicit: false,
         releaseDate: undefined,
@@ -113,7 +113,7 @@ export function UploadTrack() {
             originalFormat: values.originalFormat,
             bpm: values.bpm,
             key: values.key,
-            genres: values.genres,
+            genreNames: values.genreNames,
             description: values.description,
             isExplicit: values.isExplicit,
             licenseId: values.licenseId,
@@ -218,12 +218,12 @@ export function UploadTrack() {
           />
 
           <FormTagInput
-            id="genres"
+            id="genreNames"
             label="Genres"
             placeholder={`e.g., ${GENRE_PLACEHOLDER}`}
-            value={values.genres}
+            value={values.genreNames}
             onChange={(newGenres: string[]) =>
-              handleChange("genres", newGenres)
+              handleChange("genreNames", newGenres)
             }
             disabled={isSubmitting}
           />
