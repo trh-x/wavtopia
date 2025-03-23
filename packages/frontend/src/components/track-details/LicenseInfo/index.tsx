@@ -9,7 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import { Track } from "@/types";
-import CCIcon from "./cc.svg?react";
+import CreativeCommonsIcon from "./creative-commons.svg?react";
+import CopyrightIcon from "./copyright.svg?react";
 
 interface LicenseInfoProps {
   track: Track;
@@ -62,13 +63,17 @@ export function LicenseInfo({
         )}
       >
         {isCreativeCommons ? (
-          <CCIcon
+          <CreativeCommonsIcon
             className={cn(
               "flex-shrink-0",
-              size === "sm" ? "w-4 h-4" : "w-5 h-5"
+              "w-4 h-4"
+              // size === "sm" ? "w-4 h-4" : "w-5 h-5"
             )}
           />
         ) : (
+          // shield-check icon from heroicons.com
+          // TODO: Remove this once the design is confirmed
+          /*
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
@@ -84,6 +89,14 @@ export function LicenseInfo({
               clipRule="evenodd"
             />
           </svg>
+          */
+          <CopyrightIcon
+            className={cn(
+              "flex-shrink-0",
+              "w-4 h-4"
+              // size === "sm" ? "w-4 h-4" : "w-5 h-5"
+            )}
+          />
         )}
         {showText && <span>{displayType}</span>}
       </button>
