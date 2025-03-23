@@ -9,6 +9,7 @@ import { cn } from "@/utils/cn";
 import { Checkbox } from "../ui/Checkbox";
 import { TrackCardMenu } from "./TrackCardMenu";
 import { useEffect, useRef, useCallback } from "react";
+import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
 import {
   Select,
   SelectContent,
@@ -16,6 +17,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/Select";
+import { LicenseInfo } from "../track-details/LicenseInfo";
+import { ReleaseDate } from "../ui/ReleaseDate";
 
 interface SortOption {
   label: string;
@@ -276,7 +279,7 @@ export function TrackList({
                 <TrackCardMenu onDelete={() => onDeleteTrack(track.id)} />
               )}
             </div>
-            <Link to={`/track/${track.id}`} className="block">
+            <Link to={`/track/${track.id}`} className="block group">
               <div className="flex flex-col space-y-4">
                 <div className="flex items-center space-x-4">
                   <TrackCoverArt
@@ -284,20 +287,59 @@ export function TrackList({
                     trackId={track.id}
                     title={track.title}
                     size="sm"
+                    className="transition-transform group-hover:scale-105"
                   />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <h3 className="font-medium">{track.title}</h3>
-                      <span className="text-sm text-gray-500 ml-2">
-                        {formatDuration(track.duration)}
-                      </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className="font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors"
+                          title={track.title}
+                        >
+                          {track.title}
+                        </h3>
+                        <p
+                          className="text-sm font-medium text-gray-700 truncate"
+                          title={track.primaryArtistName ?? ""}
+                        >
+                          {track.primaryArtistName}
+                        </p>
+                        <p
+                          className="text-xs text-gray-500 truncate"
+                          title={`by ${track.user.username}`}
+                        >
+                          by {track.user.username}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span
+                          title="Track duration"
+                          className="text-sm text-gray-500 shrink-0"
+                        >
+                          {formatDuration(track.duration)}
+                        </span>
+                        <ReleaseDate
+                          date={track.releaseDate}
+                          precision={track.releaseDatePrecision}
+                          size="sm"
+                        />
+                        <LicenseInfo track={track} showText={false} size="sm" />
+                      </div>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {track.primaryArtistName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      by {track.user.username}
-                    </p>
+
+                    <TrackMetadata
+                      format={track.originalFormat}
+                      bpm={track.bpm ?? undefined}
+                      musicalKey={track.key ?? undefined}
+                      isExplicit={track.isExplicit}
+                      size="sm"
+                      className="mt-2"
+                    />
+                    <GenreList
+                      genres={track.genreNames}
+                      size="sm"
+                      className="mt-1.5"
+                    />
                   </div>
                 </div>
               </div>
