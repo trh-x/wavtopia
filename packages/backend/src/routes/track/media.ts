@@ -175,24 +175,7 @@ router.get(
   authenticateTrackAccess,
   async (req: Request, res: Response, next) => {
     try {
-      const track = await prisma.track.findFirst({
-        where: {
-          id: req.params.id,
-          OR: [
-            { userId: req.user!.id },
-            { sharedWith: { some: { userId: req.user!.id } } },
-          ],
-        },
-        select: {
-          originalUrl: true,
-          title: true,
-          originalFormat: true,
-        },
-      });
-
-      if (!track) {
-        throw new AppError(404, "Track not found");
-      }
+      const track = (req as any).track; // TODO: Fix this `any`
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(track.originalUrl);

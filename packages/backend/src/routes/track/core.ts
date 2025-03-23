@@ -49,25 +49,16 @@ router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
   try {
     const baseTrack = (req as any).track;
 
-    // Execute all three queries as a single transaction without referencing the tracks table
-    // This sends all queries to the database in a single round trip
-    const [user, stems, sharedUsers] = await prisma.$transaction([
-      // Get owner directly by ID
-      prisma.user.findUnique({
-        where: { id: baseTrack.userId },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-        },
-      }),
+    const trackUser = req.user?.id === baseTrack.userId && req.user;
 
+    const transactions = [
       // Get stems directly by trackId
       prisma.stem.findMany({
         where: { trackId: baseTrack.id },
       }),
 
       // Get shared users directly by trackId
+      // TODO: Modify the UI so shared users are retrieved on demand
       prisma.trackShare.findMany({
         where: { trackId: baseTrack.id },
         select: {
@@ -82,7 +73,29 @@ router.get("/:id", authenticateTrackAccess, async (req, res, next) => {
           },
         },
       }),
-    ]);
+
+      // Include a request for the track owner if the user is not already selected
+      ...(trackUser
+        ? []
+        : [
+            prisma.user.findUnique({
+              where: { id: baseTrack.userId },
+              select: {
+                id: true,
+                username: true,
+                email: true,
+              },
+            }),
+          ]),
+    ];
+
+    // Execute all queries as a single transaction without referencing the tracks table
+    // This sends all queries to the database in a single round trip
+    const [stems, sharedUsers, maybeUser] = await prisma.$transaction(
+      transactions
+    );
+
+    const user = trackUser || maybeUser;
 
     if (!user) {
       return next(new AppError(404, "Track owner not found"));

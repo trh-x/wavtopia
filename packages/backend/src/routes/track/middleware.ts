@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { AppError } from "../../middleware/errorHandler";
-import { verifyToken } from "../../services/auth";
-import { TrackStatus } from "@wavtopia/core-storage";
+import { getUserById, verifyToken } from "../../services/auth";
+import { Role, TrackStatus } from "@wavtopia/core-storage";
 import { prisma } from "../../lib/prisma";
 
 // Authentication helper that checks both header and query token
@@ -47,22 +47,25 @@ export const authenticateTrackAccess: RequestHandler = async (
 
     if (token) {
       try {
-        const decoded = verifyToken(token);
+        const payload = verifyToken(token);
+
+        const user = await getUserById(payload.userId);
+        if (!user) {
+          return next(new AppError(401, "User not found"));
+        }
 
         // Check if user has access to track
         const hasAccess =
           track.isPublic ||
-          track.userId === decoded.userId ||
-          track.sharedWith.some((share) => share.userId === decoded.userId);
+          user.role === Role.ADMIN ||
+          track.userId === user.id ||
+          track.sharedWith.some((share) => share.userId === user.id);
 
         if (!hasAccess) {
           return next(new AppError(403, "You don't have access to this track"));
         }
 
-        req.user = {
-          id: decoded.userId,
-          role: decoded.role,
-        };
+        req.user = user;
       } catch (error) {
         return next(
           new AppError(401, "Invalid token: " + error + ", " + token)
