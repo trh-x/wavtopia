@@ -28,7 +28,7 @@ export function TrackHeader() {
             </p>
           </div>
 
-          {/* License, explicit badge, and duration */}
+          {/* Duration, release date and license */}
           <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-3 sm:gap-2 shrink-0">
             <span
               title="Track duration"
