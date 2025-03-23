@@ -33,10 +33,7 @@ export async function authenticate(
       throw new AppError(401, "User not found");
     }
 
-    req.user = {
-      id: user.id,
-      role: user.role,
-    };
+    req.user = user;
 
     next();
   } catch (error) {
