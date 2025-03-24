@@ -84,7 +84,7 @@ export function EditTrack() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Edit Track</h1>
+      <h1 className="text-3xl font-bold mb-8">Track Info</h1>
       <EditTrackForm
         track={track}
         licenses={licenses}

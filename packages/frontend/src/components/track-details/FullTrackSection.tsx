@@ -5,6 +5,8 @@ import { styles } from "../../styles/common";
 import { TrackWaveformPlaceholder } from "../track-list/TrackList";
 import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetailsWaveform";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 
 interface AudioFileDownloadButtonProps {
   track: Track;
@@ -40,6 +42,8 @@ function AudioFileDownloadButton({
 
 export function FullTrackSection() {
   const { track } = useTrack();
+  const { user } = useAuth();
+  const isOwner = user && track.userId === user.id;
 
   return (
     <div className={styles.container.section}>
@@ -57,18 +61,28 @@ export function FullTrackSection() {
           />
         )}
       </div>
-      <div className="mt-4 flex flex-wrap gap-4">
-        <DownloadLink href={`/api/track/${track.id}/original`}>
-          Download Original {track.originalFormat.toUpperCase()} File
-        </DownloadLink>
-        <DownloadLink
-          href={`/api/track/${track.id}/full.mp3?attachment`}
-          usePresigned
-        >
-          MP3
-        </DownloadLink>
-        <AudioFileDownloadButton track={track} format="flac" />
-        <AudioFileDownloadButton track={track} format="wav" />
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <DownloadLink href={`/api/track/${track.id}/original`}>
+            Download Original {track.originalFormat.toUpperCase()} File
+          </DownloadLink>
+          <DownloadLink
+            href={`/api/track/${track.id}/full.mp3?attachment`}
+            usePresigned
+          >
+            MP3
+          </DownloadLink>
+          <AudioFileDownloadButton track={track} format="flac" />
+          <AudioFileDownloadButton track={track} format="wav" />
+        </div>
+        {isOwner && (
+          <Link
+            to={`/track/${track.id}/edit`}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            Edit Info
+          </Link>
+        )}
       </div>
     </div>
   );
