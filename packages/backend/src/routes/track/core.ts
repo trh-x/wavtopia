@@ -339,20 +339,23 @@ router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
       ? await findOrCreateByName("artist", data.primaryArtistName)
       : undefined;
 
-    const genres = data.genreNames?.length
-      ? await findOrCreateGenres(data.genreNames)
-      : undefined;
+    // Handle genres if they're provided (including empty array)
+    const genres =
+      data.genreNames !== undefined
+        ? await findOrCreateGenres(data.genreNames)
+        : undefined;
 
     const track = await prisma.$transaction(async (tx) => {
       // If updating genres, first get existing genres
-      const existingGenreIds = genres
-        ? (
-            await tx.trackGenre.findMany({
-              where: { trackId: req.params.id },
-              select: { genreId: true },
-            })
-          ).map((g) => g.genreId)
-        : undefined;
+      const existingGenreIds =
+        genres !== undefined
+          ? (
+              await tx.trackGenre.findMany({
+                where: { trackId: req.params.id },
+                select: { genreId: true },
+              })
+            ).map((g) => g.genreId)
+          : undefined;
 
       return tx.track.update({
         where: { id: req.params.id },
@@ -377,19 +380,22 @@ router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
           licenseId: data.licenseId,
           // Public status
           isPublic: data.isPublic,
-          // Update genres if provided
-          ...(genres && existingGenreIds
+          // Update genres if provided (including removal of all genres)
+          ...(genres !== undefined
             ? {
                 genres: {
                   // Remove genres that are no longer in the list
-                  deleteMany: {
-                    genreId: {
-                      notIn: genres.map((g) => g.id),
-                    },
-                  },
+                  deleteMany:
+                    genres.length > 0
+                      ? {
+                          genreId: {
+                            notIn: genres.map((g) => g.id),
+                          },
+                        }
+                      : {},
                   // Add only new genres that aren't already associated
                   create: genres
-                    .filter((g) => !existingGenreIds.includes(g.id))
+                    .filter((g) => !existingGenreIds?.includes(g.id))
                     .map((genre) => ({
                       genre: {
                         connect: { id: genre.id },
