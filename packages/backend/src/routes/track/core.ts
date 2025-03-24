@@ -339,31 +339,70 @@ router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
       ? await findOrCreateByName("artist", data.primaryArtistName)
       : undefined;
 
-    // const genres = await findOrCreateGenres(data.genres || []);
+    const genres = data.genreNames?.length
+      ? await findOrCreateGenres(data.genreNames)
+      : undefined;
 
-    const track = await prisma.track.update({
-      where: { id: req.params.id },
-      data: {
-        title: data.title,
-        primaryArtistId: primaryArtist?.id,
-        originalFormat,
-        coverArt: coverArtUrl,
-        metadata: data.metadata as Prisma.InputJsonValue,
-        /* FIXME: Don't attach genres if they already exist
-        genres: {
-          create: genres.map((genre) => ({
-            genre: {
-              connect: {
-                id: genre.id,
-              },
-            },
-          })),
+    const track = await prisma.$transaction(async (tx) => {
+      // If updating genres, first get existing genres
+      const existingGenreIds = genres
+        ? (
+            await tx.trackGenre.findMany({
+              where: { trackId: req.params.id },
+              select: { genreId: true },
+            })
+          ).map((g) => g.genreId)
+        : undefined;
+
+      return tx.track.update({
+        where: { id: req.params.id },
+        data: {
+          title: data.title,
+          primaryArtistId: primaryArtist?.id,
+          originalFormat,
+          coverArt: coverArtUrl,
+          metadata: data.metadata as Prisma.InputJsonValue,
+          // Musical Information
+          bpm: data.bpm,
+          key: data.key,
+          isExplicit: data.isExplicit,
+          // Release Information
+          releaseDate: data.releaseDate
+            ? new Date(data.releaseDate)
+            : undefined,
+          releaseDatePrecision: data.releaseDatePrecision,
+          // Metadata
+          description: data.description,
+          // License
+          licenseId: data.licenseId,
+          // Public status
+          isPublic: data.isPublic,
+          // Update genres if provided
+          ...(genres && existingGenreIds
+            ? {
+                genres: {
+                  // Remove genres that are no longer in the list
+                  deleteMany: {
+                    genreId: {
+                      notIn: genres.map((g) => g.id),
+                    },
+                  },
+                  // Add only new genres that aren't already associated
+                  create: genres
+                    .filter((g) => !existingGenreIds.includes(g.id))
+                    .map((genre) => ({
+                      genre: {
+                        connect: { id: genre.id },
+                      },
+                    })),
+                },
+              }
+            : {}),
         },
-        */
-      },
-      include: {
-        stems: true,
-      },
+        include: {
+          stems: true,
+        },
+      });
     });
 
     res.json(track);
