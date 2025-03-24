@@ -17,6 +17,8 @@ interface FormDateWithPrecisionProps extends Omit<FormFieldProps, "label"> {
   max?: string;
 }
 
+// Note: Date rounding based on precision is handled at the API level.
+// This component only handles display and input collection.
 export function FormDateWithPrecision({
   value,
   onChange,
@@ -95,25 +97,6 @@ export function FormDateWithPrecision({
     onChange(date);
   };
 
-  const handlePrecisionChange = (newPrecision: DatePrecision) => {
-    onPrecisionChange(newPrecision);
-    if (value) {
-      const date = new Date(value);
-      switch (newPrecision) {
-        case "YEAR":
-          date.setMonth(0);
-          date.setDate(1);
-          break;
-        case "MONTH":
-          date.setDate(1);
-          break;
-      }
-      onChange(date);
-    }
-  };
-
-  const placeholderProps = precision === "YEAR" ? { placeholder: "yyyy" } : {};
-
   const formatMaxDate = () => {
     if (!max) return undefined;
     const maxDate = new Date(max);
@@ -142,7 +125,7 @@ export function FormDateWithPrecision({
             onChange={handleDateChange}
             label={dateLabel}
             disabled={disabled}
-            {...placeholderProps}
+            placeholder={precision === "YEAR" ? "yyyy" : undefined}
           />
         </div>
         <div className="flex-1">
@@ -154,7 +137,7 @@ export function FormDateWithPrecision({
                 { value: "MONTH", label: "Month" },
                 { value: "YEAR", label: "Year" },
               ]}
-              onChange={handlePrecisionChange}
+              onChange={onPrecisionChange}
               disabled={disabled}
             />
           </FormFieldWrapper>

@@ -153,6 +153,33 @@ async function findOrCreateGenres(genreNames: string[]) {
   return [...existingGenres, ...newGenres];
 }
 
+// Add helper function to round date based on precision
+function roundDateByPrecision(
+  date: Date | undefined,
+  precision: DatePrecision | undefined
+): Date | undefined {
+  if (!date || !precision) return date;
+
+  const roundedDate = new Date(date);
+
+  switch (precision) {
+    case "YEAR":
+      roundedDate.setMonth(0);
+      roundedDate.setDate(1);
+      break;
+    case "MONTH":
+      roundedDate.setDate(1);
+      break;
+    case "DAY":
+      // No rounding needed
+      break;
+  }
+
+  // Clear time portion
+  roundedDate.setHours(0, 0, 0, 0);
+  return roundedDate;
+}
+
 // Create track with files
 router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
   try {
@@ -221,7 +248,10 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
           licenseId: data.licenseId,
           ...(data.releaseDate && data.releaseDatePrecision
             ? {
-                releaseDate: new Date(data.releaseDate),
+                releaseDate: roundDateByPrecision(
+                  new Date(data.releaseDate),
+                  data.releaseDatePrecision
+                ),
                 releaseDatePrecision: data.releaseDatePrecision,
               }
             : {}),
@@ -371,7 +401,10 @@ router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
           isExplicit: data.isExplicit,
           // Release Information
           releaseDate: data.releaseDate
-            ? new Date(data.releaseDate)
+            ? roundDateByPrecision(
+                new Date(data.releaseDate),
+                data.releaseDatePrecision
+              )
             : undefined,
           releaseDatePrecision: data.releaseDatePrecision,
           // Metadata

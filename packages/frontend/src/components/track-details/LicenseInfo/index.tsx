@@ -52,6 +52,9 @@ export function LicenseInfo({
     return `https://creativecommons.org/licenses/${urlPath}/4.0/`;
   };
 
+  // const iconSize = "w-4 h-4";
+  const iconSize = size === "sm" ? "w-4 h-4" : "w-5 h-5";
+
   return (
     <ControlledTooltip onOpenChange={setIsOpen}>
       <button
@@ -63,13 +66,7 @@ export function LicenseInfo({
         )}
       >
         {isCreativeCommons ? (
-          <CreativeCommonsIcon
-            className={cn(
-              "flex-shrink-0",
-              "w-4 h-4"
-              // size === "sm" ? "w-4 h-4" : "w-5 h-5"
-            )}
-          />
+          <CreativeCommonsIcon className={cn("flex-shrink-0", iconSize)} />
         ) : (
           // shield-check icon from heroicons.com
           // TODO: Remove this once the design is confirmed
@@ -90,13 +87,7 @@ export function LicenseInfo({
             />
           </svg>
           */
-          <CopyrightIcon
-            className={cn(
-              "flex-shrink-0",
-              "w-4 h-4"
-              // size === "sm" ? "w-4 h-4" : "w-5 h-5"
-            )}
-          />
+          <CopyrightIcon className={cn("flex-shrink-0", iconSize)} />
         )}
         {showText && <span>{displayType}</span>}
       </button>
