@@ -39,7 +39,7 @@ export const trackSchema = z.object({
   // Metadata
   description: z.string().optional(),
   // Classification/Taxonomy
-  genres: z.array(z.string()).optional(),
+  genreNames: z.array(z.string()).optional(),
   // License
   licenseId: z.string().uuid("License ID must be a valid UUID"),
 });
@@ -153,6 +153,33 @@ async function findOrCreateGenres(genreNames: string[]) {
   return [...existingGenres, ...newGenres];
 }
 
+// Add helper function to round date based on precision
+function roundDateByPrecision(
+  date: Date | undefined,
+  precision: DatePrecision | undefined
+): Date | undefined {
+  if (!date || !precision) return date;
+
+  const roundedDate = new Date(date);
+
+  switch (precision) {
+    case "YEAR":
+      roundedDate.setMonth(0);
+      roundedDate.setDate(1);
+      break;
+    case "MONTH":
+      roundedDate.setDate(1);
+      break;
+    case "DAY":
+      // No rounding needed
+      break;
+  }
+
+  // Clear time portion
+  roundedDate.setHours(0, 0, 0, 0);
+  return roundedDate;
+}
+
 // Create track with files
 router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
   try {
@@ -203,7 +230,7 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
         data.primaryArtistName
       );
 
-      const genres = await findOrCreateGenres(data.genres || []);
+      const genres = await findOrCreateGenres(data.genreNames || []);
 
       const track = await prisma.track.create({
         data: {
@@ -221,11 +248,14 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
           licenseId: data.licenseId,
           ...(data.releaseDate && data.releaseDatePrecision
             ? {
-                releaseDate: new Date(data.releaseDate),
+                releaseDate: roundDateByPrecision(
+                  new Date(data.releaseDate),
+                  data.releaseDatePrecision
+                ),
                 releaseDatePrecision: data.releaseDatePrecision,
               }
             : {}),
-          ...(data.genres && data.genres.length > 0
+          ...(data.genreNames && data.genreNames.length > 0
             ? {
                 genres: {
                   create: genres.map((genre) => ({
@@ -339,31 +369,79 @@ router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
       ? await findOrCreateByName("artist", data.primaryArtistName)
       : undefined;
 
-    // const genres = await findOrCreateGenres(data.genres || []);
+    // Handle genres if they're provided (including empty array)
+    const genres =
+      data.genreNames !== undefined
+        ? await findOrCreateGenres(data.genreNames)
+        : undefined;
 
-    const track = await prisma.track.update({
-      where: { id: req.params.id },
-      data: {
-        title: data.title,
-        primaryArtistId: primaryArtist?.id,
-        originalFormat,
-        coverArt: coverArtUrl,
-        metadata: data.metadata as Prisma.InputJsonValue,
-        /* FIXME: Don't attach genres if they already exist
-        genres: {
-          create: genres.map((genre) => ({
-            genre: {
-              connect: {
-                id: genre.id,
-              },
-            },
-          })),
+    const track = await prisma.$transaction(async (tx) => {
+      // If updating genres, first get existing genres
+      const existingGenreIds =
+        genres !== undefined
+          ? (
+              await tx.trackGenre.findMany({
+                where: { trackId: req.params.id },
+                select: { genreId: true },
+              })
+            ).map((g) => g.genreId)
+          : undefined;
+
+      return tx.track.update({
+        where: { id: req.params.id },
+        data: {
+          title: data.title,
+          primaryArtistId: primaryArtist?.id,
+          originalFormat,
+          coverArt: coverArtUrl,
+          metadata: data.metadata as Prisma.InputJsonValue,
+          // Musical Information
+          bpm: data.bpm,
+          key: data.key,
+          isExplicit: data.isExplicit,
+          // Release Information
+          releaseDate: data.releaseDate
+            ? roundDateByPrecision(
+                new Date(data.releaseDate),
+                data.releaseDatePrecision
+              )
+            : undefined,
+          releaseDatePrecision: data.releaseDatePrecision,
+          // Metadata
+          description: data.description,
+          // License
+          licenseId: data.licenseId,
+          // Public status
+          isPublic: data.isPublic,
+          // Update genres if provided (including removal of all genres)
+          ...(genres !== undefined
+            ? {
+                genres: {
+                  // Remove genres that are no longer in the list
+                  deleteMany:
+                    genres.length > 0
+                      ? {
+                          genreId: {
+                            notIn: genres.map((g) => g.id),
+                          },
+                        }
+                      : {},
+                  // Add only new genres that aren't already associated
+                  create: genres
+                    .filter((g) => !existingGenreIds?.includes(g.id))
+                    .map((genre) => ({
+                      genre: {
+                        connect: { id: genre.id },
+                      },
+                    })),
+                },
+              }
+            : {}),
         },
-        */
-      },
-      include: {
-        stems: true,
-      },
+        include: {
+          stems: true,
+        },
+      });
     });
 
     res.json(track);

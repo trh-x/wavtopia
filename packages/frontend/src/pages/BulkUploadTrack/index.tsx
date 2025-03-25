@@ -30,7 +30,7 @@ export function BulkUploadTrack() {
     },
   } = useFileProcessing(getToken);
 
-  const { data: licenses } = useQuery<License[]>({
+  const { data: licenses, isLoading: isLoadingLicenses } = useQuery<License[]>({
     queryKey: ["licenses"],
     queryFn: async () => {
       const response = await fetch("/api/licenses", {
@@ -93,6 +93,7 @@ export function BulkUploadTrack() {
           licenses={licenses}
           disabled={isUploadInProgress}
           required
+          isLoading={isLoadingLicenses}
         />
 
         <UploadList

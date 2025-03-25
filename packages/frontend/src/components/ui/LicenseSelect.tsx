@@ -1,6 +1,7 @@
 import type { License } from "@wavtopia/core-storage";
 import { LicenseBuilder } from "./license/LicenseBuilder";
 import { FormFieldWrapper } from "./forms/FormField";
+import { LoadingState } from "./LoadingState";
 
 interface LicenseSelectProps {
   value?: string;
@@ -8,6 +9,7 @@ interface LicenseSelectProps {
   licenses?: License[];
   disabled?: boolean;
   required?: boolean;
+  isLoading?: boolean;
 }
 
 export function LicenseSelect({
@@ -16,6 +18,7 @@ export function LicenseSelect({
   licenses,
   disabled,
   required,
+  isLoading,
 }: LicenseSelectProps) {
   return (
     <FormFieldWrapper
@@ -33,12 +36,16 @@ export function LicenseSelect({
       }
     >
       <div className="space-y-4">
-        <LicenseBuilder
-          licenses={licenses}
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-        />
+        {isLoading ? (
+          <LoadingState message="Loading licenses..." />
+        ) : (
+          <LicenseBuilder
+            licenses={licenses}
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+          />
+        )}
       </div>
     </FormFieldWrapper>
   );
