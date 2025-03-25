@@ -4,9 +4,13 @@ import { LicenseInfo } from "./LicenseInfo";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
 import { ReleaseDate } from "../ui/ReleaseDate";
+import { TrackVisibilityToggle } from "./TrackVisibilityToggle";
+import { useAuthToken } from "@/hooks/useAuthToken";
 
 export function TrackHeader() {
   const { track } = useTrack();
+  const { getToken } = useAuthToken();
+  const token = getToken();
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
@@ -41,7 +45,10 @@ export function TrackHeader() {
               precision={track.releaseDatePrecision}
               size="md"
             />
-            <LicenseInfo track={track} />
+            <div className="flex items-center gap-4">
+              <LicenseInfo track={track} />
+              {token && <TrackVisibilityToggle token={token} size="sm" />}
+            </div>
           </div>
         </div>
 
