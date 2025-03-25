@@ -19,6 +19,12 @@ import {
 } from "../ui/Select";
 import { LicenseInfo } from "../track-details/LicenseInfo";
 import { ReleaseDate } from "../ui/ReleaseDate";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  PublicTrackIcon,
+  PrivateTrackIcon,
+  TrackOwnerIcon,
+} from "./TrackIcons";
 
 interface SortOption {
   label: string;
@@ -173,6 +179,7 @@ interface TrackListProps {
     direction: SortOption["direction"]
   ) => void;
   currentSort?: string;
+  showVisibilityIcons?: boolean;
 }
 
 export function TrackList({
@@ -187,8 +194,10 @@ export function TrackList({
   isLoadingMore,
   onSort,
   currentSort = "newest",
+  showVisibilityIcons = true,
 }: TrackListProps) {
   const { appendTokenToUrl } = useAuthToken();
+  const { user } = useAuth();
   const observerTarget = useRef<HTMLDivElement>(null);
 
   const handleSort = (value: string) => {
@@ -323,7 +332,22 @@ export function TrackList({
                           precision={track.releaseDatePrecision}
                           size="sm"
                         />
-                        <LicenseInfo track={track} showText={false} size="sm" />
+                        <div className="flex items-center gap-1">
+                          <LicenseInfo
+                            track={track}
+                            showText={false}
+                            size="sm"
+                          />
+                          {showVisibilityIcons &&
+                            (track.isPublic ? (
+                              <PublicTrackIcon />
+                            ) : (
+                              <PrivateTrackIcon />
+                            ))}
+                          {user && track.userId === user.id && (
+                            <TrackOwnerIcon />
+                          )}
+                        </div>
                       </div>
                     </div>
 

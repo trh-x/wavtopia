@@ -29,6 +29,7 @@ function PublicTracks() {
         isLoadingMore={isLoadingMorePublicTracks}
         onSort={handleSort}
         currentSort={currentSortValue}
+        showVisibilityIcons={false}
       />
     </div>
   );
