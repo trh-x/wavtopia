@@ -1,10 +1,12 @@
 import { FormFieldProps, FormFieldWrapper } from "./FormField";
 import { Switch } from "../Switch";
+import { ReactNode } from "react";
 
 interface FormSwitchProps extends FormFieldProps {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   description?: string;
+  tooltipContent?: ReactNode;
 }
 
 export function FormSwitch({
@@ -14,10 +16,16 @@ export function FormSwitch({
   onCheckedChange,
   description,
   disabled,
+  tooltipContent,
   ...props
 }: FormSwitchProps) {
   return (
-    <FormFieldWrapper label={label} error={error} id={props.id}>
+    <FormFieldWrapper
+      label={label}
+      error={error}
+      id={props.id}
+      tooltipContent={tooltipContent}
+    >
       <div className="flex items-center h-[38px]">
         <Switch
           checked={checked}

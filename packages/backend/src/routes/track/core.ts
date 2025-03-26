@@ -244,6 +244,7 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
           bpm: data.bpm,
           key: data.key,
           isExplicit: data.isExplicit,
+          isPublic: data.isPublic,
           description: data.description,
           licenseId: data.licenseId,
           ...(data.releaseDate && data.releaseDatePrecision

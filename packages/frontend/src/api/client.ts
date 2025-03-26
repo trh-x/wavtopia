@@ -209,6 +209,7 @@ export const api = {
         genreNames?: string[];
         description?: string;
         isExplicit: boolean;
+        isPublic: boolean;
         licenseId: string;
         releaseDate?: string;
         releaseDatePrecision?: string;
