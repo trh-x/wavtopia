@@ -66,6 +66,7 @@ export interface TrackFormProps {
   disabled?: boolean;
   isSubmitting?: boolean;
   submitError: string | null;
+  submitDisabled?: boolean;
 }
 
 export function TrackForm({
@@ -80,6 +81,7 @@ export function TrackForm({
   disabled = false,
   isSubmitting = false,
   submitError,
+  submitDisabled = false,
 }: TrackFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
@@ -202,7 +204,10 @@ export function TrackForm({
             Cancel
           </FormButton>
         )}
-        <FormButton type="submit" disabled={disabled || isSubmitting}>
+        <FormButton
+          type="submit"
+          disabled={disabled || isSubmitting || submitDisabled}
+        >
           {isSubmitting ? "Saving..." : submitLabel}
         </FormButton>
       </div>
