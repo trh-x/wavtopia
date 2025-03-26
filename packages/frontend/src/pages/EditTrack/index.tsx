@@ -58,6 +58,7 @@ export function EditTrack() {
         genreNames: values.genreNames,
         description: values.description,
         isExplicit: values.isExplicit,
+        isPublic: values.isPublic,
         licenseId: values.licenseId,
         ...(values.releaseDate && {
           releaseDate: values.releaseDate.toISOString(),

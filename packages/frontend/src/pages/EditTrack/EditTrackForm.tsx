@@ -30,6 +30,7 @@ export function EditTrackForm({
         genreNames: track.genreNames || [],
         description: track.description ?? undefined,
         isExplicit: track.isExplicit,
+        isPublic: track.isPublic,
         releaseDate: track.releaseDate
           ? new Date(track.releaseDate)
           : undefined,

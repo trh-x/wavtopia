@@ -24,6 +24,7 @@ const EMPTY_FORM_VALUES: UploadTrackFormData = {
   genreNames: [],
   description: undefined,
   isExplicit: false,
+  isPublic: true,
   releaseDate: undefined,
   releaseDatePrecision: "DAY",
   licenseId: undefined,

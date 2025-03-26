@@ -49,6 +49,7 @@ export interface BaseTrackFormData {
   genreNames: string[];
   description: string | undefined;
   isExplicit: boolean;
+  isPublic: boolean;
   releaseDate: Date | undefined;
   releaseDatePrecision: DatePrecision;
   licenseId: string | undefined;
@@ -182,14 +183,35 @@ export function TrackForm({
         disabled={disabled || isSubmitting}
       />
 
-      <LicenseSelect
-        value={values.licenseId}
-        onChange={(value) => onFieldChange("licenseId", value)}
-        licenses={licenses}
-        required
-        isLoading={isLoadingLicenses}
-        disabled={disabled || isSubmitting}
-      />
+      <div className="flex items-start gap-4">
+        <div className="flex-1">
+          <LicenseSelect
+            value={values.licenseId}
+            onChange={(value) => onFieldChange("licenseId", value)}
+            licenses={licenses}
+            required
+            isLoading={isLoadingLicenses}
+            disabled={disabled || isSubmitting}
+          />
+        </div>
+        <div className="flex items-center gap-4">
+          <FormSwitch
+            id="isPublic"
+            label="Make public"
+            tooltipContent={
+              <p className="text-sm">
+                When enabled, your track will be visible to everyone, including
+                non-logged-in users. When disabled, only you and users you share
+                it with can see it.
+              </p>
+            }
+            checked={values.isPublic}
+            onCheckedChange={(checked) => onFieldChange("isPublic", checked)}
+            description={values.isPublic ? "Yes" : "No"}
+            disabled={disabled || isSubmitting}
+          />
+        </div>
+      </div>
 
       {submitError && <FormError message={submitError} />}
 
