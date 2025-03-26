@@ -119,7 +119,7 @@ export function UploadTrackForm({
         onSubmit={handleFormSubmit}
         submitLabel="Upload Track"
         showCancelButton={false}
-        disabled={disabled || isSubmitting || !values.original}
+        disabled={disabled}
         isSubmitting={isSubmitting}
         submitError={submitError}
       />
