@@ -121,7 +121,7 @@ export function UploadTrackForm({
         submitLabel="Upload Track"
         showCancelButton={false}
         disabled={disabled}
-        submitDisabled={!values.original}
+        submitDisabled={!(values.original && values.licenseId)}
         isSubmitting={isSubmitting}
         submitError={submitError}
       />
