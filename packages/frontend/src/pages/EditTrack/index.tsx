@@ -3,7 +3,7 @@ import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
 import type { License, Track } from "@wavtopia/core-storage";
-import { EditTrackForm, type EditTrackFormData } from "./EditTrackForm";
+import { BaseTrackFormData, EditTrackForm } from "./EditTrackForm";
 
 export function EditTrack() {
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export function EditTrack() {
     },
   });
 
-  const handleSave = async (values: EditTrackFormData) => {
+  const handleSave = async (values: BaseTrackFormData) => {
     if (!token) {
       throw new Error("Authentication required");
     }

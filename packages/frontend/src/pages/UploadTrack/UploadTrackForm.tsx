@@ -1,5 +1,5 @@
 import { DropZone } from "@/components/ui/DropZone";
-import { TrackForm, BaseTrackFormData } from "./TrackForm";
+import { TrackForm, BaseTrackFormData } from "@/components/forms/TrackForm";
 import { useForm } from "@/hooks/useForm";
 import type { License } from "@wavtopia/core-storage";
 

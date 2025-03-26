@@ -3,7 +3,7 @@ import { useAuthToken } from "@/hooks/useAuthToken";
 import { api } from "@/api/client";
 import { useQuery } from "@tanstack/react-query";
 import type { License } from "@wavtopia/core-storage";
-import { UploadTrackForm } from "@/components/forms/UploadTrackForm";
+import { UploadTrackForm } from "./UploadTrackForm";
 
 export function UploadTrack() {
   const navigate = useNavigate();
