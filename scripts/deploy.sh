@@ -148,7 +148,7 @@ setup_tunnel() {
     echo "Setting up SSH tunnel for registry access..."
     
     # Check for existing process on the port
-    if ss -ln | grep -q ":${REGISTRY_PORT}\\b"; then
+    if ss -ln | egrep -q "^tcp.*:${REGISTRY_PORT}\\b"; then
         echo "Error: Port ${REGISTRY_PORT} is already in use"
         echo "Please stop any existing process using this port and try again"
         exit 1
