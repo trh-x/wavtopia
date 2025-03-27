@@ -80,6 +80,10 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         tagNames: string[];
         artistNames: string[];
         searchConfigHash: string | null;
+        totalPlays: number;
+        totalDownloads: number;
+        uniqueListeners: number;
+        lastPlayedAt: Date | null;
     })[];
     total: number;
 }>;
