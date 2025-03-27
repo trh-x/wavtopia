@@ -209,8 +209,14 @@ model License {
 
 // Track event types
 enum TrackEventType {
-  PLAY
-  DOWNLOAD
+  PLAY      // Track was played (met minimum play threshold)
+  DOWNLOAD  // Track URL was generated for download purpose
+}
+
+// How the track was played
+enum PlaybackSource {
+  STREAM    // Played via streaming (chunks/buffering)
+  LOCAL     // Played from a downloaded file
 }
 
 // Available audio formats for playback, streaming, and download
@@ -233,7 +239,8 @@ model TrackEvent {
   user            User?          @relation(fields: [userId], references: [id])
   eventType       TrackEventType @map("event_type")
   format          AudioFormat?   // Format used for this event
-  duration        Float?         // For plays: how long they listened
+  playbackSource  PlaybackSource? // For plays: whether streamed or local playback
+  duration        Float?         // Optional: actual play duration if we can get it
   createdAt       DateTime       @default(now()) @map("created_at")
 
   @@index([trackId, eventType, createdAt])
@@ -251,8 +258,11 @@ model UserTrackActivity {
   firstPlayedAt   DateTime  @map("first_played_at")
   lastPlayedAt    DateTime  @map("last_played_at")
   playCount       Int       @default(0) @map("play_count")
-  hasDownloaded   Boolean   @default(false) @map("has_downloaded")
-  downloadFormats AudioFormat[] @default([]) @map("download_formats")
+  streamCount     Int       @default(0) @map("stream_count")
+  localPlayCount  Int       @default(0) @map("local_play_count")
+  totalPlayTime   Float     @default(0) @map("total_play_time") // Total seconds spent listening (when available)
+  downloadCount   Int       @default(0) @map("download_count") // Total number of downloads
+  downloadFormats AudioFormat[] @default([]) @map("download_formats") // Which formats they've downloaded
 
   @@unique([userId, trackId])
   @@index([trackId])
@@ -266,8 +276,12 @@ model DailyTrackStats {
   track             Track     @relation(fields: [trackId], references: [id])
   date              DateTime  // Just the date portion
   playCount         Int       @default(0) @map("play_count")
+  streamCount       Int       @default(0) @map("stream_count")
+  localPlayCount    Int       @default(0) @map("local_play_count")
   uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  totalPlayTime     Float     @default(0) @map("total_play_time") // Total seconds played (when available)
   // Downloads by format
+  downloadCount     Int       @default(0) @map("download_count") // Total downloads for the day
   originalDownloads Int       @default(0) @map("original_downloads")
   wavDownloads      Int       @default(0) @map("wav_downloads")
   mp3Downloads      Int       @default(0) @map("mp3_downloads")
@@ -285,8 +299,12 @@ model MonthlyTrackStats {
   track             Track     @relation(fields: [trackId], references: [id])
   yearMonth         DateTime  // First day of month
   playCount         Int       @default(0) @map("play_count")
+  streamCount       Int       @default(0) @map("stream_count")
+  localPlayCount    Int       @default(0) @map("local_play_count")
   uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  totalPlayTime     Float     @default(0) @map("total_play_time") // Total seconds played (when available)
   // Downloads by format
+  downloadCount     Int       @default(0) @map("download_count") // Total downloads for the month
   originalDownloads Int       @default(0) @map("original_downloads")
   wavDownloads      Int       @default(0) @map("wav_downloads")
   mp3Downloads      Int       @default(0) @map("mp3_downloads")
