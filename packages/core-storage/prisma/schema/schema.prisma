@@ -24,6 +24,8 @@ model User {
   notifications Notification[]
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
+  trackEvents  TrackEvent[]
+  trackActivities UserTrackActivity[]
 
   @@map("users")
 }
@@ -201,6 +203,16 @@ model Track {
   // Note: This requires custom SQL as Prisma doesn't directly support tsvector
   searchVector        Unsupported("tsvector")?  @map("search_vector")
   searchConfigHash    String?                   @map("search_config_hash")
+
+  // Play and download tracking
+  totalPlays          Int       @default(0) @map("total_plays")
+  totalDownloads      Int       @default(0) @map("total_downloads")
+  uniqueListeners     Int       @default(0) @map("unique_listeners")
+  lastPlayedAt        DateTime? @map("last_played_at")
+  events              TrackEvent[]
+  userActivities      UserTrackActivity[]
+  dailyStats          DailyTrackStats[]
+  monthlyStats        MonthlyTrackStats[]
 
   // TODO: Audit these indexes and remove any that are not needed.
   @@index([originalFormat, wavLastRequestedAt])

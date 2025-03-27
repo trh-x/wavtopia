@@ -206,3 +206,93 @@ model License {
 
   @@map("licenses")
 }
+
+// Track event types
+enum TrackEventType {
+  PLAY
+  DOWNLOAD
+}
+
+// Available audio formats for playback, streaming, and download
+enum AudioFormat {
+  // Original format (uses the track's SourceFormat)
+  ORIGINAL
+  
+  // Converted formats
+  WAV
+  MP3
+  FLAC
+}
+
+// Recent events with TTL (90 days)
+model TrackEvent {
+  id              String         @id @default(uuid())
+  trackId         String         @map("track_id")
+  track           Track          @relation(fields: [trackId], references: [id])
+  userId          String?        @map("user_id")
+  user            User?          @relation(fields: [userId], references: [id])
+  eventType       TrackEventType @map("event_type")
+  format          AudioFormat?   // Format used for this event
+  duration        Float?         // For plays: how long they listened
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  @@index([trackId, eventType, createdAt])
+  @@index([createdAt]) // For cleanup
+  @@map("track_events")
+}
+
+// Permanent record of user activity with tracks
+model UserTrackActivity {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id])
+  trackId         String    @map("track_id")
+  track           Track     @relation(fields: [trackId], references: [id])
+  firstPlayedAt   DateTime  @map("first_played_at")
+  lastPlayedAt    DateTime  @map("last_played_at")
+  playCount       Int       @default(0) @map("play_count")
+  hasDownloaded   Boolean   @default(false) @map("has_downloaded")
+  downloadFormats AudioFormat[] @default([]) @map("download_formats")
+
+  @@unique([userId, trackId])
+  @@index([trackId])
+  @@map("user_track_activity")
+}
+
+// Daily aggregated statistics
+model DailyTrackStats {
+  id                String    @id @default(uuid())
+  trackId           String    @map("track_id")
+  track             Track     @relation(fields: [trackId], references: [id])
+  date              DateTime  // Just the date portion
+  playCount         Int       @default(0) @map("play_count")
+  uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  // Downloads by format
+  originalDownloads Int       @default(0) @map("original_downloads")
+  wavDownloads      Int       @default(0) @map("wav_downloads")
+  mp3Downloads      Int       @default(0) @map("mp3_downloads")
+  flacDownloads     Int       @default(0) @map("flac_downloads")
+
+  @@unique([trackId, date])
+  @@index([date])
+  @@map("daily_track_stats")
+}
+
+// Monthly aggregated statistics
+model MonthlyTrackStats {
+  id                String    @id @default(uuid())
+  trackId           String    @map("track_id")
+  track             Track     @relation(fields: [trackId], references: [id])
+  yearMonth         DateTime  // First day of month
+  playCount         Int       @default(0) @map("play_count")
+  uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  // Downloads by format
+  originalDownloads Int       @default(0) @map("original_downloads")
+  wavDownloads      Int       @default(0) @map("wav_downloads")
+  mp3Downloads      Int       @default(0) @map("mp3_downloads")
+  flacDownloads     Int       @default(0) @map("flac_downloads")
+
+  @@unique([trackId, yearMonth])
+  @@index([yearMonth])
+  @@map("monthly_track_stats")
+}
