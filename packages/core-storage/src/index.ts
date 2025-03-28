@@ -32,6 +32,12 @@ export {
   DatePrecision,
   License,
   LicenseType,
+  // Track event and format types
+  TrackEventType,
+  PlaybackSource,
+  AudioFormat,
+  TrackEvent,
+  UserTrackActivity,
 } from ".prisma/client";
 
 export {

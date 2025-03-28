@@ -26,6 +26,8 @@ model User {
   updatedAt    DateTime    @updatedAt @map("updated_at")
   trackEvents  TrackEvent[]
   trackActivities UserTrackActivity[]
+  stemEvents   StemEvent[]
+  stemActivities UserStemActivity[]
 
   @@map("users")
 }
@@ -270,6 +272,16 @@ model Stem {
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
   createdAt             DateTime                   @default(now()) @map("created_at")
   updatedAt             DateTime                   @updatedAt @map("updated_at")
+
+  // Play and download tracking
+  totalPlays          Int       @default(0) @map("total_plays")
+  totalDownloads      Int       @default(0) @map("total_downloads")
+  uniqueListeners     Int       @default(0) @map("unique_listeners")
+  lastPlayedAt        DateTime? @map("last_played_at")
+  events              StemEvent[]
+  userActivities      UserStemActivity[]
+  dailyStats          DailyStemStats[]
+  monthlyStats        MonthlyStemStats[]
 
   @@unique([trackId, index])
   @@index([trackId])
