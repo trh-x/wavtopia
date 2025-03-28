@@ -1,6 +1,7 @@
 ---
 description: ""
-globs: []
+globs:
+- 
 alwaysApply: true
 ---
 # Feature-Based Organization

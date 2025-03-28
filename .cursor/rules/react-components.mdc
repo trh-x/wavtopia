@@ -1,6 +1,8 @@
 ---
 description: ""
-globs: ["**/*.tsx", "**/*.jsx"]
+globs:
+  - "**/*.tsx"
+  - "**/*.jsx"
 alwaysApply: false
 ---
 

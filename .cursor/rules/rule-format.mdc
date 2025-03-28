@@ -1,4 +1,5 @@
 ---
+description: ""
 globs:
 - .cursor/rules/**/*.*
 alwaysApply: false
@@ -9,7 +10,8 @@ Rules must use the `.mdc` extension and include these frontmatter fields:
 ```yaml
 ---
 description: ""    # Only set for Agent Requested rules
-globs: []         # Only set for Auto Attached rules
+globs:            # Only set for Auto Attached rules
+- 
 alwaysApply: false  # Set true for Always rules
 ---
 ```

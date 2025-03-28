@@ -1,9 +1,9 @@
 ---
-description: 
-globs: 
+description: ""
+globs:
+-
 alwaysApply: false
 ---
-globs:
-- **/*.*
+# No Changes
 
-Don't make any edits or changes, just report in the chat.
+Report information only - do not make any code changes.
