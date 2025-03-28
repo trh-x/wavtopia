@@ -1,13 +1,11 @@
 ---
-description: 
+description:
 globs: 
+- packages/backend/**/*.ts
+- packages/media/**/*.ts
 alwaysApply: false
 ---
 # Use @wavtopia/core-storage instead of @prisma/client for Prisma types and client access
-
-globs:
-- packages/backend/**/*.ts
-- packages/media/**/*.ts
 
 Do not import directly from @prisma/client in backend or media services.
 Instead, import Prisma types and client from @wavtopia/core-storage.
