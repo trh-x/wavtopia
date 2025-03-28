@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+globs:
+- **/*.*
+
+Don't make any edits or changes, just report in the chat.
