@@ -7,6 +7,7 @@ import {
   TrackEventType,
   PlaybackSource,
   AudioFormat,
+  Prisma,
 } from "@wavtopia/core-storage";
 
 const router = Router();
@@ -20,6 +21,63 @@ const usageSchema = z.object({
 });
 
 type UsageInput = z.infer<typeof usageSchema>;
+
+// Helper function to create activity data based on usage data
+function createActivityData(usageData: UsageInput, now: Date) {
+  return {
+    firstPlayedAt: now,
+    lastPlayedAt: now,
+    playCount: usageData.eventType === TrackEventType.PLAY ? 1 : 0,
+    streamCount:
+      usageData.eventType === TrackEventType.PLAY &&
+      usageData.playbackSource === PlaybackSource.STREAM
+        ? 1
+        : 0,
+    localPlayCount:
+      usageData.eventType === TrackEventType.PLAY &&
+      usageData.playbackSource === PlaybackSource.LOCAL
+        ? 1
+        : 0,
+    totalPlayTime: usageData.duration || 0,
+    downloadCount: usageData.eventType === TrackEventType.DOWNLOAD ? 1 : 0,
+    downloadFormats:
+      usageData.eventType === TrackEventType.DOWNLOAD && usageData.format
+        ? [usageData.format]
+        : [],
+  };
+}
+
+// Helper function to create activity update data based on usage data
+function createActivityUpdateData(usageData: UsageInput, now: Date) {
+  return {
+    lastPlayedAt: now,
+    playCount:
+      usageData.eventType === TrackEventType.PLAY
+        ? { increment: 1 }
+        : undefined,
+    streamCount:
+      usageData.eventType === TrackEventType.PLAY &&
+      usageData.playbackSource === PlaybackSource.STREAM
+        ? { increment: 1 }
+        : undefined,
+    localPlayCount:
+      usageData.eventType === TrackEventType.PLAY &&
+      usageData.playbackSource === PlaybackSource.LOCAL
+        ? { increment: 1 }
+        : undefined,
+    totalPlayTime: usageData.duration
+      ? { increment: usageData.duration }
+      : undefined,
+    downloadCount:
+      usageData.eventType === TrackEventType.DOWNLOAD
+        ? { increment: 1 }
+        : undefined,
+    downloadFormats:
+      usageData.eventType === TrackEventType.DOWNLOAD && usageData.format
+        ? { push: usageData.format }
+        : undefined,
+  };
+}
 
 // Record track usage
 router.post(
@@ -56,57 +114,9 @@ router.post(
           create: {
             userId,
             trackId,
-            firstPlayedAt: now,
-            lastPlayedAt: now,
-            playCount: usageData.eventType === TrackEventType.PLAY ? 1 : 0,
-            streamCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.STREAM
-                ? 1
-                : 0,
-            localPlayCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.LOCAL
-                ? 1
-                : 0,
-            totalPlayTime: usageData.duration || 0,
-            downloadCount:
-              usageData.eventType === TrackEventType.DOWNLOAD ? 1 : 0,
-            downloadFormats:
-              usageData.eventType === TrackEventType.DOWNLOAD &&
-              usageData.format
-                ? [usageData.format]
-                : [],
+            ...createActivityData(usageData, now),
           },
-          update: {
-            lastPlayedAt: now,
-            playCount:
-              usageData.eventType === TrackEventType.PLAY
-                ? { increment: 1 }
-                : undefined,
-            streamCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.STREAM
-                ? { increment: 1 }
-                : undefined,
-            localPlayCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.LOCAL
-                ? { increment: 1 }
-                : undefined,
-            totalPlayTime: usageData.duration
-              ? { increment: usageData.duration }
-              : undefined,
-            downloadCount:
-              usageData.eventType === TrackEventType.DOWNLOAD
-                ? { increment: 1 }
-                : undefined,
-            downloadFormats:
-              usageData.eventType === TrackEventType.DOWNLOAD &&
-              usageData.format
-                ? { push: usageData.format }
-                : undefined,
-          },
+          update: createActivityUpdateData(usageData, now),
         });
       }
 
@@ -170,57 +180,9 @@ router.post(
           create: {
             userId,
             stemId,
-            firstPlayedAt: now,
-            lastPlayedAt: now,
-            playCount: usageData.eventType === TrackEventType.PLAY ? 1 : 0,
-            streamCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.STREAM
-                ? 1
-                : 0,
-            localPlayCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.LOCAL
-                ? 1
-                : 0,
-            totalPlayTime: usageData.duration || 0,
-            downloadCount:
-              usageData.eventType === TrackEventType.DOWNLOAD ? 1 : 0,
-            downloadFormats:
-              usageData.eventType === TrackEventType.DOWNLOAD &&
-              usageData.format
-                ? [usageData.format]
-                : [],
+            ...createActivityData(usageData, now),
           },
-          update: {
-            lastPlayedAt: now,
-            playCount:
-              usageData.eventType === TrackEventType.PLAY
-                ? { increment: 1 }
-                : undefined,
-            streamCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.STREAM
-                ? { increment: 1 }
-                : undefined,
-            localPlayCount:
-              usageData.eventType === TrackEventType.PLAY &&
-              usageData.playbackSource === PlaybackSource.LOCAL
-                ? { increment: 1 }
-                : undefined,
-            totalPlayTime: usageData.duration
-              ? { increment: usageData.duration }
-              : undefined,
-            downloadCount:
-              usageData.eventType === TrackEventType.DOWNLOAD
-                ? { increment: 1 }
-                : undefined,
-            downloadFormats:
-              usageData.eventType === TrackEventType.DOWNLOAD &&
-              usageData.format
-                ? { push: usageData.format }
-                : undefined,
-          },
+          update: createActivityUpdateData(usageData, now),
         });
       }
 
