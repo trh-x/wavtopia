@@ -4,7 +4,11 @@ import {
   User,
   PaginatedResponse,
   License,
-} from "../types";
+  TrackEventType,
+  PlaybackSource,
+  AudioFormat,
+  TrackUsageResponse,
+} from "@wavtopia/core-storage";
 
 const API_URL = "/api";
 
@@ -12,6 +16,14 @@ interface FetchOptions extends RequestInit {
   token?: string | null;
   searchParams?: URLSearchParams;
   contentType?: string;
+}
+
+// TODO: This should be shared from the backend package
+interface TrackUsageInput {
+  eventType: TrackEventType;
+  playbackSource?: PlaybackSource;
+  format?: AudioFormat;
+  duration?: number;
 }
 
 export const apiRequest = async <T = any>(
@@ -189,6 +201,24 @@ export const api = {
         contentType: "application/json",
         body: JSON.stringify({ isPublic }),
       }) as Promise<Track>;
+    },
+
+    recordUsage: async (
+      id: string,
+      data: TrackUsageInput,
+      token: string | null,
+      stemId?: string
+    ): Promise<TrackUsageResponse> => {
+      const endpoint = stemId
+        ? `/track/${id}/stem/${stemId}/usage`
+        : `/track/${id}/usage`;
+
+      return apiRequest(endpoint, {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      });
     },
 
     upload: async (formData: FormData, token: string) => {

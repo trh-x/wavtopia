@@ -2,6 +2,8 @@ import { useTrackListPlayback } from "@/contexts/TrackListPlaybackContext";
 import { WaveformDisplay } from "./WaveformDisplay";
 
 export interface StreamableWaveformProps {
+  trackId: string;
+  stemId?: string;
   waveformData: number[];
   audioUrl: string;
   duration?: number;
@@ -12,6 +14,8 @@ export interface StreamableWaveformProps {
 }
 
 export function StreamableWaveform({
+  trackId,
+  stemId,
   waveformData,
   audioUrl,
   duration,
@@ -24,6 +28,8 @@ export function StreamableWaveform({
 
   return (
     <WaveformDisplay
+      trackId={trackId}
+      stemId={stemId}
       context={trackListContext}
       waveformData={waveformData}
       audioUrl={audioUrl}

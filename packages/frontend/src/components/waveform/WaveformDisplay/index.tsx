@@ -4,6 +4,7 @@ import { TrackListPlaybackContextType } from "@/contexts/TrackListPlaybackContex
 import { SyncedPlaybackContextType } from "@/contexts/SyncedPlaybackContext";
 import { PlayPauseButton, StopButton, SoloButton } from "./buttons";
 import { usePresignedUrl } from "@/hooks/usePresignedUrl";
+import { usePlayUsage } from "@/hooks/usePlayUsage";
 
 // Minimal valid empty WAV file as a data URL (44 bytes total)
 const EMPTY_AUDIO_DATA_URL =
@@ -20,6 +21,8 @@ interface WaveformDisplayProps {
   progressColor?: string;
   isFullTrack?: boolean;
   isStreamable?: boolean;
+  trackId: string; // Add trackId prop for tracking
+  stemId?: string; // Optional stemId for stem tracking
 }
 
 export function WaveformDisplay({
@@ -33,6 +36,8 @@ export function WaveformDisplay({
   progressColor = "#4f46e5",
   isFullTrack = false,
   isStreamable = false,
+  trackId,
+  stemId,
 }: WaveformDisplayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -43,6 +48,11 @@ export function WaveformDisplay({
   const [isAudioReady, setIsAudioReady] = useState(false);
   const [resolvedAudioUrl, setResolvedAudioUrl] = useState<string | null>(null);
   const { getPresignedUrl, isLoading: isLoadingUrl } = usePresignedUrl();
+  const { startMonitoring, stopMonitoring, cleanup } = usePlayUsage({
+    trackId,
+    stemId,
+    isStreamable,
+  });
 
   const isWaveformReady = isReady && (isStreamable || isAudioReady);
   const isWaveformLoading =
@@ -188,14 +198,19 @@ export function WaveformDisplay({
 
         wavesurfer.on("play", () => {
           setIsPlaying(true);
+          if (!isMuted(wavesurfer)) {
+            startMonitoring();
+          }
         });
 
         wavesurfer.on("pause", () => {
           setIsPlaying(false);
+          stopMonitoring();
         });
 
         wavesurfer.on("finish", () => {
           setIsPlaying(false);
+          cleanup();
           stopPlayback(wavesurfer);
         });
 
@@ -223,6 +238,7 @@ export function WaveformDisplay({
         }
 
         if (wavesurferRef.current) {
+          cleanup();
           unregisterWaveform(wavesurferRef.current!);
           wavesurferRef.current.destroy();
           wavesurferRef.current = null;

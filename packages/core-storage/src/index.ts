@@ -47,6 +47,7 @@ export {
   type Genre,
   type PaginatedResponse,
   type PaginationParams,
+  type TrackUsageResponse,
   encodeCursor,
   decodeCursor,
 } from "./types";

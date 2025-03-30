@@ -23,7 +23,10 @@ const usageSchema = z.object({
 type UsageInput = z.infer<typeof usageSchema>;
 
 // Helper function to create activity data based on usage data
-function createActivityData(usageData: UsageInput, now: Date) {
+function createActivityData(
+  usageData: UsageInput,
+  now: Date
+): Omit<Prisma.UserTrackActivityUncheckedCreateInput, "userId" | "trackId"> {
   return {
     firstPlayedAt: now,
     lastPlayedAt: now,
@@ -33,7 +36,7 @@ function createActivityData(usageData: UsageInput, now: Date) {
       usageData.playbackSource === PlaybackSource.STREAM
         ? 1
         : 0,
-    localPlayCount:
+    syncedPlayCount:
       usageData.eventType === TrackEventType.PLAY &&
       usageData.playbackSource === PlaybackSource.SYNCED
         ? 1
@@ -48,7 +51,10 @@ function createActivityData(usageData: UsageInput, now: Date) {
 }
 
 // Helper function to create activity update data based on usage data
-function createActivityUpdateData(usageData: UsageInput, now: Date) {
+function createActivityUpdateData(
+  usageData: UsageInput,
+  now: Date
+): Prisma.UserTrackActivityUpdateInput {
   return {
     lastPlayedAt: now,
     playCount:
@@ -60,7 +66,7 @@ function createActivityUpdateData(usageData: UsageInput, now: Date) {
       usageData.playbackSource === PlaybackSource.STREAM
         ? { increment: 1 }
         : undefined,
-    localPlayCount:
+    syncedPlayCount:
       usageData.eventType === TrackEventType.PLAY &&
       usageData.playbackSource === PlaybackSource.SYNCED
         ? { increment: 1 }
@@ -80,64 +86,60 @@ function createActivityUpdateData(usageData: UsageInput, now: Date) {
 }
 
 // Record track usage
-router.post(
-  "/:trackId/usage",
-  authenticateTrackAccess,
-  async (req, res, next) => {
-    try {
-      const { trackId } = req.params;
-      const usageData = usageSchema.parse(req.body);
-      const userId = req.user?.id;
+router.post("/:id/usage", authenticateTrackAccess, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const usageData = usageSchema.parse(req.body);
+    const userId = req.user?.id;
 
-      // Create the event
-      const event = await prisma.trackEvent.create({
-        data: {
-          trackId,
-          userId,
-          eventType: usageData.eventType,
-          format: usageData.format,
-          playbackSource: usageData.playbackSource,
-          duration: usageData.duration,
-        },
-      });
+    // Create the event
+    const event = await prisma.trackEvent.create({
+      data: {
+        trackId: id,
+        userId,
+        eventType: usageData.eventType,
+        format: usageData.format,
+        playbackSource: usageData.playbackSource,
+        duration: usageData.duration,
+      },
+    });
 
-      // If there's a user, update or create their activity record
-      if (userId) {
-        const now = new Date();
-        await prisma.userTrackActivity.upsert({
-          where: {
-            userId_trackId: {
-              userId,
-              trackId,
-            },
-          },
-          create: {
+    // If there's a user, update or create their activity record
+    if (userId) {
+      const now = new Date();
+      await prisma.userTrackActivity.upsert({
+        where: {
+          userId_trackId: {
             userId,
-            trackId,
-            ...createActivityData(usageData, now),
+            trackId: id,
           },
-          update: createActivityUpdateData(usageData, now),
-        });
-      }
+        },
+        create: {
+          userId,
+          trackId: id,
+          ...createActivityData(usageData, now),
+        },
+        update: createActivityUpdateData(usageData, now),
+      });
+    }
 
-      res.status(201).json(event);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        next(new AppError(400, "Invalid usage data"));
-      } else {
-        next(error);
-      }
+    res.status(201).json(event);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      next(new AppError(400, "Invalid usage data"));
+    } else {
+      next(error);
     }
   }
-);
+});
 
 // Record stem usage
 router.post(
-  "/:trackId/stem/:stemId/usage",
+  "/:id/stem/:stemId/usage",
   authenticateTrackAccess,
   async (req, res, next) => {
     try {
-      const { trackId, stemId } = req.params;
+      const { id, stemId } = req.params;
       const usageData = usageSchema.parse(req.body);
       const userId = req.user?.id;
 
@@ -145,7 +147,7 @@ router.post(
       const stem = await prisma.stem.findUnique({
         where: {
           id: stemId,
-          trackId: trackId,
+          trackId: id,
         },
       });
 

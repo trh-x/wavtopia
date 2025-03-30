@@ -372,6 +372,7 @@ export function TrackList({
               <TrackWaveformPlaceholder height={48} />
             ) : (
               <StreamableWaveform
+                trackId={track.id}
                 waveformData={track.waveformData}
                 duration={track.duration ?? undefined}
                 audioUrl={appendTokenToUrl(`/api/track/${track.id}/full.mp3`)}
