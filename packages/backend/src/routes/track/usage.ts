@@ -35,7 +35,7 @@ function createActivityData(usageData: UsageInput, now: Date) {
         : 0,
     localPlayCount:
       usageData.eventType === TrackEventType.PLAY &&
-      usageData.playbackSource === PlaybackSource.LOCAL
+      usageData.playbackSource === PlaybackSource.SYNCED
         ? 1
         : 0,
     totalPlayTime: usageData.duration || 0,
@@ -62,7 +62,7 @@ function createActivityUpdateData(usageData: UsageInput, now: Date) {
         : undefined,
     localPlayCount:
       usageData.eventType === TrackEventType.PLAY &&
-      usageData.playbackSource === PlaybackSource.LOCAL
+      usageData.playbackSource === PlaybackSource.SYNCED
         ? { increment: 1 }
         : undefined,
     totalPlayTime: usageData.duration

@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
 import { AppError } from "../../middleware/errorHandler";
-import { authenticate } from "../../middleware/auth";
 import { getObject, getFileUrl } from "../../services/storage";
 import { prisma } from "../../lib/prisma";
 import { config } from "../../config";
 import { authenticateTrackAccess } from "./middleware";
+import { AudioFormat, TrackEventType } from "@wavtopia/core-storage";
 
 // TODO: Extend Request type to include user property
 
@@ -107,6 +107,18 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
+      // Track download event if attachment is requested
+      if (req.query.hasOwnProperty("attachment")) {
+        await prisma.stemEvent.create({
+          data: {
+            stemId: stem.id,
+            userId: req.user?.id,
+            eventType: TrackEventType.DOWNLOAD,
+            format: format.toUpperCase() as AudioFormat,
+          },
+        });
+      }
+
       // Generate a presigned URL instead of streaming
       const presignedUrl = await getFileUrl(filePath, {
         // Expiry set to 2 minutes, for testing. TODO: Set to 7 days
@@ -149,6 +161,18 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
+      // Track download event if attachment is requested
+      if (req.query.hasOwnProperty("attachment")) {
+        await prisma.trackEvent.create({
+          data: {
+            trackId: track.id,
+            userId: req.user?.id,
+            eventType: TrackEventType.DOWNLOAD,
+            format: format.toUpperCase() as AudioFormat,
+          },
+        });
+      }
+
       // Generate a presigned URL instead of streaming
       const presignedUrl = await getFileUrl(filePath, {
         // Expiry set to 2 minutes, for testing. TODO: Set to 7 days
@@ -176,6 +200,16 @@ router.get(
   async (req: Request, res: Response, next) => {
     try {
       const track = (req as any).track; // TODO: Fix this `any`
+
+      // Track download event (original is always a download)
+      await prisma.trackEvent.create({
+        data: {
+          trackId: track.id,
+          userId: req.user?.id,
+          eventType: TrackEventType.DOWNLOAD,
+          format: "ORIGINAL" as AudioFormat,
+        },
+      });
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(track.originalUrl);
