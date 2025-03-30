@@ -9,7 +9,7 @@ enum TrackEventType {
 // How the track was played
 enum PlaybackSource {
   STREAM    // Played via streaming (chunks/buffering)
-  LOCAL     // Played from a downloaded file
+  SYNCED    // Played from a synchronized file (sync mode)
 }
 
 // Available audio formats for playback, streaming, and download
@@ -32,7 +32,7 @@ model TrackEvent {
   user            User?          @relation(fields: [userId], references: [id])
   eventType       TrackEventType @map("event_type")
   format          AudioFormat?   // Format used for this event
-  playbackSource  PlaybackSource? // For plays: whether streamed or local playback
+  playbackSource  PlaybackSource? // For plays: whether streamed or synced playback
   duration        Float?         // Optional: actual play duration if we can get it
   createdAt       DateTime       @default(now()) @map("created_at")
 
@@ -52,7 +52,7 @@ model UserTrackActivity {
   lastPlayedAt    DateTime  @map("last_played_at")
   playCount       Int       @default(0) @map("play_count")
   streamCount     Int       @default(0) @map("stream_count")
-  localPlayCount  Int       @default(0) @map("local_play_count")
+  syncedPlayCount Int       @default(0) @map("synced_play_count")
   totalPlayTime   Float     @default(0) @map("total_play_time") // Total seconds spent listening (when available)
   downloadCount   Int       @default(0) @map("download_count") // Total number of downloads
   downloadFormats AudioFormat[] @default([]) @map("download_formats") // Which formats they've downloaded
@@ -70,7 +70,7 @@ model DailyTrackStats {
   date              DateTime  // Just the date portion
   playCount         Int       @default(0) @map("play_count")
   streamCount       Int       @default(0) @map("stream_count")
-  localPlayCount    Int       @default(0) @map("local_play_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
   uniquePlayCount   Int       @default(0) @map("unique_play_count")
   totalPlayTime     Float     @default(0) @map("total_play_time") // Total seconds played (when available)
   // Downloads by format
@@ -93,7 +93,7 @@ model MonthlyTrackStats {
   yearMonth         DateTime  // First day of month
   playCount         Int       @default(0) @map("play_count")
   streamCount       Int       @default(0) @map("stream_count")
-  localPlayCount    Int       @default(0) @map("local_play_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
   uniquePlayCount   Int       @default(0) @map("unique_play_count")
   totalPlayTime     Float     @default(0) @map("total_play_time") // Total seconds played (when available)
   // Downloads by format
@@ -117,7 +117,7 @@ model StemEvent {
   user            User?          @relation(fields: [userId], references: [id])
   eventType       TrackEventType @map("event_type")
   format          AudioFormat?   // Format used for this event
-  playbackSource  PlaybackSource? // For plays: whether streamed or local playback
+  playbackSource  PlaybackSource? // For plays: whether streamed or synced playback
   duration        Float?         // Optional: actual play duration if we can get it
   createdAt       DateTime       @default(now()) @map("created_at")
 
@@ -137,7 +137,7 @@ model UserStemActivity {
   lastPlayedAt    DateTime  @map("last_played_at")
   playCount       Int       @default(0) @map("play_count")
   streamCount     Int       @default(0) @map("stream_count")
-  localPlayCount  Int       @default(0) @map("local_play_count")
+  syncedPlayCount Int       @default(0) @map("synced_play_count")
   totalPlayTime   Float     @default(0) @map("total_play_time")
   downloadCount   Int       @default(0) @map("download_count")
   downloadFormats AudioFormat[] @default([]) @map("download_formats")
@@ -155,7 +155,7 @@ model DailyStemStats {
   date              DateTime  // Just the date portion
   playCount         Int       @default(0) @map("play_count")
   streamCount       Int       @default(0) @map("stream_count")
-  localPlayCount    Int       @default(0) @map("local_play_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
   uniquePlayCount   Int       @default(0) @map("unique_play_count")
   totalPlayTime     Float     @default(0) @map("total_play_time")
   // Downloads by format
@@ -177,7 +177,7 @@ model MonthlyStemStats {
   yearMonth         DateTime  // First day of month
   playCount         Int       @default(0) @map("play_count")
   streamCount       Int       @default(0) @map("stream_count")
-  localPlayCount    Int       @default(0) @map("local_play_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
   uniquePlayCount   Int       @default(0) @map("unique_play_count")
   totalPlayTime     Float     @default(0) @map("total_play_time")
   // Downloads by format

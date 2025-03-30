@@ -1,0 +1,15 @@
+---
+description:
+globs:
+-
+alwaysApply: true
+---
+
+# Comment Preservation
+
+✅ DO:
+- Keep all comments (TODOs, FIXMEs, notes)
+- Only remove comments when removing the code they directly document
+
+❌ DON'T:
+- Remove unrelated comments 
