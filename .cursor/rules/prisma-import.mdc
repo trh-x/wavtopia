@@ -1,8 +1,9 @@
 ---
 description:
 globs: 
-- packages/backend/**/*.ts
 - packages/media/**/*.ts
+- packages/backend/**/*.ts
+- packages/frontend/**/*.ts
 alwaysApply: false
 ---
 # Use @wavtopia/core-storage instead of @prisma/client for Prisma types and client access
