@@ -350,7 +350,7 @@ export function TrackList({
                                     track.totalPlays,
                                     track.totalDownloads
                                   ) >= 1
-                                    ? "h-1 bg-indigo-400"
+                                    ? "h-1 bg-indigo-300"
                                     : "h-1 bg-gray-200"
                                 )}
                               />
@@ -372,7 +372,7 @@ export function TrackList({
                                     track.totalPlays,
                                     track.totalDownloads
                                   ) >= 3
-                                    ? "h-3 bg-indigo-400"
+                                    ? "h-3 bg-indigo-500"
                                     : "h-3 bg-gray-200"
                                 )}
                               />
