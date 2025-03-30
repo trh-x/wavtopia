@@ -10,7 +10,6 @@ import { Checkbox } from "../ui/Checkbox";
 import { TrackCardMenu } from "./TrackCardMenu";
 import { useEffect, useRef, useCallback } from "react";
 import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
-import { ChartBarIcon } from "@heroicons/react/24/outline";
 import {
   Select,
   SelectContent,
@@ -171,6 +170,20 @@ function getEngagementLevel(plays: number, downloads: number): number {
   if (total < 10) return 1;
   if (total < 50) return 2;
   return 3;
+}
+
+function getEngagementMessage(plays: number, downloads: number): string {
+  const level = getEngagementLevel(plays, downloads);
+  switch (level) {
+    case 1:
+      return "Getting discovered! 🌱";
+    case 2:
+      return "Gaining momentum! ⭐️";
+    case 3:
+      return "Track is on fire! 🔥";
+    default:
+      return "";
+  }
 }
 
 interface TrackListProps {
@@ -341,7 +354,10 @@ export function TrackList({
                             track.totalDownloads > 0) && (
                             <div
                               className="flex gap-0.5 items-end h-3"
-                              title={`${track.totalPlays} plays, ${track.totalDownloads} downloads`}
+                              title={getEngagementMessage(
+                                track.totalPlays,
+                                track.totalDownloads
+                              )}
                             >
                               <div
                                 className={cn(
