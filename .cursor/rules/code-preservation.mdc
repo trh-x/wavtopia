@@ -1,8 +1,6 @@
 ---
 description:
 globs:
-- "**/*.ts"
-- "**/*.tsx"
 alwaysApply: true
 ---
 

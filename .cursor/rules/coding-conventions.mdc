@@ -1,0 +1,14 @@
+---
+description: ""
+globs:
+- "**/*.ts"
+- "**/*.tsx"
+alwaysApply: false
+---
+
+# Coding Conventions
+
+Use `function` keyword by default. Arrow functions only for callbacks or returned functions:
+- ✓ `function handleClick() {}`
+- ✓ `someArray.map(item => doSomething(item))`
+- ✓ `function factory() { return (x) => x * 2 }`
