@@ -1,7 +1,9 @@
 ---
 description:
 globs:
-alwaysApply: true
+- "**/*.ts"
+- "**/*.tsx"
+alwaysApply: false
 ---
 
 # Code Preservation
