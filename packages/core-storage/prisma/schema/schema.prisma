@@ -209,6 +209,11 @@ model Track {
   // Play and download tracking
   totalPlays          Int       @default(0) @map("total_plays")
   totalDownloads      Int       @default(0) @map("total_downloads")
+  // stemPlays and stemDownloads are metrics for the stems. All other fields are for the full track **
+  stemPlays           Int       @default(0) @map("stem_plays")
+  stemDownloads       Int       @default(0) @map("stem_downloads")
+  // End of stem metrics
+  // ** There is a question of whether to track unique listeners for the full track or include stems too
   uniqueListeners     Int       @default(0) @map("unique_listeners")
   lastPlayedAt        DateTime? @map("last_played_at")
   events              TrackEvent[]

@@ -165,12 +165,31 @@ function formatDuration(seconds: number | null | undefined): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function getEngagementLevel(plays: number, downloads: number): number {
-  const total = plays + downloads;
-  if (total === 0) return 0;
-  if (total < 10) return 1;
-  if (total < 50) return 2;
+function getEngagementLevel(track: Track): number {
+  const totalInteractions =
+    track.totalPlays +
+    track.totalDownloads +
+    track.stemPlays +
+    track.stemDownloads;
+
+  if (totalInteractions === 0) return 0;
+  if (totalInteractions < 20) return 1; // Increased threshold since we're counting more interactions
+  if (totalInteractions < 100) return 2;
   return 3;
+}
+
+function getEngagementMessage(track: Track): string {
+  const level = getEngagementLevel(track);
+  switch (level) {
+    case 1:
+      return "Getting discovered! 🌱";
+    case 2:
+      return "Gaining momentum! ⭐️";
+    case 3:
+      return "Track is on fire! 🔥";
+    default:
+      return "";
+  }
 }
 
 interface TrackListProps {
@@ -338,18 +357,17 @@ export function TrackList({
                             {formatDuration(track.duration)}
                           </span>
                           {(track.totalPlays > 0 ||
-                            track.totalDownloads > 0) && (
+                            track.totalDownloads > 0 ||
+                            track.stemPlays > 0 ||
+                            track.stemDownloads > 0) && (
                             <div
                               className="flex gap-0.5 items-end h-3"
-                              title={`${track.totalPlays} plays, ${track.totalDownloads} downloads`}
+                              title={getEngagementMessage(track)}
                             >
                               <div
                                 className={cn(
                                   "w-0.5 transition-all",
-                                  getEngagementLevel(
-                                    track.totalPlays,
-                                    track.totalDownloads
-                                  ) >= 1
+                                  getEngagementLevel(track) >= 1
                                     ? "h-1 bg-indigo-300"
                                     : "h-1 bg-gray-200"
                                 )}
@@ -357,10 +375,7 @@ export function TrackList({
                               <div
                                 className={cn(
                                   "w-0.5 transition-all",
-                                  getEngagementLevel(
-                                    track.totalPlays,
-                                    track.totalDownloads
-                                  ) >= 2
+                                  getEngagementLevel(track) >= 2
                                     ? "h-2 bg-indigo-400"
                                     : "h-2 bg-gray-200"
                                 )}
@@ -368,10 +383,7 @@ export function TrackList({
                               <div
                                 className={cn(
                                   "w-0.5 transition-all",
-                                  getEngagementLevel(
-                                    track.totalPlays,
-                                    track.totalDownloads
-                                  ) >= 3
+                                  getEngagementLevel(track) >= 3
                                     ? "h-3 bg-indigo-500"
                                     : "h-3 bg-gray-200"
                                 )}
