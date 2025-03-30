@@ -1,15 +1,19 @@
 ---
 description:
 globs:
--
+- "**/*.ts"
+- "**/*.tsx"
 alwaysApply: true
 ---
 
-# Comment Preservation
+# Code Preservation
+
+When editing files:
 
 ✅ DO:
-- Keep all comments (TODOs, FIXMEs, notes)
-- Only remove comments when removing the code they directly document
+- Keep all code/comments unless explicitly asked to modify
+- Mark unchanged code spans with `// ... existing code ...` comment
 
 ❌ DON'T:
-- Remove unrelated comments 
+- Remove/modify code unrelated to the change
+- "Clean up" or reorganize without being asked 
