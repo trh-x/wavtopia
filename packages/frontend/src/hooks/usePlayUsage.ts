@@ -1,16 +1,46 @@
 import { useRef, useEffect } from "react";
 import { api } from "@/api/client";
 import { useAuthToken } from "@/hooks/useAuthToken";
+import { storage } from "@/utils/storage";
+import { session } from "@/utils/session";
 
 // FIXME: Increase this to a longer duration e.g. 30 seconds.
 // Minimum duration in seconds before we record a play event.
 const MIN_PLAY_DURATION = 5;
+
+// One hour cooldown between plays
+const PLAY_COOLDOWN_MS = 60 * 60 * 1000;
 
 interface PlayUsageOptions {
   trackId: string;
   stemId?: string;
   isStreamable?: boolean;
 }
+
+// Create a namespaced storage for play tracking
+const playStorage = storage.namespace("play-tracking");
+
+// Helper function to check if we can record a play event
+const canRecordPlay = (trackId: string, token: string | null) => {
+  const key = token
+    ? `${trackId}_${token}`
+    : `${trackId}_anon_${session.getAnonId()}`;
+
+  const lastPlay = playStorage.get(key);
+  if (!lastPlay) return true;
+
+  const lastPlayTime = parseInt(lastPlay, 10);
+  return Date.now() - lastPlayTime >= PLAY_COOLDOWN_MS;
+};
+
+// Helper function to record last play time
+const recordLastPlayTime = (trackId: string, token: string | null) => {
+  const key = token
+    ? `${trackId}_${token}`
+    : `${trackId}_anon_${session.getAnonId()}`;
+
+  playStorage.set(key, Date.now().toString());
+};
 
 export function usePlayUsage({
   trackId,
@@ -25,6 +55,12 @@ export function usePlayUsage({
 
   // Record play event
   const recordPlayUsage = async (duration: number) => {
+    // Check if we can record a play event
+    if (!canRecordPlay(trackId, token)) {
+      console.log("Play event already recorded within the last hour");
+      return;
+    }
+
     try {
       await api.track.recordUsage(
         trackId,
@@ -36,6 +72,9 @@ export function usePlayUsage({
         token,
         stemId
       );
+
+      // Record the play time after successful tracking
+      recordLastPlayTime(trackId, token);
     } catch (error) {
       console.error("Failed to record play usage:", error);
     }

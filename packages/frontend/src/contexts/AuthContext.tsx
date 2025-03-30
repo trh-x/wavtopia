@@ -1,6 +1,7 @@
 import { api } from "@/api/client";
 import { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "@/utils/auth";
 
 interface User {
   id: string;
@@ -33,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function loadUser() {
-      const token = localStorage.getItem("token");
+      const token = auth.getToken();
       if (!token) {
         setIsLoading(false);
         return;
@@ -43,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await api.auth.me(token);
         setUser(data.user);
       } catch (error) {
-        localStorage.removeItem("token");
+        auth.removeToken();
       } finally {
         setIsLoading(false);
       }
@@ -53,12 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = (token: string, userData: User) => {
-    localStorage.setItem("token", token);
+    auth.setToken(token);
     setUser(userData);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    auth.removeToken();
     setUser(null);
     navigate("/login");
   };
