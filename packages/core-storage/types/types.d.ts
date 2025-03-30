@@ -1,4 +1,4 @@
-import { Prisma, TrackEventType, PlaybackSource, AudioFormat } from ".prisma/client";
+import { Prisma } from ".prisma/client";
 export type Stem = Prisma.StemGetPayload<{}>;
 export type Track = Prisma.TrackGetPayload<{
     include: {
@@ -47,13 +47,6 @@ export interface SortedCursor {
 export declare function encodeCursor(sortValue: Date | string | number, id: string, createdAt: Date): string;
 export declare function decodeCursor(cursor: string): SortedCursor & {
     id: string;
-};
-export type TrackUsageData = {
-    eventType: TrackEventType;
-    source: PlaybackSource;
-    duration?: number;
-    stemId?: string;
-    format?: AudioFormat;
 };
 export type TrackUsageResponse = Prisma.TrackEventGetPayload<{
     select: {

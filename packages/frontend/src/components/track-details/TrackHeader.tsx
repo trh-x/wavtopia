@@ -6,6 +6,7 @@ import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
 import { ReleaseDate } from "../ui/ReleaseDate";
 import { TrackVisibilityToggle } from "./TrackVisibilityToggle";
 import { useAuthToken } from "@/hooks/useAuthToken";
+import { PlayIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 
 export function TrackHeader() {
   const { track } = useTrack();
@@ -21,8 +22,8 @@ export function TrackHeader() {
         size="lg"
       />
       <div className="flex-1 min-w-0">
-        {/* Title section */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+          {/* Title and artist */}
           <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold sm:leading-tight">
               {track.title}
@@ -32,23 +33,41 @@ export function TrackHeader() {
             </p>
           </div>
 
-          {/* Duration, release date and license */}
-          <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-3 sm:gap-2 shrink-0">
-            <span
-              title="Track duration"
-              className="text-base sm:text-lg text-gray-500 hover:text-gray-400 transition-colors cursor-default"
-            >
-              {formatDuration(track.duration)}
-            </span>
+          {/* Track controls and stats */}
+          <div className="flex flex-col items-start sm:items-end gap-4 shrink-0">
+            {/* License and visibility */}
+            <div className="flex items-center gap-3">
+              <LicenseInfo track={track} />
+              {token && <TrackVisibilityToggle token={token} size="sm" />}
+            </div>
+
+            {/* Track stats */}
+            <div className="flex items-center gap-6 text-gray-600">
+              <span title="Track duration" className="font-medium">
+                {formatDuration(track.duration)}
+              </span>
+              <div className="flex items-center gap-1.5" title="Total plays">
+                <PlayIcon className="h-4 w-4" />
+                <span className="font-medium">
+                  {track.totalPlays.toLocaleString()}
+                </span>
+              </div>
+              <div
+                className="flex items-center gap-1.5"
+                title="Total downloads"
+              >
+                <ArrowDownTrayIcon className="h-4 w-4" />
+                <span className="font-medium">
+                  {track.totalDownloads.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
             <ReleaseDate
               date={track.releaseDate}
               precision={track.releaseDatePrecision}
               size="md"
             />
-            <div className="flex items-center gap-4">
-              <LicenseInfo track={track} />
-              {token && <TrackVisibilityToggle token={token} size="sm" />}
-            </div>
           </div>
         </div>
 

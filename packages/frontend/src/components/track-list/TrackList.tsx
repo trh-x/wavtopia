@@ -337,6 +337,7 @@ export function TrackList({
                             track={track}
                             showText={false}
                             size="sm"
+                            className="mr-0.5"
                           />
                           {showVisibilityIcons &&
                             (track.isPublic ? (
