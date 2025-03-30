@@ -8,9 +8,43 @@ import {
   PlaybackSource,
   AudioFormat,
   Prisma,
+  config,
 } from "@wavtopia/core-storage";
+import { NextFunction } from "express";
+import { redis } from "../../lib/redis";
 
 const router = Router();
+
+// Rate limiting constants
+const PLAY_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+
+// Helper function to check rate limit
+async function checkRateLimit(identifier: string): Promise<boolean> {
+  const now = Date.now();
+  const key = `rate_limit:${identifier}`;
+
+  // Use Redis SETNX (SET if Not eXists) for atomic check-and-set
+  const result = await redis.set(key, now, "PX", PLAY_COOLDOWN_MS, "NX");
+
+  // If we successfully set the key (it didn't exist), allow the request
+  return result === "OK";
+}
+
+interface RateLimitIdParams {
+  userId: string | undefined;
+  ip: string;
+  resourceId: string;
+}
+
+// Helper function to get rate limit identifier
+function getRateLimitId({ userId, ip, resourceId }: RateLimitIdParams): string {
+  // For anonymous users, use IP-based identifier
+  if (!userId) {
+    return `anon:${ip}:${resourceId}`;
+  }
+  // For authenticated users, use user ID-based identifier
+  return `user:${userId}:${resourceId}`;
+}
 
 // Schema for track/stem usage data
 const usageSchema = z.object({
@@ -85,12 +119,35 @@ function createActivityUpdateData(
   };
 }
 
+async function checkPlayRateLimit(
+  userId: string | undefined,
+  clientIp: string,
+  resourceId: string,
+  next: NextFunction
+): Promise<boolean> {
+  const rateLimitId = getRateLimitId({ userId, ip: clientIp, resourceId });
+  if (!(await checkRateLimit(rateLimitId))) {
+    next(new AppError(429, "Rate limit exceeded. Please try again later."));
+    return false;
+  }
+  return true;
+}
+
 // Record track usage
 router.post("/:id/usage", authenticateTrackAccess, async (req, res, next) => {
   try {
     const { id } = req.params;
     const usageData = usageSchema.parse(req.body);
     const userId = req.user?.id;
+    const clientIp = req.ip || "unknown";
+
+    // Only apply rate limiting for play events
+    if (usageData.eventType === TrackEventType.PLAY) {
+      const resourceId = `track:${id}`;
+      if (!(await checkPlayRateLimit(userId, clientIp, resourceId, next))) {
+        return;
+      }
+    }
 
     // Create the event
     const event = await prisma.trackEvent.create({
@@ -142,6 +199,15 @@ router.post(
       const { id, stemId } = req.params;
       const usageData = usageSchema.parse(req.body);
       const userId = req.user?.id;
+      const clientIp = req.ip || "unknown";
+
+      // Only apply rate limiting for play events
+      if (usageData.eventType === TrackEventType.PLAY) {
+        const resourceId = `track:${id}:stem:${stemId}`;
+        if (!(await checkPlayRateLimit(userId, clientIp, resourceId, next))) {
+          return;
+        }
+      }
 
       // Verify stem belongs to track
       const stem = await prisma.stem.findUnique({
