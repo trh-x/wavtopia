@@ -12,7 +12,6 @@ When editing files:
 
 ✅ DO:
 - Keep all code/comments unless explicitly asked to modify
-- Mark unchanged code spans with `// ... existing code ...` comment
 
 ❌ DON'T:
 - Remove/modify code unrelated to the change
