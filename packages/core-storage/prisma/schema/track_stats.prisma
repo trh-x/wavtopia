@@ -32,7 +32,7 @@ model TrackEvent {
   user            User?          @relation(fields: [userId], references: [id])
   eventType       TrackEventType @map("event_type")
   format          AudioFormat?   // Format used for this event
-  playbackSource  PlaybackSource? // For plays: whether streamed or synced playback
+  playbackSource  PlaybackSource? @map("playback_source") // For plays: whether streamed or synced playback
   duration        Float?         // Optional: actual play duration if we can get it
   createdAt       DateTime       @default(now()) @map("created_at")
 
@@ -117,7 +117,7 @@ model StemEvent {
   user            User?          @relation(fields: [userId], references: [id])
   eventType       TrackEventType @map("event_type")
   format          AudioFormat?   // Format used for this event
-  playbackSource  PlaybackSource? // For plays: whether streamed or synced playback
+  playbackSource  PlaybackSource? @map("playback_source") // For plays: whether streamed or synced playback
   duration        Float?         // Optional: actual play duration if we can get it
   createdAt       DateTime       @default(now()) @map("created_at")
 
