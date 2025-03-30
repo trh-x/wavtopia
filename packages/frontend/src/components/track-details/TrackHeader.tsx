@@ -46,21 +46,25 @@ export function TrackHeader() {
               <span title="Track duration" className="font-medium">
                 {formatDuration(track.duration)}
               </span>
-              <div className="flex items-center gap-1.5" title="Total plays">
-                <PlayIcon className="h-4 w-4" />
-                <span className="font-medium">
-                  {track.totalPlays.toLocaleString()}
-                </span>
-              </div>
-              <div
-                className="flex items-center gap-1.5"
-                title="Total downloads"
-              >
-                <ArrowDownTrayIcon className="h-4 w-4" />
-                <span className="font-medium">
-                  {track.totalDownloads.toLocaleString()}
-                </span>
-              </div>
+              {track.totalPlays > 0 && (
+                <div className="flex items-center gap-1.5" title="Total plays">
+                  <PlayIcon className="h-4 w-4" />
+                  <span className="font-medium">
+                    {track.totalPlays.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              {track.totalDownloads > 0 && (
+                <div
+                  className="flex items-center gap-1.5"
+                  title="Total downloads"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4" />
+                  <span className="font-medium">
+                    {track.totalDownloads.toLocaleString()}
+                  </span>
+                </div>
+              )}
             </div>
 
             <ReleaseDate
