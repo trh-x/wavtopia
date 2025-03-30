@@ -10,6 +10,7 @@ import { Checkbox } from "../ui/Checkbox";
 import { TrackCardMenu } from "./TrackCardMenu";
 import { useEffect, useRef, useCallback } from "react";
 import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
+import { ChartBarIcon } from "@heroicons/react/24/outline";
 import {
   Select,
   SelectContent,
@@ -162,6 +163,14 @@ function formatDuration(seconds: number | null | undefined): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
+
+function getEngagementLevel(plays: number, downloads: number): number {
+  const total = plays + downloads;
+  if (total === 0) return 0;
+  if (total < 10) return 1;
+  if (total < 50) return 2;
+  return 3;
 }
 
 interface TrackListProps {
@@ -321,12 +330,55 @@ export function TrackList({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span
-                          title="Track duration"
-                          className="text-sm text-gray-500 shrink-0"
-                        >
-                          {formatDuration(track.duration)}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            title="Track duration"
+                            className="text-sm text-gray-500 shrink-0"
+                          >
+                            {formatDuration(track.duration)}
+                          </span>
+                          {(track.totalPlays > 0 ||
+                            track.totalDownloads > 0) && (
+                            <div
+                              className="flex gap-0.5 items-end h-3"
+                              title={`${track.totalPlays} plays, ${track.totalDownloads} downloads`}
+                            >
+                              <div
+                                className={cn(
+                                  "w-0.5 transition-all",
+                                  getEngagementLevel(
+                                    track.totalPlays,
+                                    track.totalDownloads
+                                  ) >= 1
+                                    ? "h-1 bg-indigo-400"
+                                    : "h-1 bg-gray-200"
+                                )}
+                              />
+                              <div
+                                className={cn(
+                                  "w-0.5 transition-all",
+                                  getEngagementLevel(
+                                    track.totalPlays,
+                                    track.totalDownloads
+                                  ) >= 2
+                                    ? "h-2 bg-indigo-400"
+                                    : "h-2 bg-gray-200"
+                                )}
+                              />
+                              <div
+                                className={cn(
+                                  "w-0.5 transition-all",
+                                  getEngagementLevel(
+                                    track.totalPlays,
+                                    track.totalDownloads
+                                  ) >= 3
+                                    ? "h-3 bg-indigo-400"
+                                    : "h-3 bg-gray-200"
+                                )}
+                              />
+                            </div>
+                          )}
+                        </div>
                         <ReleaseDate
                           date={track.releaseDate}
                           precision={track.releaseDatePrecision}

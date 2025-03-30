@@ -3,7 +3,6 @@ import { api } from "@/api/client";
 import { useAuthToken } from "@/hooks/useAuthToken";
 
 // FIXME: Increase this to a longer duration e.g. 30 seconds.
-// Also, follow up to track duration updates for an event.
 // Minimum duration in seconds before we record a play event.
 const MIN_PLAY_DURATION = 5;
 
