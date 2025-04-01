@@ -1,0 +1,35 @@
+---
+description: ""
+globs:
+- 
+alwaysApply: true
+---
+# Feature-Based Organization
+
+Prefer organizing code by feature/domain rather than technical layer:
+
+```
+✅ Feature-based:
+feature/
+  components/
+  hooks/
+  utils/
+  types.ts
+  api.ts
+
+❌ Layer-based:
+components/
+  feature1/
+  feature2/
+hooks/
+  feature1/
+  feature2/
+utils/
+  feature1/
+  feature2/
+```
+
+Exceptions:
+1. Shared/common code (utils, types, components used across features)
+2. Platform-specific code (mobile vs web)
+3. Infrastructure code (database, auth, etc) 

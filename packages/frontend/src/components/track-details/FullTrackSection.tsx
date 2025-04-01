@@ -52,6 +52,7 @@ export function FullTrackSection() {
           <TrackWaveformPlaceholder height={96} />
         ) : (
           <TrackDetailsWaveform
+            trackId={track.id}
             waveformData={track.waveformData}
             duration={track.duration ?? undefined}
             height={96}

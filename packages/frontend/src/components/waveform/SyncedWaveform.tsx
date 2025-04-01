@@ -9,9 +9,13 @@ export interface SyncedWaveformProps {
   color?: string;
   progressColor?: string;
   isFullTrack?: boolean;
+  trackId: string;
+  stemId?: string;
 }
 
 export function SyncedWaveform({
+  trackId,
+  stemId,
   waveformData,
   audioUrl,
   duration,
@@ -24,6 +28,8 @@ export function SyncedWaveform({
 
   return (
     <WaveformDisplay
+      trackId={trackId}
+      stemId={stemId}
       context={playbackContext}
       waveformData={waveformData}
       audioUrl={audioUrl}

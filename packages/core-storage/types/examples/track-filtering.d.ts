@@ -39,6 +39,10 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         flacLastRequestedAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
+        totalPlays: number;
+        totalDownloads: number;
+        uniqueListeners: number;
+        lastPlayedAt: Date | null;
         title: string;
         primaryArtistId: string;
         primaryArtistName: string | null;

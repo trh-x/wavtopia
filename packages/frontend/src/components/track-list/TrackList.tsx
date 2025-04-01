@@ -25,6 +25,7 @@ import {
   PrivateTrackIcon,
   TrackOwnerIcon,
 } from "./TrackIcons";
+import { EngagementIndicator } from "@/components/engagement/EngagementIndicator";
 
 interface SortOption {
   label: string;
@@ -321,12 +322,15 @@ export function TrackList({
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span
-                          title="Track duration"
-                          className="text-sm text-gray-500 shrink-0"
-                        >
-                          {formatDuration(track.duration)}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            title="Track duration"
+                            className="text-sm text-gray-500 shrink-0"
+                          >
+                            {formatDuration(track.duration)}
+                          </span>
+                          <EngagementIndicator track={track} />
+                        </div>
                         <ReleaseDate
                           date={track.releaseDate}
                           precision={track.releaseDatePrecision}
@@ -337,6 +341,7 @@ export function TrackList({
                             track={track}
                             showText={false}
                             size="sm"
+                            className="mr-0.5"
                           />
                           {showVisibilityIcons &&
                             (track.isPublic ? (
@@ -372,6 +377,7 @@ export function TrackList({
               <TrackWaveformPlaceholder height={48} />
             ) : (
               <StreamableWaveform
+                trackId={track.id}
                 waveformData={track.waveformData}
                 duration={track.duration ?? undefined}
                 audioUrl={appendTokenToUrl(`/api/track/${track.id}/full.mp3`)}

@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
 import { AppError } from "../../middleware/errorHandler";
-import { authenticate } from "../../middleware/auth";
 import { getObject, getFileUrl } from "../../services/storage";
 import { prisma } from "../../lib/prisma";
 import { config } from "../../config";
 import { authenticateTrackAccess } from "./middleware";
+import { AudioFormat, TrackEventType } from "@wavtopia/core-storage";
 
 // TODO: Extend Request type to include user property
 
@@ -107,13 +107,31 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
+      const isAttachment = req.query.hasOwnProperty("attachment");
+
       // Generate a presigned URL instead of streaming
       const presignedUrl = await getFileUrl(filePath, {
         // Expiry set to 2 minutes, for testing. TODO: Set to 7 days
         urlExpiryInSeconds: 2 * 60,
         cacheExpiryInSeconds: 2 * 60,
-        isAttachment: req.query.hasOwnProperty("attachment"),
+        isAttachment,
       });
+
+      // Track download event if attachment is requested
+      if (isAttachment) {
+        try {
+          await prisma.stemEvent.create({
+            data: {
+              stemId: stem.id,
+              userId: req.user?.id,
+              eventType: TrackEventType.DOWNLOAD,
+              format: format.toUpperCase() as AudioFormat,
+            },
+          });
+        } catch (error) {
+          console.error("Error creating stem event:", error);
+        }
+      }
 
       // Set cache control headers
       // Cache expiry set to 1 minute, for testing. TODO: Set to 3.5 days
@@ -149,13 +167,31 @@ router.get(
         throw new AppError(400, "Invalid format");
       }
 
+      const isAttachment = req.query.hasOwnProperty("attachment");
+
       // Generate a presigned URL instead of streaming
       const presignedUrl = await getFileUrl(filePath, {
         // Expiry set to 2 minutes, for testing. TODO: Set to 7 days
         urlExpiryInSeconds: 2 * 60,
         cacheExpiryInSeconds: 2 * 60,
-        isAttachment: req.query.hasOwnProperty("attachment"),
+        isAttachment,
       });
+
+      // Track download event if attachment is requested
+      if (isAttachment) {
+        try {
+          await prisma.trackEvent.create({
+            data: {
+              trackId: track.id,
+              userId: req.user?.id,
+              eventType: TrackEventType.DOWNLOAD,
+              format: format.toUpperCase() as AudioFormat,
+            },
+          });
+        } catch (error) {
+          console.error("Error creating track event:", error);
+        }
+      }
 
       // Set cache control headers
       // Cache expiry set to 1 minute, for testing. TODO: Set to 3.5 days
@@ -179,6 +215,20 @@ router.get(
 
       // Stream the file directly from MinIO
       const fileStream = await getObject(track.originalUrl);
+
+      try {
+        // Track download event (original is always a download)
+        await prisma.trackEvent.create({
+          data: {
+            trackId: track.id,
+            userId: req.user?.id,
+            eventType: TrackEventType.DOWNLOAD,
+            format: "ORIGINAL" as AudioFormat,
+          },
+        });
+      } catch (error) {
+        console.error("Error creating track event:", error);
+      }
 
       // Set appropriate content type for tracker files
       const mimeTypes: { [key: string]: string } = {

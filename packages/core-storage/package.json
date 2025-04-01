@@ -17,7 +17,8 @@
     "migrate:deploy": "prisma migrate deploy",
     "postinstall": "pnpm generate",
     "bootstrap": "ts-node src/cli/bootstrap-db.ts",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:mock-stats": "ts-node src/cli/mock-track-stats.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
@@ -30,6 +31,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.6.0",
     "@types/bcryptjs": "^2.4.6",
     "@types/multer": "^1.4.12",
     "@types/node": "^20.10.4",

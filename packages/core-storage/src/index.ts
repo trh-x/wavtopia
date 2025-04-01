@@ -32,6 +32,12 @@ export {
   DatePrecision,
   License,
   LicenseType,
+  // Track event and format types
+  TrackEventType,
+  PlaybackSource,
+  AudioFormat,
+  TrackEvent,
+  UserTrackActivity,
 } from ".prisma/client";
 
 export {
@@ -41,6 +47,7 @@ export {
   type Genre,
   type PaginatedResponse,
   type PaginationParams,
+  type TrackUsageResponse,
   encodeCursor,
   decodeCursor,
 } from "./types";

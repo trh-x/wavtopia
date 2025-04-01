@@ -1,0 +1,192 @@
+// This file contains tracking and statistics related schemas for tracks
+
+// Track event types
+enum TrackEventType {
+  PLAY      // Track was played (met minimum play threshold)
+  DOWNLOAD  // Track URL was generated for download purpose
+}
+
+// How the track was played
+enum PlaybackSource {
+  STREAM    // Played via streaming (chunks/buffering)
+  SYNCED    // Played from a synchronized file (sync mode)
+}
+
+// Available audio formats for playback, streaming, and download
+enum AudioFormat {
+  // Original format (uses the track's SourceFormat)
+  ORIGINAL
+  
+  // Converted formats
+  WAV
+  MP3
+  FLAC
+}
+
+// Recent events with TTL (90 days)
+model TrackEvent {
+  id              String         @id @default(uuid())
+  trackId         String         @map("track_id")
+  track           Track          @relation(fields: [trackId], references: [id])
+  userId          String?        @map("user_id")
+  user            User?          @relation(fields: [userId], references: [id])
+  eventType       TrackEventType @map("event_type")
+  format          AudioFormat?   // Format used for this event
+  playbackSource  PlaybackSource? @map("playback_source") // For plays: whether streamed or synced playback
+  duration        Float?         // Optional: actual play duration if we can get it
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  @@index([trackId, eventType, createdAt])
+  @@index([createdAt]) // For cleanup
+  @@map("track_events")
+}
+
+// Permanent record of user activity with tracks
+model UserTrackActivity {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id])
+  trackId         String    @map("track_id")
+  track           Track     @relation(fields: [trackId], references: [id])
+  firstPlayedAt   DateTime  @map("first_played_at")
+  lastPlayedAt    DateTime  @map("last_played_at")
+  playCount       Int       @default(0) @map("play_count")
+  streamCount     Int       @default(0) @map("stream_count")
+  syncedPlayCount Int       @default(0) @map("synced_play_count")
+  totalPlayTime   Float     @default(0) @map("total_play_time") // Total seconds spent listening (when available)
+  downloadCount   Int       @default(0) @map("download_count") // Total number of downloads
+  downloadFormats AudioFormat[] @default([]) @map("download_formats") // Which formats they've downloaded
+
+  @@unique([userId, trackId])
+  @@index([trackId])
+  @@map("user_track_activity")
+}
+
+// Daily aggregated statistics
+model DailyTrackStats {
+  id                String    @id @default(uuid())
+  trackId           String    @map("track_id")
+  track             Track     @relation(fields: [trackId], references: [id])
+  date              DateTime  // Just the date portion
+  playCount         Int       @default(0) @map("play_count")
+  streamCount       Int       @default(0) @map("stream_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
+  uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  totalPlayTime     Float     @default(0) @map("total_play_time") // Total seconds played (when available)
+  // Downloads by format
+  downloadCount     Int       @default(0) @map("download_count") // Total downloads for the day
+  originalDownloads Int       @default(0) @map("original_downloads")
+  wavDownloads      Int       @default(0) @map("wav_downloads")
+  mp3Downloads      Int       @default(0) @map("mp3_downloads")
+  flacDownloads     Int       @default(0) @map("flac_downloads")
+
+  @@unique([trackId, date])
+  @@index([date])
+  @@map("daily_track_stats")
+}
+
+// Monthly aggregated statistics
+model MonthlyTrackStats {
+  id                String    @id @default(uuid())
+  trackId           String    @map("track_id")
+  track             Track     @relation(fields: [trackId], references: [id])
+  yearMonth         DateTime  // First day of month
+  playCount         Int       @default(0) @map("play_count")
+  streamCount       Int       @default(0) @map("stream_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
+  uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  totalPlayTime     Float     @default(0) @map("total_play_time") // Total seconds played (when available)
+  // Downloads by format
+  downloadCount     Int       @default(0) @map("download_count") // Total downloads for the month
+  originalDownloads Int       @default(0) @map("original_downloads")
+  wavDownloads      Int       @default(0) @map("wav_downloads")
+  mp3Downloads      Int       @default(0) @map("mp3_downloads")
+  flacDownloads     Int       @default(0) @map("flac_downloads")
+
+  @@unique([trackId, yearMonth])
+  @@index([yearMonth])
+  @@map("monthly_track_stats")
+}
+
+// Recent stem events with TTL (90 days)
+model StemEvent {
+  id              String         @id @default(uuid())
+  stemId          String         @map("stem_id")
+  stem            Stem           @relation(fields: [stemId], references: [id])
+  userId          String?        @map("user_id")
+  user            User?          @relation(fields: [userId], references: [id])
+  eventType       TrackEventType @map("event_type")
+  format          AudioFormat?   // Format used for this event
+  playbackSource  PlaybackSource? @map("playback_source") // For plays: whether streamed or synced playback
+  duration        Float?         // Optional: actual play duration if we can get it
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  @@index([stemId, eventType, createdAt])
+  @@index([createdAt]) // For cleanup
+  @@map("stem_events")
+}
+
+// Permanent record of user activity with stems
+model UserStemActivity {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id])
+  stemId          String    @map("stem_id")
+  stem            Stem      @relation(fields: [stemId], references: [id])
+  firstPlayedAt   DateTime  @map("first_played_at")
+  lastPlayedAt    DateTime  @map("last_played_at")
+  playCount       Int       @default(0) @map("play_count")
+  streamCount     Int       @default(0) @map("stream_count")
+  syncedPlayCount Int       @default(0) @map("synced_play_count")
+  totalPlayTime   Float     @default(0) @map("total_play_time")
+  downloadCount   Int       @default(0) @map("download_count")
+  downloadFormats AudioFormat[] @default([]) @map("download_formats")
+
+  @@unique([userId, stemId])
+  @@index([stemId])
+  @@map("user_stem_activity")
+}
+
+// Daily aggregated stem statistics
+model DailyStemStats {
+  id                String    @id @default(uuid())
+  stemId            String    @map("stem_id")
+  stem              Stem      @relation(fields: [stemId], references: [id])
+  date              DateTime  // Just the date portion
+  playCount         Int       @default(0) @map("play_count")
+  streamCount       Int       @default(0) @map("stream_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
+  uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  totalPlayTime     Float     @default(0) @map("total_play_time")
+  // Downloads by format
+  downloadCount     Int       @default(0) @map("download_count")
+  wavDownloads      Int       @default(0) @map("wav_downloads")
+  mp3Downloads      Int       @default(0) @map("mp3_downloads")
+  flacDownloads     Int       @default(0) @map("flac_downloads")
+
+  @@unique([stemId, date])
+  @@index([date])
+  @@map("daily_stem_stats")
+}
+
+// Monthly aggregated stem statistics
+model MonthlyStemStats {
+  id                String    @id @default(uuid())
+  stemId            String    @map("stem_id")
+  stem              Stem      @relation(fields: [stemId], references: [id])
+  yearMonth         DateTime  // First day of month
+  playCount         Int       @default(0) @map("play_count")
+  streamCount       Int       @default(0) @map("stream_count")
+  syncedPlayCount   Int       @default(0) @map("synced_play_count")
+  uniquePlayCount   Int       @default(0) @map("unique_play_count")
+  totalPlayTime     Float     @default(0) @map("total_play_time")
+  // Downloads by format
+  downloadCount     Int       @default(0) @map("download_count")
+  wavDownloads      Int       @default(0) @map("wav_downloads")
+  mp3Downloads      Int       @default(0) @map("mp3_downloads")
+  flacDownloads     Int       @default(0) @map("flac_downloads")
+
+  @@unique([stemId, yearMonth])
+  @@index([yearMonth])
+  @@map("monthly_stem_stats")
+} 

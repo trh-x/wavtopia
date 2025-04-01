@@ -1,0 +1,12 @@
+---
+description: ""
+alwaysApply: true
+---
+# Package Manager Usage
+
+```
+❌ npm install, npx prisma, yarn add
+✅ pnpm install, pnpm exec prisma, pnpm add
+```
+
+Ensures consistent dependency management and proper workspace handling in the monorepo. 

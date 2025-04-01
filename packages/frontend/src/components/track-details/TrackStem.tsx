@@ -30,6 +30,8 @@ export function TrackStem({ stem, isGridView }: TrackStemProps) {
         <StemDownloadButtons track={track} stem={stem} />
       </div>
       <TrackDetailsWaveform
+        trackId={track.id}
+        stemId={stem.id}
         waveformData={stem.waveformData}
         duration={stem.duration ?? undefined}
         height={isGridView ? 48 : 64}

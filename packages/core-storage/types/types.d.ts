@@ -48,3 +48,16 @@ export declare function encodeCursor(sortValue: Date | string | number, id: stri
 export declare function decodeCursor(cursor: string): SortedCursor & {
     id: string;
 };
+export type TrackUsageResponse = Prisma.TrackEventGetPayload<{
+    select: {
+        id: true;
+        trackId: true;
+        stemId: true;
+        userId: true;
+        eventType: true;
+        playbackSource: true;
+        duration: true;
+        format: true;
+        createdAt: true;
+    };
+}>;

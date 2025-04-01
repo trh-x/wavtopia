@@ -1,4 +1,9 @@
-import { Prisma } from ".prisma/client";
+import {
+  Prisma,
+  TrackEventType,
+  PlaybackSource,
+  AudioFormat,
+} from ".prisma/client";
 
 // Base Stem type - matches what Prisma gives us in track.stems
 export type Stem = Prisma.StemGetPayload<{}>;
@@ -97,3 +102,17 @@ export function decodeCursor(cursor: string): SortedCursor & { id: string } {
       return { sortValue: value, id, createdAt };
   }
 }
+
+export type TrackUsageResponse = Prisma.TrackEventGetPayload<{
+  select: {
+    id: true;
+    trackId: true;
+    stemId: true;
+    userId: true;
+    eventType: true;
+    playbackSource: true;
+    duration: true;
+    format: true;
+    createdAt: true;
+  };
+}>;

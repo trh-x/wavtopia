@@ -13,6 +13,8 @@ export type TrackDetailsWaveformProps = StreamableWaveformProps &
   SyncedWaveformProps;
 
 export function TrackDetailsWaveform({
+  trackId,
+  stemId,
   waveformData,
   audioUrl,
   duration,
@@ -29,6 +31,8 @@ export function TrackDetailsWaveform({
 
   return playbackContext.playMode === "preview" ? (
     <StreamableWaveform
+      trackId={trackId}
+      stemId={stemId}
       waveformData={waveformData}
       audioUrl={audioUrl}
       duration={duration}
@@ -38,6 +42,8 @@ export function TrackDetailsWaveform({
     />
   ) : (
     <SyncedWaveform
+      trackId={trackId}
+      stemId={stemId}
       waveformData={waveformData}
       audioUrl={audioUrl}
       duration={duration}

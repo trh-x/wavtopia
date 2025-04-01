@@ -1,0 +1,34 @@
+---
+description: ""
+globs:
+  - "**/*.tsx"
+  - "**/*.jsx"
+alwaysApply: false
+---
+
+# React Component Guidelines
+
+Component files must follow this structure:
+
+```tsx
+import React from "react";
+
+interface Props {
+  // TypeScript required
+  propName: PropType;
+}
+
+export const Component: React.FC<Props> = ({ propName }) => {
+  return <div className="flex items-center">{propName}</div>;
+};
+```
+
+Structure Requirements:
+
+1. File name matches component name (PascalCase)
+2. Imports → Types → Component
+3. One component per file
+4. TypeScript required
+5. Extract reusable logic to hooks
+6. Keep components focused/single-responsibility
+7. Use feature-based organization (group related components, hooks, and utils by feature)

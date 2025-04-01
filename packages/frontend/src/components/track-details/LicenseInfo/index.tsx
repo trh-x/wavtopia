@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/utils/cn";
 import { Track } from "@/types";
+import { LicenseType } from "@wavtopia/core-storage";
 import CreativeCommonsIcon from "./creative-commons.svg?react";
 import CopyrightIcon from "./copyright.svg?react";
 
@@ -17,6 +18,29 @@ interface LicenseInfoProps {
   showText?: boolean;
   size?: "sm" | "md";
   className?: string;
+}
+
+function getLicenseDisplayInfo(
+  licenseType: LicenseType,
+  size: "sm" | "md" = "md"
+) {
+  if (licenseType === "ALL_RIGHTS_RESERVED") {
+    return {
+      displayType: "All Rights Reserved",
+      iconSize: size === "sm" ? "w-3 h-3" : "w-4 h-4",
+    };
+  }
+
+  return {
+    displayType: "Creative Commons",
+    iconSize: size === "sm" ? "w-4 h-4" : "w-5 h-5",
+  };
+}
+
+function getLicenseUrl(type: string) {
+  // Convert CC_BY_NC_SA to by-nc-sa
+  const urlPath = type.toLowerCase().replace(/_/g, "-").substring(3);
+  return `https://creativecommons.org/licenses/${urlPath}/4.0/`;
 }
 
 export function LicenseInfo({
@@ -40,20 +64,10 @@ export function LicenseInfo({
 
   const isCreativeCommons = track.licenseType.startsWith("CC_");
 
-  // Convert license type to more readable format
-  const displayType =
-    track.licenseType === "ALL_RIGHTS_RESERVED"
-      ? "All Rights Reserved"
-      : "Creative Commons";
-
-  const getLicenseUrl = (type: string) => {
-    // Convert CC_BY_NC_SA to by-nc-sa
-    const urlPath = type.toLowerCase().replace(/_/g, "-").substring(3);
-    return `https://creativecommons.org/licenses/${urlPath}/4.0/`;
-  };
-
-  // const iconSize = "w-4 h-4";
-  const iconSize = size === "sm" ? "w-4 h-4" : "w-5 h-5";
+  const { displayType, iconSize } = getLicenseDisplayInfo(
+    track.licenseType,
+    size
+  );
 
   return (
     <ControlledTooltip onOpenChange={setIsOpen}>

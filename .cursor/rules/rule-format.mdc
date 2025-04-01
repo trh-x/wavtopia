@@ -1,0 +1,25 @@
+---
+description: ""
+globs:
+- .cursor/rules/*.*
+alwaysApply: false
+---
+# Cursor Rule Frontmatter Protocol
+
+Rules must use the `.mdc` extension and include these frontmatter fields:
+```yaml
+---
+description: ""    # Only set for Agent Requested rules
+globs:            # Only set for Auto Attached rules
+- 
+alwaysApply: false  # Set true for Always rules
+---
+```
+
+Types:
+- Manual (default): Empty description/globs
+- Auto Attached: Set globs patterns
+- Always: Set alwaysApply: true
+- Agent Requested: Set description
+
+Keep rules concise - they should be short and focused while retaining all essential information.

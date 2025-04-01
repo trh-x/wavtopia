@@ -1,19 +1,13 @@
-const getStoredToken = () => localStorage.getItem("token");
-
-const appendTokenToUrlImpl = (url: string): string => {
-  const token = getStoredToken();
-  return token ? `${url}?token=${token}` : url;
-};
+import { auth } from "@/utils/auth";
 
 export function useAuthToken() {
-  const token = getStoredToken();
   return {
-    token,
-    getToken: getStoredToken,
-    appendTokenToUrl: appendTokenToUrlImpl,
+    token: auth.getToken(),
+    getToken: auth.getToken,
+    appendTokenToUrl: auth.appendTokenToUrl,
   };
 }
 
 export function getAudioUrl(path: string): string {
-  return appendTokenToUrlImpl(path);
+  return auth.appendTokenToUrl(path);
 }
