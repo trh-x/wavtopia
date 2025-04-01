@@ -58,10 +58,6 @@ export async function getFileUrl(
       isAttachment,
     });
 
-    // Check if URL transformation is enabled via environment variable
-    const transformEnabled =
-      process.env.STORAGE_URL_TRANSFORM_ENABLED === "true";
-
     // Transform URL if enabled
     if (
       backendConfig.client.storageUrlTransformEnabled &&

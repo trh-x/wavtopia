@@ -152,6 +152,10 @@ The `scripts/` directory contains several utility scripts:
   - Run `./scripts/deploy.sh --help` for all available commands
 - `apply-arch-lockfile.sh`: Applies architecture-specific lockfile for better dependency management
 - `update-arch-lockfile.sh`: Updates the architecture-specific lockfile
+- `distribute-env.sh`: Distributes environment variables to package-specific .env files:
+  - Takes a source .env file and creates package-specific versions
+  - Only includes variables used by each package's config.ts
+  - Usage: `./scripts/distribute-env.sh .env.docker`
 
 ### Database Management
 
