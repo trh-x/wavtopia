@@ -25,6 +25,7 @@ import {
   PrivateTrackIcon,
   TrackOwnerIcon,
 } from "./TrackIcons";
+import { EngagementIndicator } from "@/components/engagement/EngagementIndicator";
 
 interface SortOption {
   label: string;
@@ -162,30 +163,6 @@ function formatDuration(seconds: number | null | undefined): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
-function getEngagementLevel(plays: number, downloads: number): number {
-  const total = plays + downloads;
-  if (total === 0) return 0;
-  if (total < 10) return 1;
-  if (total < 50) return 2;
-  return 3;
-}
-
-function getEngagementMessage(track: Track): string {
-  const level = getEngagementLevel(track.totalPlays, track.totalDownloads);
-
-  switch (level) {
-    case 1:
-      return "Activity: Getting discovered! 🌱";
-    case 2:
-      return "Activity: Gaining momentum! ⭐️";
-    case 3:
-      return "Activity: Track is on fire! 🔥";
-    default:
-      // This is not used yet:
-      return "Activity: No plays or downloads yet";
-  }
 }
 
 interface TrackListProps {
@@ -352,47 +329,7 @@ export function TrackList({
                           >
                             {formatDuration(track.duration)}
                           </span>
-                          {(track.totalPlays > 0 ||
-                            track.totalDownloads > 0) && (
-                            <div
-                              className="flex gap-0.5 items-end h-3"
-                              title={getEngagementMessage(track)}
-                            >
-                              <div
-                                className={cn(
-                                  "w-0.5 transition-all",
-                                  getEngagementLevel(
-                                    track.totalPlays,
-                                    track.totalDownloads
-                                  ) >= 1
-                                    ? "h-1 bg-indigo-300"
-                                    : "h-1 bg-gray-200"
-                                )}
-                              />
-                              <div
-                                className={cn(
-                                  "w-0.5 transition-all",
-                                  getEngagementLevel(
-                                    track.totalPlays,
-                                    track.totalDownloads
-                                  ) >= 2
-                                    ? "h-2 bg-indigo-400"
-                                    : "h-2 bg-gray-200"
-                                )}
-                              />
-                              <div
-                                className={cn(
-                                  "w-0.5 transition-all",
-                                  getEngagementLevel(
-                                    track.totalPlays,
-                                    track.totalDownloads
-                                  ) >= 3
-                                    ? "h-3 bg-indigo-500"
-                                    : "h-3 bg-gray-200"
-                                )}
-                              />
-                            </div>
-                          )}
+                          <EngagementIndicator track={track} />
                         </div>
                         <ReleaseDate
                           date={track.releaseDate}
