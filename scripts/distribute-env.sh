@@ -29,12 +29,21 @@ create_package_env() {
     local config_file="$2"
     local target_env="$3"
     local source_env="$4"
+    local core_storage_vars="$5"
     
     # Get the list of env vars used in config
     local env_vars=$(extract_env_vars "$config_file")
     
+    # For packages that depend on core-storage, include its vars
+    if [ ! -z "$core_storage_vars" ]; then
+        env_vars=$(echo -e "$env_vars\n$core_storage_vars" | sort -u)
+    fi
+    
     echo "# Generated from $source_env" > "$target_env"
     echo "# Variables used by $(basename $package_dir)" >> "$target_env"
+    if [ ! -z "$core_storage_vars" ]; then
+        echo "# Including variables from core-storage package" >> "$target_env"
+    fi
     echo "" >> "$target_env"
     
     # For each env var in the source file
@@ -61,14 +70,20 @@ create_package_env() {
     echo "Created $(basename $target_env) for $(basename $package_dir)"
 }
 
-# Process each package
+# First, get core-storage env vars since they'll be needed by other packages
+CORE_STORAGE_VARS=""
+if [ -f "packages/core-storage/src/config.ts" ]; then
+    CORE_STORAGE_VARS=$(extract_env_vars "packages/core-storage/src/config.ts")
+fi
+
+# Process each package (excluding core-storage)
 for package_dir in packages/*; do
-    if [ -d "$package_dir" ]; then
+    if [ -d "$package_dir" ] && [ "$(basename $package_dir)" != "core-storage" ]; then
         config_file="$package_dir/src/config.ts"
         if [ -f "$config_file" ]; then
             # Create the same type of env file in the package
             target_env="$package_dir/$(basename $SOURCE_ENV)"
-            create_package_env "$package_dir" "$config_file" "$target_env" "$SOURCE_ENV"
+            create_package_env "$package_dir" "$config_file" "$target_env" "$SOURCE_ENV" "$CORE_STORAGE_VARS"
         fi
     fi
 done
