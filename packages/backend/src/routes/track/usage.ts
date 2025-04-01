@@ -36,16 +36,6 @@ interface RateLimitIdParams {
   resourceId: string;
 }
 
-// Helper function to get rate limit identifier
-function getRateLimitId({ userId, ip, resourceId }: RateLimitIdParams): string {
-  // For anonymous users, use IP-based identifier
-  if (!userId) {
-    return `anon:${ip}:${resourceId}`;
-  }
-  // For authenticated users, use user ID-based identifier
-  return `user:${userId}:${resourceId}`;
-}
-
 // Schema for track/stem usage data
 const usageSchema = z.object({
   eventType: z.nativeEnum(TrackEventType),
@@ -117,6 +107,16 @@ function createActivityUpdateData(
         ? { push: usageData.format }
         : undefined,
   };
+}
+
+// Helper function to get rate limit identifier
+function getRateLimitId({ userId, ip, resourceId }: RateLimitIdParams): string {
+  // For anonymous users, use IP-based identifier
+  if (!userId) {
+    return `anon:${ip}:${resourceId}`;
+  }
+  // For authenticated users, use user ID-based identifier
+  return `user:${userId}:${resourceId}`;
 }
 
 async function checkPlayRateLimit(
