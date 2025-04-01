@@ -2,6 +2,17 @@
 
 set -e
 
+# This script distributes environment variables from a root .env file to package-specific .env files
+# based on their usage in each package's config.ts file.
+#
+# Special handling for core-storage package:
+# - core-storage is a library package used by both backend and media services
+# - Its environment variables are automatically included in both backend and media .env files
+# - No separate .env file is generated for core-storage itself
+#
+# Usage: ./scripts/distribute-env.sh <.env file>
+# Example: ./scripts/distribute-env.sh .env.docker
+
 # Check if an argument is provided
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <.env file>"
