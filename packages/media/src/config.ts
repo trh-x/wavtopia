@@ -20,7 +20,7 @@ export type SharedConfig = z.infer<typeof SharedConfigSchema>;
 function loadConfig(): SharedConfig {
   return SharedConfigSchema.parse({
     server: {
-      port: parseInt(process.env.PORT || "3001"),
+      port: parseInt(process.env.MEDIA_SERVICE_PORT || "3001"),
     },
     tools: {
       milkyCliPath: process.env.MILKYCLI_PATH,

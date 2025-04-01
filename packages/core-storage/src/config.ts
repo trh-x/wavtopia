@@ -31,6 +31,8 @@ export const DatabaseConfigSchema = z.object({
 export const RedisConfigSchema = z.object({
   host: z.string().default("localhost"),
   port: z.coerce.number().default(6379),
+  username: z.string().optional(),
+  password: z.string().optional(),
 });
 
 export const SharedConfigSchema = z.object({
@@ -61,6 +63,8 @@ function loadConfig(): SharedConfig {
     redis: {
       host: process.env.REDIS_HOST,
       port: process.env.REDIS_PORT,
+      username: process.env.REDIS_USERNAME,
+      password: process.env.REDIS_PASSWORD,
     },
   });
 }
