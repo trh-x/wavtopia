@@ -29,6 +29,7 @@ Commands:
   test-registry      Test connection to registry through SSH tunnel
   bootstrap-prod     Bootstrap the production database with an admin user
   seed-prod          Seed the production database with starter data
+
 Options:
   -h, --help                Show this help message
   -d, --debug              Enable debug/verbose output
@@ -109,7 +110,7 @@ while [[ "$#" -gt 0 ]]; do
             shift
             DOCKER_VOLUMES_BASE="$1"
             ;;
-        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod|verify-prod-volumes)
+        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod|seed-prod|verify-prod-volumes)
             COMMAND="$1"
             ;;
         *)
