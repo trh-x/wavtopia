@@ -360,6 +360,12 @@ build_tools() {
 # Function to build workspace (used by other build commands)
 build_workspace() {
     debug_log "Building workspace..."
+    
+    # Distribute environment variables to packages first
+    echo "Distributing environment variables to packages..."
+    debug_log "Running distribute-env.sh for .env.docker"
+    ./scripts/distribute-env.sh .env.docker
+    
     docker compose --profile build build workspace-apt-base workspace
 }
 
