@@ -28,7 +28,7 @@ Commands:
   verify-prod-volumes Verify production volume directories exist (requires --volumes-base path)
   test-registry      Test connection to registry through SSH tunnel
   bootstrap-prod     Bootstrap the production database with an admin user
-
+  seed-prod          Seed the production database with starter data
 Options:
   -h, --help                Show this help message
   -d, --debug              Enable debug/verbose output
@@ -496,6 +496,21 @@ bootstrap_prod() {
     echo "Production database bootstrapped successfully!"
 }
 
+# Function to seed production database
+seed_prod() {
+    echo "Seeding production database..."
+    check_prod_connection
+
+    # Run bootstrap command in production context
+    docker context use wavtopia-prod
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
+      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run db:seed"
+    
+    # Switch back to default context
+    docker context use default
+    echo "Production database seeded successfully!"
+}
+
 # Function to verify production volume directories
 verify_prod_volumes() {
     echo "Verifying production volume directories..."
@@ -601,6 +616,9 @@ case $COMMAND in
         ;;
     "bootstrap-prod")
         bootstrap_prod
+        ;;
+    "seed-prod")
+        seed_prod
         ;;
     "")
         echo "No command specified"
