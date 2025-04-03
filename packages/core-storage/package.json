@@ -5,10 +5,10 @@
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "node scripts/run-cli.js prisma/seed.ts"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "clean": "rimraf dist types",
     "dev": "tsc -w",
     "lint": "eslint src --ext .ts",
@@ -16,9 +16,12 @@
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "postinstall": "pnpm generate",
-    "bootstrap": "ts-node src/cli/bootstrap-db.ts",
+    "bootstrap": "node scripts/run-cli.js src/cli/bootstrap-db.ts",
+    "bootstrap:prod": "NODE_ENV=production node scripts/run-cli.js src/cli/bootstrap-db.ts",
     "db:seed": "prisma db seed",
-    "db:mock-stats": "ts-node src/cli/mock-track-stats.ts"
+    "db:seed:prod": "NODE_ENV=production prisma db seed",
+    "db:mock-stats": "node scripts/run-cli.js src/cli/mock-track-stats.ts",
+    "db:mock-stats:prod": "NODE_ENV=production node scripts/run-cli.js src/cli/mock-track-stats.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",

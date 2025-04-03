@@ -8,7 +8,7 @@ set -e
 # Special handling for core-storage package:
 # - core-storage is a library package used by both backend and media services
 # - Its environment variables are automatically included in both backend and media .env files
-# - No separate .env file is generated for core-storage itself
+# - core-storage also gets its own .env file for running CLI tools
 #
 # Usage: ./scripts/distribute-env.sh <.env file>
 # Example: ./scripts/distribute-env.sh .env.docker
@@ -46,13 +46,13 @@ create_package_env() {
     local env_vars=$(extract_env_vars "$config_file")
     
     # For packages that depend on core-storage, include its vars
-    if [ ! -z "$core_storage_vars" ]; then
+    if [ ! -z "$core_storage_vars" ] && [ "$(basename $package_dir)" != "core-storage" ]; then
         env_vars=$(echo -e "$env_vars\n$core_storage_vars" | sort -u)
     fi
     
     echo "# Generated from $source_env" > "$target_env"
     echo "# Variables used by $(basename $package_dir)" >> "$target_env"
-    if [ ! -z "$core_storage_vars" ]; then
+    if [ ! -z "$core_storage_vars" ] && [ "$(basename $package_dir)" != "core-storage" ]; then
         echo "# Including variables from core-storage package" >> "$target_env"
     fi
     echo "" >> "$target_env"
@@ -85,9 +85,13 @@ create_package_env() {
 CORE_STORAGE_VARS=""
 if [ -f "packages/core-storage/src/config.ts" ]; then
     CORE_STORAGE_VARS=$(extract_env_vars "packages/core-storage/src/config.ts")
+    
+    # Create env file for core-storage first
+    target_env="packages/core-storage/$(basename $SOURCE_ENV)"
+    create_package_env "packages/core-storage" "packages/core-storage/src/config.ts" "$target_env" "$SOURCE_ENV" "$CORE_STORAGE_VARS"
 fi
 
-# Process each package (excluding core-storage)
+# Process each package (excluding core-storage since it's already done)
 for package_dir in packages/*; do
     if [ -d "$package_dir" ] && [ "$(basename $package_dir)" != "core-storage" ]; then
         config_file="$package_dir/src/config.ts"

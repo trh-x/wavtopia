@@ -34,12 +34,18 @@ export declare const DatabaseConfigSchema: z.ZodObject<{
 export declare const RedisConfigSchema: z.ZodObject<{
     host: z.ZodDefault<z.ZodString>;
     port: z.ZodDefault<z.ZodNumber>;
+    username: z.ZodOptional<z.ZodString>;
+    password: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     port: number;
     host: string;
+    username?: string | undefined;
+    password?: string | undefined;
 }, {
     port?: number | undefined;
     host?: string | undefined;
+    username?: string | undefined;
+    password?: string | undefined;
 }>;
 export declare const SharedConfigSchema: z.ZodObject<{
     storage: z.ZodObject<{
@@ -77,12 +83,18 @@ export declare const SharedConfigSchema: z.ZodObject<{
     redis: z.ZodObject<{
         host: z.ZodDefault<z.ZodString>;
         port: z.ZodDefault<z.ZodNumber>;
+        username: z.ZodOptional<z.ZodString>;
+        password: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
         port: number;
         host: string;
+        username?: string | undefined;
+        password?: string | undefined;
     }, {
         port?: number | undefined;
         host?: string | undefined;
+        username?: string | undefined;
+        password?: string | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     storage: {
@@ -100,6 +112,8 @@ export declare const SharedConfigSchema: z.ZodObject<{
     redis: {
         port: number;
         host: string;
+        username?: string | undefined;
+        password?: string | undefined;
     };
 }, {
     storage: {
@@ -117,6 +131,8 @@ export declare const SharedConfigSchema: z.ZodObject<{
     redis: {
         port?: number | undefined;
         host?: string | undefined;
+        username?: string | undefined;
+        password?: string | undefined;
     };
 }>;
 export type StorageConfig = z.infer<typeof StorageConfigSchema>;
@@ -139,5 +155,7 @@ export declare const config: {
     redis: {
         port: number;
         host: string;
+        username?: string | undefined;
+        password?: string | undefined;
     };
 };

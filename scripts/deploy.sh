@@ -487,10 +487,12 @@ bootstrap_prod() {
     echo "Bootstrapping production database..."
     check_prod_connection
 
+    # TODO: Follow the same pattern as seed_prod for registry/tunnel
+
     # Run bootstrap command in production context
     docker context use wavtopia-prod
     DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
-      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap"
+      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap:prod"
     
     # Switch back to default context
     docker context use default
@@ -502,10 +504,23 @@ seed_prod() {
     echo "Seeding production database..."
     check_prod_connection
 
-    # Run bootstrap command in production context
+    # Get actual registry port before setting up tunnel
+    REGISTRY_PORT=$(get_registry_port)
+
+    # Get the remote host from the current context
+    REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+
+    # Set up SSH tunnel
+    debug_log "Setting up SSH tunnel to $REMOTE_HOST"
+    setup_tunnel "$REMOTE_HOST"
+
+    # Use localhost for registry when deploying since we're on the remote host
+    export REGISTRY_PREFIX="localhost:${REGISTRY_PORT}/"
+
+    # Run seed command in production context
     docker context use wavtopia-prod
     DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
-      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run db:seed"
+      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run db:seed:prod"
     
     # Switch back to default context
     docker context use default

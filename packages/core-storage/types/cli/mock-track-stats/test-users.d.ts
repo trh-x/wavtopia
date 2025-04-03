@@ -13,12 +13,12 @@ export declare const TEST_USERS: readonly [{
 }];
 export declare function ensureTestUsers(): Promise<void>;
 export declare function getTestUsers(): Promise<{
+    username: string;
+    password: string;
     id: string;
     createdAt: Date;
     updatedAt: Date;
     email: string;
-    username: string;
-    password: string;
     role: import(".prisma/client").$Enums.Role;
     inviteCodeId: string | null;
 }[]>;
