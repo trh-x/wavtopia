@@ -5,9 +5,9 @@ services:
       - development
     image: postgres:14-alpine
     environment:
-      POSTGRES_USER: wavtopia
-      POSTGRES_PASSWORD: wavtopia
-      POSTGRES_DB: wavtopia
+      POSTGRES_USER: ${POSTGRES_USER:-wavtopia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wavtopia}
+      POSTGRES_DB: ${POSTGRES_DB:-wavtopia}
     ports:
       - "5432:5432"
     volumes:
@@ -20,8 +20,8 @@ services:
       - development
     image: dpage/pgadmin4
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@wavtopia.com
-      PGADMIN_DEFAULT_PASSWORD: wavtopia123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@wavtopia.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-wavtopia123}
     ports:
       - "5050:80"
     volumes:
@@ -37,8 +37,8 @@ services:
       - development
     image: minio/minio
     environment:
-      MINIO_ROOT_USER: wavtopia
-      MINIO_ROOT_PASSWORD: wavtopia123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-wavtopia}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-wavtopia123}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -55,9 +55,18 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    environment:
+      - REDIS_USERNAME=${REDIS_USERNAME:-wavtopia}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-wavtopia123}
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+      - ./config/redis/redis.conf.template:/etc/redis/redis.conf.template:ro
+    # Use sed to replace environment variables in the template file:
+    # 1. Replace ${REDIS_PASSWORD} with the actual password
+    # 2. Replace ${REDIS_USERNAME} with the actual username
+    # 3. Write the result to redis.conf
+    # 4. Start Redis with the generated config
+    command: sh -c 'sed "s/\$${REDIS_PASSWORD}/${REDIS_PASSWORD}/g; s/\$${REDIS_USERNAME}/${REDIS_USERNAME}/g" /etc/redis/redis.conf.template > /etc/redis/redis.conf && redis-server /etc/redis/redis.conf'
     networks:
       - wavtopia-net
 
