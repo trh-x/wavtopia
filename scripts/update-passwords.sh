@@ -186,20 +186,46 @@ update_minio() {
         sleep 1
     done
 
-    # Configure mc with current passwords
+    # Configure mc with root credentials
     if ! docker compose exec -T minio mc alias set local http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; then
-        echo "❌ Failed to authenticate with MinIO using current passwords"
+        echo "❌ Failed to authenticate with MinIO using root credentials"
         return 1
     fi
 
-    # TODO: Remove the user and create a new one with the new password
-    # Update MinIO root user password
-    if docker compose exec -T minio mc admin user add local "$MINIO_USER" "$NEW_MINIO_PASSWORD" --update; then
-        echo "✅ MinIO password updated successfully"
+    # Remove existing user and recreate with new password
+    echo "Removing existing MinIO user '$MINIO_USER'..."
+    
+    # First detach any existing policies
+    if docker compose exec -T minio mc admin user info local "$MINIO_USER" > /dev/null 2>&1; then
+        debug_log "User exists, detaching policies..."
+        # Ignore errors here as the policy might not be attached
+        docker compose exec -T minio mc admin policy detach local readwrite --user="$MINIO_USER" > /dev/null 2>&1 || true
+        
+        # Remove the user
+        if ! docker compose exec -T minio mc admin user remove local "$MINIO_USER"; then
+            echo "❌ Failed to remove existing MinIO user"
+            return 1
+        fi
+        echo "✅ Removed existing MinIO user"
     else
-        echo "❌ Failed to update MinIO password"
+        debug_log "User does not exist, proceeding with creation"
+    fi
+
+    # Create user with new password
+    echo "Creating MinIO user with new password..."
+    if ! docker compose exec -T minio mc admin user add local "$MINIO_USER" "$NEW_MINIO_PASSWORD"; then
+        echo "❌ Failed to create MinIO user"
         return 1
     fi
+
+    # Attach readwrite policy
+    echo "Attaching readwrite policy..."
+    if ! docker compose exec -T minio mc admin policy attach local readwrite --user="$MINIO_USER"; then
+        echo "❌ Failed to attach policy to MinIO user"
+        return 1
+    fi
+
+    echo "✅ MinIO password updated successfully"
 }
 
 update_pgadmin() {
@@ -231,7 +257,7 @@ update_redis() {
 
 show_usage() {
     echo "Usage: $0 [--debug] [service...]"
-    echo "Updates service passwords using values from .env"
+    echo "Updates service passwords by prompting for new values"
     echo
     echo "Options:"
     echo "  --debug    Enable debug logging"
@@ -240,7 +266,7 @@ show_usage() {
     echo "  postgres   - Update PostgreSQL password"
     echo "  minio     - Update MinIO password"
     echo "  pgadmin   - Update pgAdmin password"
-    echo "  redis     - Restart Redis to apply new password"
+    echo "  redis     - Update Redis password"
     echo
     echo "If no service is specified, all services will be updated."
     echo "Multiple services can be specified: $0 postgres minio"
@@ -252,8 +278,8 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     exit 0
 fi
 
-echo "This script will update service passwords using values from .env"
-echo "Make sure you have updated .env with the desired passwords before continuing."
+echo "This script will prompt for new passwords for each service"
+echo "The changes will be saved to new .env files for review"
 
 # If no arguments provided, update all services
 if [ $# -eq 0 ]; then
@@ -309,10 +335,11 @@ if [ $# -eq 0 ] || [ $# -gt 0 ]; then
     echo "Then copy them over with:"
     echo "  cp .env.new .env"
     echo "  cp .env.docker.new .env.docker"
+    echo
+    echo "Finally, distribute the new env values to packages:"
+    echo "  ./scripts/distribute-env.sh .env"
+    echo "  ./scripts/distribute-env.sh .env.docker"
 fi
 
 echo
-echo "✅ Password updates completed"
-if [ $# -eq 0 ]; then
-    echo "Note: For Redis, restart the container to apply new password from .env"
-fi 
+echo "✅ Password updates completed" 
