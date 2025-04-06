@@ -12,6 +12,33 @@ debug_log() {
     fi
 }
 
+# Helper function to escape strings for shell usage
+escape_string() {
+    local var_name=$1
+    local string_to_escape=$2
+    printf -v "$var_name" "%q" "$string_to_escape"
+}
+
+# Helper function to escape strings for SQL usage
+escape_sql() {
+    local var_name=$1
+    local string_to_escape=$2
+    # Handle special characters in this order:
+    # 1. Backslashes first (since they're used to escape other characters)
+    # 2. Single quotes (SQL standard)
+    # 3. Special characters that could be interpreted by PostgreSQL
+    local escaped="${string_to_escape//\\/\\\\}"  # \ -> \\
+    escaped="${escaped//\'/\'\'}"                 # ' -> ''
+    escaped="${escaped//\$/\\\$}"                 # $ -> \$
+    escaped="${escaped//\`/\\\`}"                 # ` -> \`
+    escaped="${escaped//\"/\\\"}"                 # " -> \"
+    escaped="${escaped//\r/\\r}"                  # CR -> \r
+    escaped="${escaped//\n/\\n}"                  # LF -> \n
+    escaped="${escaped//\t/\\t}"                  # Tab -> \t
+    # Finally wrap in single quotes
+    printf -v "$var_name" "'%s'" "$escaped"
+}
+
 # Parse flags before other arguments
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -153,10 +180,16 @@ update_postgres() {
     debug_log "Attempting to update password..."
     debug_log "Running: docker run --rm --network $NETWORK_NAME -e PGPASSWORD=**** $IMAGE_NAME psql -h postgres -U $POSTGRES_USER -d $POSTGRES_DB"
     
+    # Escape passwords for both shell and SQL
+    local shell_current_password shell_new_password sql_new_password
+    escape_string shell_current_password "$POSTGRES_PASSWORD"
+    escape_string shell_new_password "$NEW_POSTGRES_PASSWORD"
+    escape_sql sql_new_password "$NEW_POSTGRES_PASSWORD"
+    
     if ! OUTPUT=$(docker run --rm --network "$NETWORK_NAME" \
-        -e PGPASSWORD="$POSTGRES_PASSWORD" \
+        -e PGPASSWORD="$shell_current_password" \
         "$IMAGE_NAME" psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-        -c "ALTER USER $POSTGRES_USER WITH PASSWORD '$NEW_POSTGRES_PASSWORD';" 2>&1); then
+        -c "ALTER USER $POSTGRES_USER WITH PASSWORD $sql_new_password;" 2>&1); then
         echo "❌ Failed to update PostgreSQL password"
         debug_log "Error output: $OUTPUT"
         return 1
@@ -166,7 +199,7 @@ update_postgres() {
     # Verify the new password works
     debug_log "Verifying new password..."
     if ! OUTPUT=$(docker run --rm --network "$NETWORK_NAME" \
-        -e PGPASSWORD="$NEW_POSTGRES_PASSWORD" \
+        -e PGPASSWORD="$shell_new_password" \
         "$IMAGE_NAME" psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
         -c "SELECT 1;" 2>&1); then
         echo "❌ New password verification failed"
@@ -186,23 +219,30 @@ update_minio() {
         sleep 1
     done
 
+    # Escape credentials for mc commands
+    local escaped_root_user escaped_root_password escaped_user escaped_new_password
+    escape_string escaped_root_user "$MINIO_ROOT_USER"
+    escape_string escaped_root_password "$MINIO_ROOT_PASSWORD"
+    escape_string escaped_user "$MINIO_USER"
+    escape_string escaped_new_password "$NEW_MINIO_PASSWORD"
+
     # Configure mc with root credentials
-    if ! docker compose exec -T minio mc alias set local http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; then
+    if ! docker compose exec -T minio mc alias set local http://localhost:9000 "$escaped_root_user" "$escaped_root_password"; then
         echo "❌ Failed to authenticate with MinIO using root credentials"
         return 1
     fi
 
     # Remove existing user and recreate with new password
-    echo "Removing existing MinIO user '$MINIO_USER'..."
+    echo "Removing existing MinIO user '$escaped_user'..."
     
     # First detach any existing policies
-    if docker compose exec -T minio mc admin user info local "$MINIO_USER" > /dev/null 2>&1; then
+    if docker compose exec -T minio mc admin user info local "$escaped_user" > /dev/null 2>&1; then
         debug_log "User exists, detaching policies..."
         # Ignore errors here as the policy might not be attached
-        docker compose exec -T minio mc admin policy detach local readwrite --user="$MINIO_USER" > /dev/null 2>&1 || true
+        docker compose exec -T minio mc admin policy detach local readwrite --user="$escaped_user" > /dev/null 2>&1 || true
         
         # Remove the user
-        if ! docker compose exec -T minio mc admin user remove local "$MINIO_USER"; then
+        if ! docker compose exec -T minio mc admin user remove local "$escaped_user"; then
             echo "❌ Failed to remove existing MinIO user"
             return 1
         fi
@@ -213,14 +253,14 @@ update_minio() {
 
     # Create user with new password
     echo "Creating MinIO user with new password..."
-    if ! docker compose exec -T minio mc admin user add local "$MINIO_USER" "$NEW_MINIO_PASSWORD"; then
+    if ! docker compose exec -T minio mc admin user add local "$escaped_user" "$escaped_new_password"; then
         echo "❌ Failed to create MinIO user"
         return 1
     fi
 
     # Attach readwrite policy
     echo "Attaching readwrite policy..."
-    if ! docker compose exec -T minio mc admin policy attach local readwrite --user="$MINIO_USER"; then
+    if ! docker compose exec -T minio mc admin policy attach local readwrite --user="$escaped_user"; then
         echo "❌ Failed to attach policy to MinIO user"
         return 1
     fi
@@ -232,9 +272,13 @@ update_pgadmin() {
     echo "Updating pgAdmin password..."
     prompt_new_credentials pgadmin
     
+    # Escape password for environment variable
+    local escaped_new_password
+    escape_string escaped_new_password "$NEW_PGADMIN_PASSWORD"
+    
     # Set new passwords as environment variables for the container
     docker compose stop pgadmin
-    if PGADMIN_PASSWORD="$NEW_PGADMIN_PASSWORD" docker compose up -d pgadmin; then
+    if PGADMIN_PASSWORD="$escaped_new_password" docker compose up -d pgadmin; then
         echo "✅ pgAdmin password updated successfully"
     else
         echo "❌ Failed to update pgAdmin password"
@@ -245,14 +289,9 @@ update_pgadmin() {
 update_redis() {
     echo "Updating Redis password..."
     prompt_new_credentials redis
-    
-    # Redis passwords are applied on container restart
-    if docker compose restart redis; then
-        echo "✅ Redis restarted with new password"
-    else
-        echo "❌ Failed to restart Redis"
-        return 1
-    fi
+
+    # Note: Redis password will be applied after copying new .env files and restarting the container
+    echo "ℹ️  Redis password will be applied after updating .env files and restarting the container"
 }
 
 show_usage() {
