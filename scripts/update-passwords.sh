@@ -18,10 +18,10 @@ validate_password() {
     # Allow only:
     # - ASCII letters (a-z, A-Z)
     # - Numbers (0-9)
-    # - Common special characters (-._@#%+)
-    if [[ ! "$password" =~ ^[-a-zA-Z0-9._@#%+]+$ ]]; then
+    # - Special characters (-._~) that are URL-safe (needed for DATABASE_URL)
+    if [[ ! "$password" =~ ^[-a-zA-Z0-9._~]+$ ]]; then
         echo "❌ Password contains invalid characters"
-        echo "Allowed characters: letters, numbers, and -._@#%+"
+        echo "Allowed characters: letters, numbers, and -._~"
         return 1
     fi
     return 0
@@ -313,7 +313,7 @@ echo
 echo "Allowed password characters:"
 echo "- Letters (a-z, A-Z)"
 echo "- Numbers (0-9)"
-echo "- Special characters: -._@#%+"
+echo "- Special characters: -._~"
 echo
 
 # If no arguments provided, update all services
