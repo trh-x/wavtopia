@@ -8,6 +8,7 @@ import { TrackVisibilityToggle } from "./TrackVisibilityToggle";
 import { PlayIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserLink } from "../ui/UserLink";
+import { TrackUploaderIcon } from "../track-list/TrackIcons";
 
 export function TrackHeader() {
   const { track } = useTrack();
@@ -39,7 +40,10 @@ export function TrackHeader() {
             <div className="flex items-center gap-3">
               <LicenseInfo track={track} />
               {user && track.userId === user.id ? (
-                <TrackVisibilityToggle size="sm" />
+                <div className="flex items-center gap-2">
+                  <TrackUploaderIcon />
+                  <TrackVisibilityToggle size="sm" />
+                </div>
               ) : (
                 <span className="text-sm text-gray-600">
                   Uploaded by <UserLink username={track.user.username} />
