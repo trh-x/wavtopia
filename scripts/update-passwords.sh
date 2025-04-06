@@ -72,6 +72,10 @@ update_env_file() {
     # Create backup
     cp "$source_file" "$backup_file"
 
+    # Get DATABASE_URL from the current file being processed
+    local current_database_url
+    current_database_url=$(grep "^DATABASE_URL=" "$source_file" | cut -d'=' -f2-)
+
     # Create new env file with updated passwords
     while IFS= read -r line || [ -n "$line" ]; do
         # Skip empty lines and comments
@@ -88,9 +92,9 @@ update_env_file() {
             DATABASE_URL=*)
                 if [[ -n "$NEW_POSTGRES_PASSWORD" ]]; then
                     # Replace password in DATABASE_URL while preserving the rest of the URL
-                    old_url="$DATABASE_URL"
-                    user=$(echo "$old_url" | sed -E 's|^postgresql://([^:]+):.*@.*$|\1|')
-                    rest=$(echo "$old_url" | sed -E 's|^postgresql://[^:]+:[^@]+@(.*)$|\1|')
+                    # Use the DATABASE_URL from the current file
+                    user=$(echo "$current_database_url" | sed -E 's|^postgresql://([^:]+):.*@.*$|\1|')
+                    rest=$(echo "$current_database_url" | sed -E 's|^postgresql://[^:]+:[^@]+@(.*)$|\1|')
                     echo "DATABASE_URL=postgresql://$user:$NEW_POSTGRES_PASSWORD@$rest"
                 else
                     echo "$line"
