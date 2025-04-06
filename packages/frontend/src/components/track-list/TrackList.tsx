@@ -23,7 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   PublicTrackIcon,
   PrivateTrackIcon,
-  TrackOwnerIcon,
+  TrackUploaderIcon,
+  OtherUploaderIcon,
 } from "./TrackIcons";
 import { EngagementIndicator } from "@/components/engagement/EngagementIndicator";
 
@@ -314,12 +315,6 @@ export function TrackList({
                         >
                           {track.primaryArtistName}
                         </p>
-                        <p
-                          className="text-xs text-gray-500 truncate"
-                          title={`by ${track.user.username}`}
-                        >
-                          by {track.user.username}
-                        </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <div className="flex items-center gap-1.5">
@@ -349,8 +344,12 @@ export function TrackList({
                             ) : (
                               <PrivateTrackIcon />
                             ))}
-                          {user && track.userId === user.id && (
-                            <TrackOwnerIcon />
+                          {user && track.userId === user.id ? (
+                            <TrackUploaderIcon />
+                          ) : (
+                            <OtherUploaderIcon
+                              ownerName={track.user.username}
+                            />
                           )}
                         </div>
                       </div>
