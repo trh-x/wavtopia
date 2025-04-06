@@ -5,9 +5,9 @@ services:
       - development
     image: postgres:14-alpine
     environment:
-      POSTGRES_USER: wavtopia
-      POSTGRES_PASSWORD: wavtopia
-      POSTGRES_DB: wavtopia
+      POSTGRES_USER: ${POSTGRES_USER:-wavtopia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wavtopia}
+      POSTGRES_DB: ${POSTGRES_DB:-wavtopia}
     ports:
       - "5432:5432"
     volumes:
@@ -20,8 +20,8 @@ services:
       - development
     image: dpage/pgadmin4
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@wavtopia.com
-      PGADMIN_DEFAULT_PASSWORD: wavtopia123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@wavtopia.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-wavtopia123}
     ports:
       - "5050:80"
     volumes:
@@ -37,8 +37,8 @@ services:
       - development
     image: minio/minio
     environment:
-      MINIO_ROOT_USER: wavtopia
-      MINIO_ROOT_PASSWORD: wavtopia123
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-wavtopia}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-wavtopia123}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -55,9 +55,37 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    environment:
+      - REDIS_USERNAME=${REDIS_USERNAME:-wavtopia}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-wavtopia123}
     volumes:
       - redis_data:/data
-    command: redis-server --appendonly yes
+    # Create the Redis config file directly and start Redis:
+    # 1. Create the config directory
+    # 2. Create the config file with cat
+    # 3. Start Redis with the config
+    command: |
+      sh -c 'mkdir -p /etc/redis && cat > /etc/redis/redis.conf << EOF
+      # Redis configuration file
+
+      # Basic settings
+      port 6379
+      bind 0.0.0.0
+
+      # Persistence
+      appendonly yes
+      dir /data
+
+      # Security settings
+      protected-mode yes
+      requirepass ${REDIS_PASSWORD}
+
+      # ACL configuration
+      user default off
+      user ${REDIS_USERNAME} on ~* +@all >${REDIS_PASSWORD}
+      EOF
+
+      redis-server /etc/redis/redis.conf'
     networks:
       - wavtopia-net
 
@@ -166,6 +194,10 @@ volumes:
   pgadmin_data:
   # TODO: Rename to temp_data
   temp_files:
+
+configs:
+  redis_config_template:
+    file: ./config/redis/redis.conf.template
 
 networks:
   wavtopia-net:

@@ -13,7 +13,8 @@
     "db:setup": "cd packages/core-storage && pnpm prisma migrate dev && pnpm prisma generate",
     "db:bootstrap": "pnpm --filter @wavtopia/core-storage bootstrap",
     "db:seed": "pnpm --filter @wavtopia/core-storage db:seed",
-    "db:mock-stats": "pnpm --filter @wavtopia/core-storage db:mock-stats"
+    "db:mock-stats": "pnpm --filter @wavtopia/core-storage db:mock-stats",
+    "minio:setup": "pnpm --filter @wavtopia/core-storage minio:setup"
   },
   "engines": {
     "node": ">=18.0.0",

@@ -28,6 +28,7 @@ Commands:
   verify-prod-volumes Verify production volume directories exist (requires --volumes-base path)
   test-registry      Test connection to registry through SSH tunnel
   bootstrap-prod     Bootstrap the production database with an admin user
+  seed-prod          Seed the production database with starter data
 
 Options:
   -h, --help                Show this help message
@@ -109,7 +110,7 @@ while [[ "$#" -gt 0 ]]; do
             shift
             DOCKER_VOLUMES_BASE="$1"
             ;;
-        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod|verify-prod-volumes)
+        build-workspace|build-tools|build-media|build-backend|build-services|up-dev|up-prod|down|down-volumes|clean|setup-remote|deploy-prod|test-registry|bootstrap-prod|seed-prod|verify-prod-volumes)
             COMMAND="$1"
             ;;
         *)
@@ -360,6 +361,12 @@ build_tools() {
 # Function to build workspace (used by other build commands)
 build_workspace() {
     debug_log "Building workspace..."
+    
+    # Distribute environment variables to packages first
+    echo "Distributing environment variables to packages..."
+    debug_log "Running distribute-env.sh for .env.docker"
+    ./scripts/distribute-env.sh .env.docker
+    
     docker compose --profile build build workspace-apt-base workspace
 }
 
@@ -480,14 +487,44 @@ bootstrap_prod() {
     echo "Bootstrapping production database..."
     check_prod_connection
 
+    # TODO: Follow the same pattern as seed_prod for registry/tunnel
+
     # Run bootstrap command in production context
     docker context use wavtopia-prod
     DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
-      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap"
+      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run bootstrap:prod"
     
     # Switch back to default context
     docker context use default
     echo "Production database bootstrapped successfully!"
+}
+
+# Function to seed production database
+seed_prod() {
+    echo "Seeding production database..."
+    check_prod_connection
+
+    # Get actual registry port before setting up tunnel
+    REGISTRY_PORT=$(get_registry_port)
+
+    # Get the remote host from the current context
+    REMOTE_HOST=$(docker context inspect wavtopia-prod --format '{{.Endpoints.docker.Host}}' | sed 's|ssh://||' | cut -d':' -f1)
+
+    # Set up SSH tunnel
+    debug_log "Setting up SSH tunnel to $REMOTE_HOST"
+    setup_tunnel "$REMOTE_HOST"
+
+    # Use localhost for registry when deploying since we're on the remote host
+    export REGISTRY_PREFIX="localhost:${REGISTRY_PORT}/"
+
+    # Run seed command in production context
+    docker context use wavtopia-prod
+    DOCKER_VOLUMES_BASE="$DOCKER_VOLUMES_BASE" docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production run --rm \
+      backend sh -c "cd /app/node_modules/@wavtopia/core-storage && npm run db:seed:prod"
+    
+    # Switch back to default context
+    docker context use default
+    echo "Production database seeded successfully!"
 }
 
 # Function to verify production volume directories
@@ -595,6 +632,9 @@ case $COMMAND in
         ;;
     "bootstrap-prod")
         bootstrap_prod
+        ;;
+    "seed-prod")
+        seed_prod
         ;;
     "")
         echo "No command specified"

@@ -5,7 +5,6 @@ import jwt from "jsonwebtoken";
 import { AppError } from "../middleware/errorHandler";
 import { isEarlyAccessRequired } from "./featureFlags";
 import { config } from "../config";
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 interface UserSignupData {
   email: string;

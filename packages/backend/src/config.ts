@@ -27,7 +27,7 @@ export type SharedConfig = z.infer<typeof SharedConfigSchema>;
 function loadConfig(): SharedConfig {
   return SharedConfigSchema.parse({
     server: {
-      port: parseInt(process.env.PORT || "3002"),
+      port: parseInt(process.env.BACKEND_SERVICE_PORT || "3002"),
       jwtSecret: process.env.JWT_SECRET || "your-secret-key",
     },
     services: {

@@ -152,6 +152,10 @@ The `scripts/` directory contains several utility scripts:
   - Run `./scripts/deploy.sh --help` for all available commands
 - `apply-arch-lockfile.sh`: Applies architecture-specific lockfile for better dependency management
 - `update-arch-lockfile.sh`: Updates the architecture-specific lockfile
+- `distribute-env.sh`: Distributes environment variables to package-specific .env files:
+  - Takes a source .env file and creates package-specific versions
+  - Only includes variables used by each package's config.ts
+  - Usage: `./scripts/distribute-env.sh .env.docker`
 
 ### Database Management
 
@@ -288,8 +292,8 @@ DATABASE_URL="postgresql://user:password@localhost:5432/wavtopia"
 JWT_SECRET="your-secret-key"
 MINIO_ENDPOINT="localhost"
 MINIO_PORT="9000"
-MINIO_ROOT_USER="minioadmin"
-MINIO_ROOT_PASSWORD="minioadmin"
+MINIO_USER="minioadmin"
+MINIO_PASSWORD="minioadmin"
 MINIO_BUCKET="wavtopia"
 MILKYCLI_PATH="/usr/local/bin/milkycli"
 

@@ -23,8 +23,8 @@ interface TrackFilterOptions {
 export declare function filterTracks(options: TrackFilterOptions): Promise<{
     tracks: ({
         user: {
-            id: string;
             username: string;
+            id: string;
         };
     } & {
         status: import(".prisma/client").$Enums.TrackStatus;
