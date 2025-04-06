@@ -19,7 +19,7 @@ validate_password() {
     # - ASCII letters (a-z, A-Z)
     # - Numbers (0-9)
     # - Common special characters (-._@#%+)
-    if [[ ! "$password" =~ ^[a-zA-Z0-9\-._@#%+]+$ ]]; then
+    if [[ ! "$password" =~ ^[-a-zA-Z0-9._@#%+]+$ ]]; then
         echo "❌ Password contains invalid characters"
         echo "Allowed characters: letters, numbers, and -._@#%+"
         return 1
