@@ -271,15 +271,9 @@ update_minio() {
 update_pgadmin() {
     echo "Updating pgAdmin password..."
     prompt_new_credentials pgadmin
-    
-    # Set new passwords as environment variables for the container
-    docker compose stop pgadmin
-    if PGADMIN_PASSWORD="$NEW_PGADMIN_PASSWORD" docker compose up -d pgadmin; then
-        echo "✅ pgAdmin password updated successfully"
-    else
-        echo "❌ Failed to update pgAdmin password"
-        return 1
-    fi
+
+    # Note: pgAdmin password will be applied after copying new .env files and restarting the container
+    echo "ℹ️  pgAdmin password will be applied after updating .env files and restarting the container"
 }
 
 update_redis() {
