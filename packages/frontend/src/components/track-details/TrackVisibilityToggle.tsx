@@ -2,22 +2,40 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Switch } from "../ui/Switch";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { api } from "@/api/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/utils/cn";
+import { useAuthToken } from "@/hooks/useAuthToken";
 
 interface TrackVisibilityToggleProps {
-  token: string;
   size?: "sm" | "md";
   className?: string;
 }
 
 export function TrackVisibilityToggle({
-  token,
   size = "md",
   className,
 }: TrackVisibilityToggleProps) {
+  const { getToken } = useAuthToken();
+  const token = getToken();
+
+  if (!token) {
+    return null;
+  }
+
+  return <VisibilityToggle token={token} size={size} className={className} />;
+}
+
+interface VisibilityToggleProps {
+  token: string;
+  size?: "sm" | "md";
+  className?: string;
+}
+
+function VisibilityToggle({
+  token,
+  size = "md",
+  className,
+}: VisibilityToggleProps) {
   const { track } = useTrack();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const updateVisibilityMutation = useMutation({
@@ -32,11 +50,6 @@ export function TrackVisibilityToggle({
   const handleVisibilityChange = async (checked: boolean) => {
     await updateVisibilityMutation.mutateAsync(checked);
   };
-
-  // Only show the toggle if the user owns the track
-  if (!user || track.userId !== user.id) {
-    return null;
-  }
 
   return (
     <div

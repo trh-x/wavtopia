@@ -5,13 +5,14 @@ import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { TrackMetadata, GenreList } from "../ui/TrackMetadata";
 import { ReleaseDate } from "../ui/ReleaseDate";
 import { TrackVisibilityToggle } from "./TrackVisibilityToggle";
-import { useAuthToken } from "@/hooks/useAuthToken";
 import { PlayIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
+import { useAuth } from "@/contexts/AuthContext";
+import { UserLink } from "../ui/UserLink";
+import { TrackUploaderIcon } from "../track-list/TrackIcons";
 
 export function TrackHeader() {
   const { track } = useTrack();
-  const { getToken } = useAuthToken();
-  const token = getToken();
+  const { user } = useAuth();
 
   return (
     <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">
@@ -38,7 +39,16 @@ export function TrackHeader() {
             {/* License and visibility */}
             <div className="flex items-center gap-3">
               <LicenseInfo track={track} />
-              {token && <TrackVisibilityToggle token={token} size="sm" />}
+              {user && track.userId === user.id ? (
+                <div className="flex items-center gap-2">
+                  <TrackUploaderIcon />
+                  <TrackVisibilityToggle size="sm" />
+                </div>
+              ) : (
+                <span className="text-sm text-gray-600">
+                  Uploaded by <UserLink username={track.user.username} />
+                </span>
+              )}
             </div>
 
             {/* Track stats */}
