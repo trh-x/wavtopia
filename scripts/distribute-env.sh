@@ -45,6 +45,16 @@ create_package_env() {
     # Get the list of env vars used in config
     local env_vars=$(extract_env_vars "$config_file")
     
+    # For core-storage, also check CLI configs
+    if [ "$(basename $package_dir)" = "core-storage" ]; then
+        local cli_config="$package_dir/src/cli/config.ts"
+        if [ -f "$cli_config" ]; then
+            local cli_vars=$(extract_env_vars "$cli_config")
+            env_vars=$(echo -e "$env_vars\n$cli_vars" | sort -u)
+            echo "Found CLI config at $cli_config"
+        fi
+    fi
+    
     # For packages that depend on core-storage, include its vars
     if [ ! -z "$core_storage_vars" ] && [ "$(basename $package_dir)" != "core-storage" ]; then
         env_vars=$(echo -e "$env_vars\n$core_storage_vars" | sort -u)

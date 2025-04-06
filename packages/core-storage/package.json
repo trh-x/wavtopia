@@ -21,7 +21,9 @@
     "db:seed": "prisma db seed",
     "db:seed:prod": "NODE_ENV=production prisma db seed",
     "db:mock-stats": "node scripts/run-cli.js src/cli/mock-track-stats.ts",
-    "db:mock-stats:prod": "NODE_ENV=production node scripts/run-cli.js src/cli/mock-track-stats.ts"
+    "db:mock-stats:prod": "NODE_ENV=production node scripts/run-cli.js src/cli/mock-track-stats.ts",
+    "minio:setup": "node scripts/run-cli.js src/cli/setup-minio.ts",
+    "minio:setup:prod": "NODE_ENV=production node scripts/run-cli.js src/cli/setup-minio.ts"
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
@@ -39,6 +41,7 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^20.10.4",
     "@types/prompts": "^2.4.9",
+    "dotenv": "^16.4.7",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"

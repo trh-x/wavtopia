@@ -34,16 +34,13 @@ else
     exit 1
 fi
 
-# Variables for new credentials
+# Variables for new passwords
 NEW_POSTGRES_PASSWORD=""
-NEW_MINIO_ROOT_USER=""
-NEW_MINIO_ROOT_PASSWORD=""
-NEW_PGADMIN_EMAIL=""
+NEW_MINIO_PASSWORD=""
 NEW_PGADMIN_PASSWORD=""
-NEW_REDIS_USERNAME=""
 NEW_REDIS_PASSWORD=""
 
-# Create .env.new with updated credentials
+# Create .env.new with updated passwords
 update_env_file() {
     local source_file="$1"
     local target_file="${source_file}.new"
@@ -60,7 +57,7 @@ update_env_file() {
     # Create backup
     cp "$source_file" "$backup_file"
 
-    # Create new env file with updated credentials
+    # Create new env file with updated passwords
     while IFS= read -r line || [ -n "$line" ]; do
         # Skip empty lines and comments
         if [[ -z "$line" ]] || [[ "$line" =~ ^# ]]; then
@@ -84,20 +81,11 @@ update_env_file() {
                     echo "$line"
                 fi
                 ;;
-            MINIO_ROOT_USER=*)
-                [[ -n "$NEW_MINIO_ROOT_USER" ]] && echo "MINIO_ROOT_USER=$NEW_MINIO_ROOT_USER" || echo "$line"
-                ;;
-            MINIO_ROOT_PASSWORD=*)
-                [[ -n "$NEW_MINIO_ROOT_PASSWORD" ]] && echo "MINIO_ROOT_PASSWORD=$NEW_MINIO_ROOT_PASSWORD" || echo "$line"
-                ;;
-            PGADMIN_EMAIL=*)
-                [[ -n "$NEW_PGADMIN_EMAIL" ]] && echo "PGADMIN_EMAIL=$NEW_PGADMIN_EMAIL" || echo "$line"
+            MINIO_PASSWORD=*)
+                [[ -n "$NEW_MINIO_PASSWORD" ]] && echo "MINIO_PASSWORD=$NEW_MINIO_PASSWORD" || echo "$line"
                 ;;
             PGADMIN_PASSWORD=*)
                 [[ -n "$NEW_PGADMIN_PASSWORD" ]] && echo "PGADMIN_PASSWORD=$NEW_PGADMIN_PASSWORD" || echo "$line"
-                ;;
-            REDIS_USERNAME=*)
-                [[ -n "$NEW_REDIS_USERNAME" ]] && echo "REDIS_USERNAME=$NEW_REDIS_USERNAME" || echo "$line"
                 ;;
             REDIS_PASSWORD=*)
                 [[ -n "$NEW_REDIS_PASSWORD" ]] && echo "REDIS_PASSWORD=$NEW_REDIS_PASSWORD" || echo "$line"
@@ -119,18 +107,15 @@ prompt_new_credentials() {
             read -p "Enter new PostgreSQL password: " NEW_POSTGRES_PASSWORD
             ;;
         minio)
-            echo "Current MinIO user: $MINIO_ROOT_USER"
-            read -p "Enter new MinIO username: " NEW_MINIO_ROOT_USER
-            read -p "Enter new MinIO password: " NEW_MINIO_ROOT_PASSWORD
+            echo "Current MinIO user: $MINIO_USER"
+            read -p "Enter new MinIO password: " NEW_MINIO_PASSWORD
             ;;
         pgadmin)
             echo "Current pgAdmin email: $PGADMIN_EMAIL"
-            read -p "Enter new pgAdmin email: " NEW_PGADMIN_EMAIL
             read -p "Enter new pgAdmin password: " NEW_PGADMIN_PASSWORD
             ;;
         redis)
             echo "Current Redis user: $REDIS_USERNAME"
-            read -p "Enter new Redis username: " NEW_REDIS_USERNAME
             read -p "Enter new Redis password: " NEW_REDIS_PASSWORD
             ;;
     esac
@@ -192,7 +177,7 @@ update_postgres() {
 }
 
 update_minio() {
-    echo "Updating MinIO credentials..."
+    echo "Updating MinIO password..."
     prompt_new_credentials minio
     
     # Wait for MinIO to be ready by checking the health endpoint
@@ -201,42 +186,43 @@ update_minio() {
         sleep 1
     done
 
-    # Configure mc with current credentials
+    # Configure mc with current passwords
     if ! docker compose exec -T minio mc alias set local http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; then
-        echo "❌ Failed to authenticate with MinIO using current credentials"
+        echo "❌ Failed to authenticate with MinIO using current passwords"
         return 1
     fi
 
-    # Update MinIO root credentials
-    if docker compose exec -T minio mc admin user add local "$NEW_MINIO_ROOT_USER" "$NEW_MINIO_ROOT_PASSWORD" --update; then
-        echo "✅ MinIO credentials updated successfully"
+    # TODO: Remove the user and create a new one with the new password
+    # Update MinIO root user password
+    if docker compose exec -T minio mc admin user add local "$MINIO_USER" "$NEW_MINIO_PASSWORD" --update; then
+        echo "✅ MinIO password updated successfully"
     else
-        echo "❌ Failed to update MinIO credentials"
+        echo "❌ Failed to update MinIO password"
         return 1
     fi
 }
 
 update_pgadmin() {
-    echo "Updating pgAdmin credentials..."
+    echo "Updating pgAdmin password..."
     prompt_new_credentials pgadmin
     
-    # Set new credentials as environment variables for the container
+    # Set new passwords as environment variables for the container
     docker compose stop pgadmin
-    if PGADMIN_EMAIL="$NEW_PGADMIN_EMAIL" PGADMIN_PASSWORD="$NEW_PGADMIN_PASSWORD" docker compose up -d pgadmin; then
-        echo "✅ pgAdmin credentials updated successfully"
+    if PGADMIN_PASSWORD="$NEW_PGADMIN_PASSWORD" docker compose up -d pgadmin; then
+        echo "✅ pgAdmin password updated successfully"
     else
-        echo "❌ Failed to update pgAdmin credentials"
+        echo "❌ Failed to update pgAdmin password"
         return 1
     fi
 }
 
 update_redis() {
-    echo "Updating Redis credentials..."
+    echo "Updating Redis password..."
     prompt_new_credentials redis
     
-    # Redis credentials are applied on container restart
+    # Redis passwords are applied on container restart
     if docker compose restart redis; then
-        echo "✅ Redis restarted with new credentials"
+        echo "✅ Redis restarted with new password"
     else
         echo "❌ Failed to restart Redis"
         return 1
@@ -245,16 +231,16 @@ update_redis() {
 
 show_usage() {
     echo "Usage: $0 [--debug] [service...]"
-    echo "Updates service credentials using values from .env"
+    echo "Updates service passwords using values from .env"
     echo
     echo "Options:"
     echo "  --debug    Enable debug logging"
     echo
     echo "Available services:"
     echo "  postgres   - Update PostgreSQL password"
-    echo "  minio     - Update MinIO credentials"
-    echo "  pgadmin   - Update pgAdmin credentials"
-    echo "  redis     - Restart Redis to apply new credentials"
+    echo "  minio     - Update MinIO password"
+    echo "  pgadmin   - Update pgAdmin password"
+    echo "  redis     - Restart Redis to apply new password"
     echo
     echo "If no service is specified, all services will be updated."
     echo "Multiple services can be specified: $0 postgres minio"
@@ -266,8 +252,8 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     exit 0
 fi
 
-echo "This script will update service credentials using values from .env"
-echo "Make sure you have updated .env with the desired credentials before continuing."
+echo "This script will update service passwords using values from .env"
+echo "Make sure you have updated .env with the desired passwords before continuing."
 
 # If no arguments provided, update all services
 if [ $# -eq 0 ]; then
@@ -276,7 +262,7 @@ if [ $# -eq 0 ]; then
         exit 0
     fi
     echo
-    echo "Updating all service credentials..."
+    echo "Updating all service passwords..."
     update_postgres
     update_minio
     update_pgadmin
@@ -326,7 +312,7 @@ if [ $# -eq 0 ] || [ $# -gt 0 ]; then
 fi
 
 echo
-echo "✅ Credential updates completed"
+echo "✅ Password updates completed"
 if [ $# -eq 0 ]; then
-    echo "Note: For Redis, restart the container to apply new credentials from .env"
+    echo "Note: For Redis, restart the container to apply new password from .env"
 fi 

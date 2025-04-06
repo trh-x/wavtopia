@@ -52,8 +52,8 @@ function loadConfig(): SharedConfig {
       endpoint: process.env.MINIO_ENDPOINT,
       port: process.env.MINIO_PORT,
       useSSL: process.env.MINIO_USE_SSL,
-      accessKey: process.env.MINIO_ROOT_USER,
-      secretKey: process.env.MINIO_ROOT_PASSWORD,
+      accessKey: process.env.MINIO_USER,
+      secretKey: process.env.MINIO_PASSWORD,
       bucket: process.env.MINIO_BUCKET,
     },
     database: {
