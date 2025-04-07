@@ -123,6 +123,12 @@ export function FormDateWithPrecision({
             value={formatDateValue()}
             max={formatMaxDate()}
             onChange={handleDateChange}
+            onWheel={(e) => {
+              // Prevent scroll wheel from changing number input value
+              if (precision === "YEAR") {
+                e.currentTarget.blur();
+              }
+            }}
             label={dateLabel}
             disabled={disabled}
             placeholder={precision === "YEAR" ? "yyyy" : undefined}
