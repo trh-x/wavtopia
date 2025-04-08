@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "runtimeExecutable": "${env:NVM_BIN}/node",
+      "request": "launch",
+      "name": "Debug Media",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/packages/media/src/index.ts",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "cwd": "${workspaceFolder}/packages/media",
+      "outFiles": ["${workspaceFolder}/packages/media/dist/**/*.js"],
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "smartStep": true,
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    },
+    {
+      "type": "node",
+      "runtimeExecutable": "${env:NVM_BIN}/node",
+      "request": "launch",
+      "name": "Debug Backend",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/packages/backend/src/index.ts",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "cwd": "${workspaceFolder}/packages/backend",
+      "outFiles": ["${workspaceFolder}/packages/backend/dist/**/*.js"],
+      "sourceMaps": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ],
+      "smartStep": true,
+      "internalConsoleOptions": "openOnSessionStart",
+      "outputCapture": "std"
+    }
+  ]
+}
