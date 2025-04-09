@@ -28,6 +28,7 @@ model User {
   trackActivities UserTrackActivity[]
   stemEvents   StemEvent[]
   stemActivities UserStemActivity[]
+  userPlan     UserPlan?   // Link to the user's plan
 
   @@map("users")
 }
@@ -139,7 +140,15 @@ model Track {
   flacCreatedAt         DateTime?                  @map("flac_created_at")
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
 
-    // Musical Information
+  // Storage Size Tracking
+  originalSizeBytes     BigInt?   @map("original_size_bytes")
+  mp3SizeBytes          BigInt?   @map("mp3_size_bytes")
+  wavSizeBytes          BigInt?   @map("wav_size_bytes")
+  flacSizeBytes         BigInt?   @map("flac_size_bytes")
+  coverArtSizeBytes     BigInt?   @map("cover_art_size_bytes")
+  // totalStemSizeBytes will be calculated dynamically or stored if needed for performance
+
+  // Musical Information
   bpm                 Float?
   key                 String?
   isrc                String?      @map("isrc") // International Standard Recording Code
@@ -282,6 +291,11 @@ model Stem {
   userActivities      UserStemActivity[]
   dailyStats          DailyStemStats[]
   monthlyStats        MonthlyStemStats[]
+
+  // Storage Size Tracking
+  mp3SizeBytes  BigInt? @map("mp3_size_bytes")
+  wavSizeBytes  BigInt? @map("wav_size_bytes")
+  flacSizeBytes BigInt? @map("flac_size_bytes")
 
   @@unique([trackId, index])
   @@index([trackId])
