@@ -11,24 +11,26 @@ datasource db {
 }
 
 model User {
-  id           String      @id @default(uuid())
-  email        String      @unique
-  username     String      @unique
-  password     String
-  role         Role        @default(USER)
-  inviteCode   InviteCode? @relation("UsedInviteCode", fields: [inviteCodeId], references: [id])
-  inviteCodeId String?     @map("invite_code_id")
-  features     UserFeature[]
-  tracks       Track[]
-  sharedTracks TrackShare[] @relation("SharedWithUser")
-  notifications Notification[]
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
-  trackEvents  TrackEvent[]
-  trackActivities UserTrackActivity[]
-  stemEvents   StemEvent[]
-  stemActivities UserStemActivity[]
-  userPlan     UserPlan?   // Link to the user's plan
+  id                    String      @id @default(uuid())
+  email                 String      @unique
+  username              String      @unique
+  password              String
+  role                  Role        @default(USER)
+  inviteCode            InviteCode? @relation("UsedInviteCode", fields: [inviteCodeId], references: [id])
+  inviteCodeId          String?     @map("invite_code_id")
+  features              UserFeature[]
+  tracks                Track[]
+  sharedTracks          TrackShare[] @relation("SharedWithUser")
+  notifications         Notification[]
+  // Storage tracking
+  extraQuotaBytes       BigInt      @default(0) @map("extra_quota_bytes")  // Additional storage quota purchased
+  usedStorageBytes      BigInt      @default(0) @map("used_storage_bytes") // Current storage usage
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+  trackEvents           TrackEvent[]
+  trackActivities       UserTrackActivity[]
+  stemEvents            StemEvent[]
+  stemActivities        UserStemActivity[]
 
   @@map("users")
 }

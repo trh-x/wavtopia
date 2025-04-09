@@ -1,0 +1,35 @@
+// This file contains system-wide configuration models and enums
+// It is meant to be used alongside the main schema.prisma file
+
+enum SystemSettingKey {
+  FREE_STORAGE_QUOTA_BYTES
+  // Easy to add other system settings later:
+  // MAX_TRACK_SIZE_BYTES
+  // MAX_STEMS_PER_TRACK
+  // etc.
+}
+
+enum SystemSettingValueType {
+  STRING
+  NUMBER
+  BOOLEAN
+  JSON
+}
+
+// System-wide configuration values
+model SystemSetting {
+  id          String                @id @default(uuid())
+  key         SystemSettingKey      @unique
+  valueType   SystemSettingValueType @map("value_type")
+  // Different value fields for different types
+  stringValue String?              @map("string_value")
+  numberValue BigInt?              @map("number_value")  // Using BigInt for large numbers like storage quotas
+  boolValue   Boolean?             @map("bool_value")
+  jsonValue   Json?                @map("json_value")
+  description String?              // Helpful for admin UI
+  updatedBy   String?              @map("updated_by")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+} 
