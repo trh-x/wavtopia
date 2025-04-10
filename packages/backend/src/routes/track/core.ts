@@ -242,57 +242,67 @@ router.post(
 
         const genres = await findOrCreateGenres(data.genreNames || []);
 
-        const track = await prisma.track.create({
-          data: {
-            title: data.title,
-            primaryArtistId: primaryArtist.id,
-            originalFormat,
-            originalUrl: originalFileUrl,
-            originalSizeBytes: BigInt(originalSizeBytes),
-            coverArt: coverArtUrl,
-            coverArtSizeBytes: coverArtSizeBytes
-              ? BigInt(coverArtSizeBytes)
-              : null,
-            metadata: data.metadata as Prisma.InputJsonValue,
-            userId: req.user!.id,
-            bpm: data.bpm,
-            key: data.key,
-            isExplicit: data.isExplicit,
-            isPublic: data.isPublic,
-            description: data.description,
-            licenseId: data.licenseId,
-            ...(data.releaseDate && data.releaseDatePrecision
-              ? {
-                  releaseDate: roundDateByPrecision(
-                    new Date(data.releaseDate),
-                    data.releaseDatePrecision
-                  ),
-                  releaseDatePrecision: data.releaseDatePrecision,
-                }
-              : {}),
-            ...(data.genreNames && data.genreNames.length > 0
-              ? {
-                  genres: {
-                    create: genres.map((genre) => ({
-                      genre: {
-                        connect: {
-                          id: genre.id,
-                        },
+        // Create track and update storage usage in a transaction
+        const { track, quotaWarning } = await prisma.$transaction(
+          async (tx) => {
+            const track = await tx.track.create({
+              data: {
+                title: data.title,
+                primaryArtistId: primaryArtist.id,
+                originalFormat,
+                originalUrl: originalFileUrl,
+                originalSizeBytes: BigInt(originalSizeBytes),
+                coverArt: coverArtUrl,
+                coverArtSizeBytes: coverArtSizeBytes
+                  ? BigInt(coverArtSizeBytes)
+                  : null,
+                metadata: data.metadata as Prisma.InputJsonValue,
+                userId: req.user!.id,
+                bpm: data.bpm,
+                key: data.key,
+                isExplicit: data.isExplicit,
+                isPublic: data.isPublic,
+                description: data.description,
+                licenseId: data.licenseId,
+                ...(data.releaseDate && data.releaseDatePrecision
+                  ? {
+                      releaseDate: roundDateByPrecision(
+                        new Date(data.releaseDate),
+                        data.releaseDatePrecision
+                      ),
+                      releaseDatePrecision: data.releaseDatePrecision,
+                    }
+                  : {}),
+                ...(data.genreNames && data.genreNames.length > 0
+                  ? {
+                      genres: {
+                        create: genres.map((genre) => ({
+                          genre: {
+                            connect: {
+                              id: genre.id,
+                            },
+                          },
+                        })),
                       },
-                    })),
-                  },
-                }
-              : {}),
-          },
-        });
+                    }
+                  : {}),
+              },
+            });
 
-        // Update storage usage and get quota warning
-        const totalBytesToAdd =
-          BigInt(originalSizeBytes) + BigInt(coverArtSizeBytes ?? 0);
-        const { quotaWarning } = await updateUserStorage({
-          bytesToAdd: Number(totalBytesToAdd),
-          user: req.user!,
-        });
+            // Update storage usage and get quota warning
+            const totalBytesToAdd =
+              BigInt(originalSizeBytes) + BigInt(coverArtSizeBytes ?? 0);
+            const { quotaWarning } = await updateUserStorage(
+              {
+                bytesToAdd: Number(totalBytesToAdd),
+                user: req.user!,
+              },
+              tx
+            );
+
+            return { track, quotaWarning };
+          }
+        );
 
         // If they're over quota, include a warning in the response
         const response = {

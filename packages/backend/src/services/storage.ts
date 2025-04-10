@@ -7,7 +7,7 @@ import {
 import { config as backendConfig } from "../config";
 import { AppError } from "../middleware/errorHandler";
 import internal from "stream";
-import { prisma } from "../lib/prisma";
+import { prisma, PrismaTransactionClient } from "../lib/prisma";
 
 // Extract complex parameter types
 type GetFileUrlParams = Parameters<StorageService["getFileUrl"]>;
@@ -118,15 +118,15 @@ type UpdateStorageParams = {
 /**
  * Updates a user's storage usage and checks quota status
  */
-export async function updateUserStorage({
-  bytesToAdd,
-  ...params
-}: UpdateStorageParams): Promise<StorageUpdateResult> {
+export async function updateUserStorage(
+  params: UpdateStorageParams,
+  prismaClient: typeof prisma | PrismaTransactionClient = prisma
+): Promise<StorageUpdateResult> {
   // Get initial user state either from params or by fetching
   const initialUser =
     "user" in params
       ? params.user
-      : await prisma.user.findUniqueOrThrow({
+      : await prismaClient.user.findUniqueOrThrow({
           where: { id: params.userId },
           select: {
             id: true,
@@ -139,11 +139,11 @@ export async function updateUserStorage({
   const totalQuotaBytes =
     initialUser.freeQuotaBytes + initialUser.extraQuotaBytes;
   const newTotalUsage =
-    BigInt(initialUser.usedStorageBytes) + BigInt(bytesToAdd);
+    BigInt(initialUser.usedStorageBytes) + BigInt(params.bytesToAdd);
   const isOverQuota = newTotalUsage > totalQuotaBytes;
 
   // Update the user's storage usage
-  const updatedUser = await prisma.user.update({
+  const user = await prismaClient.user.update({
     where: { id: initialUser.id },
     data: {
       usedStorageBytes: newTotalUsage,
@@ -161,7 +161,7 @@ export async function updateUserStorage({
     : undefined;
 
   return {
-    user: updatedUser,
+    user,
     quotaWarning,
   };
 }

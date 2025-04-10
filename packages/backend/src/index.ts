@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { prisma, prismaService } from "./lib/prisma";
+import { prismaService } from "./lib/prisma";
 import { errorHandler } from "./middleware/errorHandler";
 import { authRoutes } from "./routes/auth";
 import { trackRoutes } from "./routes/track";
