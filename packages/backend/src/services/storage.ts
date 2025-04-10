@@ -165,3 +165,19 @@ export async function updateUserStorage({
     quotaWarning,
   };
 }
+
+/**
+ * Gets the default free storage quota from system settings
+ */
+export async function getDefaultFreeQuota(): Promise<bigint> {
+  const setting = await prisma.systemSetting.findUnique({
+    where: { key: "FREE_STORAGE_QUOTA_BYTES" },
+    select: { numberValue: true },
+  });
+
+  if (!setting?.numberValue) {
+    throw new Error("System storage quota not configured");
+  }
+
+  return setting.numberValue;
+}

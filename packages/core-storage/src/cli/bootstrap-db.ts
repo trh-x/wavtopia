@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from ".prisma/client";
+import { PrismaClient, Role, SystemSettingKey } from ".prisma/client";
 import { hashPassword } from "../auth";
 import { program } from "commander";
 import prompts, { PromptObject } from "prompts";
@@ -53,6 +53,14 @@ async function promptForMissingOptions(options: BootstrapOptions) {
 
 async function bootstrap(username: string, email: string, password: string) {
   try {
+    const DEFAULT_QUOTA_BYTES = BigInt(1024 * 1024 * 1024); // 1GB in bytes
+
+    // Try to get system quota, fall back to default if not set
+    const quotaSetting = await prisma.systemSetting.findUnique({
+      where: { key: SystemSettingKey.FREE_STORAGE_QUOTA_BYTES },
+      select: { numberValue: true },
+    });
+
     // Create admin user
     const hashedPassword = await hashPassword(password);
     const user = await prisma.user.create({
@@ -61,6 +69,7 @@ async function bootstrap(username: string, email: string, password: string) {
         email,
         password: hashedPassword,
         role: Role.ADMIN,
+        freeQuotaBytes: quotaSetting?.numberValue ?? DEFAULT_QUOTA_BYTES,
       },
     });
     console.log("Created admin user:", {
