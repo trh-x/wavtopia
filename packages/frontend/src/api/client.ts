@@ -9,6 +9,7 @@ import {
   AudioFormat,
   TrackUsageResponse,
 } from "@wavtopia/core-storage";
+import type { QuotaWarning } from "../types/storage";
 
 const API_URL = "/api";
 
@@ -226,7 +227,7 @@ export const api = {
         method: "POST",
         token,
         body: formData,
-      }) as Promise<Track>;
+      }) as Promise<{ track: Track; quotaWarning?: QuotaWarning }>;
     },
 
     update: async (

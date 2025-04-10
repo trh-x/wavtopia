@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { AppError } from "../../middleware/errorHandler";
 import { authenticate } from "../../middleware/auth";
-import { uploadTrackFiles } from "../../middleware/upload";
-import { uploadFile } from "../../services/storage";
+import { checkStorageQuota, uploadTrackFiles } from "../../middleware/upload";
+import { uploadFile, updateUserStorage } from "../../services/storage";
 import { z } from "zod";
 import {
   deleteLocalFile,
@@ -181,6 +181,7 @@ function roundDateByPrecision(
 }
 
 // Create track with files
+// TODO: Include the checkStorageQuota middleware before uploadTrackFiles
 router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
   try {
     const data = trackSchema.parse(JSON.parse(req.body.data));
@@ -197,17 +198,22 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
     });
 
     const originalFile = files.original[0];
+    const originalSizeBytes = originalFile.size;
 
     // The original file is stored on disk at this point
     const originalFileUrl = "file://" + originalFile.path;
     console.log("Original file URL:", originalFileUrl);
+    console.log("Original file size:", originalSizeBytes, "bytes");
 
     // Store cover art if provided
     let coverArtUrl: string | undefined;
+    let coverArtSizeBytes: number | undefined;
     if (files.coverArt?.[0]) {
       // The cover art is stored on disk at this point
       coverArtUrl = "file://" + files.coverArt[0].path;
+      coverArtSizeBytes = files.coverArt[0].size;
       console.log("Cover art URL:", coverArtUrl);
+      console.log("Cover art size:", coverArtSizeBytes, "bytes");
     }
 
     const originalFormat = {
@@ -238,7 +244,11 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
           primaryArtistId: primaryArtist.id,
           originalFormat,
           originalUrl: originalFileUrl,
+          originalSizeBytes: BigInt(originalSizeBytes),
           coverArt: coverArtUrl,
+          coverArtSizeBytes: coverArtSizeBytes
+            ? BigInt(coverArtSizeBytes)
+            : null,
           metadata: data.metadata as Prisma.InputJsonValue,
           userId: req.user!.id,
           bpm: data.bpm,
@@ -272,6 +282,20 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
         },
       });
 
+      // Update storage usage and get quota warning
+      const totalBytesToAdd =
+        BigInt(originalSizeBytes) + BigInt(coverArtSizeBytes ?? 0);
+      const { quotaWarning } = await updateUserStorage({
+        bytesToAdd: Number(totalBytesToAdd),
+        user: req.user!,
+      });
+
+      // If they're over quota, include a warning in the response
+      const response = {
+        track,
+        quotaWarning,
+      };
+
       console.log("Track created successfully:", track.id);
 
       // Now POST to the media service to convert the track
@@ -293,7 +317,7 @@ router.post("/", authenticate, uploadTrackFiles, async (req, res, next) => {
         console.warn("Media service URL not set");
       }
 
-      res.status(201).json(track);
+      res.status(201).json(response);
     } catch (dbError) {
       console.error("Database error during track creation:", dbError);
 

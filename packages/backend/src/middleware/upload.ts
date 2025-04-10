@@ -1,7 +1,7 @@
 import multer from "multer";
 import { AppError } from "./errorHandler";
 import path from "path";
-import { Request } from "express";
+import { Request, Response, NextFunction } from "express";
 
 // Configure multer for disk storage
 const storage = multer.diskStorage({
@@ -40,6 +40,28 @@ const upload = multer({
     }
   },
 });
+
+// Middleware to check if user is over quota before allowing new uploads
+export function checkStorageQuota(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.user?.id) {
+    return next(new AppError(401, "Authentication required"));
+  }
+
+  if (req.user.isOverStorageQuota) {
+    return next(
+      new AppError(
+        413,
+        "You have exceeded your storage quota. Please free up some space before uploading more."
+      )
+    );
+  }
+
+  next();
+}
 
 export const uploadTrackFiles = upload.fields([
   { name: "original", maxCount: 1 },

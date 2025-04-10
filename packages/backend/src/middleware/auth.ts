@@ -9,6 +9,10 @@ declare global {
       user?: {
         id: string;
         role: Role;
+        isOverStorageQuota: boolean;
+        usedStorageBytes: bigint;
+        extraQuotaBytes: bigint;
+        freeQuotaBytes: bigint;
       };
     }
   }

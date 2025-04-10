@@ -39,13 +39,13 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         flacLastRequestedAt: Date | null;
         createdAt: Date;
         updatedAt: Date;
-        mp3SizeBytes: bigint | null;
-        wavSizeBytes: bigint | null;
-        flacSizeBytes: bigint | null;
         totalPlays: number;
         totalDownloads: number;
         uniqueListeners: number;
         lastPlayedAt: Date | null;
+        mp3SizeBytes: bigint | null;
+        wavSizeBytes: bigint | null;
+        flacSizeBytes: bigint | null;
         title: string;
         primaryArtistId: string;
         primaryArtistName: string | null;

@@ -2,10 +2,12 @@ import {
   DEFAULT_URL_EXPIRY_SECONDS,
   StorageService,
   config,
+  User,
 } from "@wavtopia/core-storage";
 import { config as backendConfig } from "../config";
 import { AppError } from "../middleware/errorHandler";
 import internal from "stream";
+import { prisma } from "../lib/prisma";
 
 // Extract complex parameter types
 type GetFileUrlParams = Parameters<StorageService["getFileUrl"]>;
@@ -89,4 +91,77 @@ export async function getObject(fileName: string): Promise<internal.Readable> {
     console.error("Failed to get object:", error);
     throw new AppError(500, "Failed to get object");
   }
+}
+
+interface StorageUser {
+  id: string;
+  usedStorageBytes: bigint;
+  freeQuotaBytes: bigint;
+  extraQuotaBytes: bigint;
+}
+
+interface QuotaWarning {
+  message: string;
+  currentUsage: number;
+  quota: number;
+}
+
+interface StorageUpdateResult {
+  user: User;
+  quotaWarning?: QuotaWarning;
+}
+
+type UpdateStorageParams = {
+  bytesToAdd: number;
+} & ({ user: StorageUser } | { userId: string });
+
+/**
+ * Updates a user's storage usage and checks quota status
+ */
+export async function updateUserStorage({
+  bytesToAdd,
+  ...params
+}: UpdateStorageParams): Promise<StorageUpdateResult> {
+  // Get initial user state either from params or by fetching
+  const initialUser =
+    "user" in params
+      ? params.user
+      : await prisma.user.findUniqueOrThrow({
+          where: { id: params.userId },
+          select: {
+            id: true,
+            usedStorageBytes: true,
+            freeQuotaBytes: true,
+            extraQuotaBytes: true,
+          },
+        });
+
+  const totalQuotaBytes =
+    initialUser.freeQuotaBytes + initialUser.extraQuotaBytes;
+  const newTotalUsage =
+    BigInt(initialUser.usedStorageBytes) + BigInt(bytesToAdd);
+  const isOverQuota = newTotalUsage > totalQuotaBytes;
+
+  // Update the user's storage usage
+  const updatedUser = await prisma.user.update({
+    where: { id: initialUser.id },
+    data: {
+      usedStorageBytes: newTotalUsage,
+      isOverStorageQuota: isOverQuota,
+    },
+  });
+
+  const quotaWarning = isOverQuota
+    ? {
+        message:
+          "You have exceeded your storage quota. Please free up some space before uploading more.",
+        currentUsage: Number(newTotalUsage),
+        quota: Number(totalQuotaBytes),
+      }
+    : undefined;
+
+  return {
+    user: updatedUser,
+    quotaWarning,
+  };
 }

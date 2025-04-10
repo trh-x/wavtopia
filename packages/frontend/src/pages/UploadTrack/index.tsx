@@ -53,8 +53,9 @@ export function UploadTrack() {
             formData.append("coverArt", values.coverArt);
           }
 
+          // TODO: Handle quota warning if returned.
           const data = await api.track.upload(formData, getToken()!);
-          navigate(`/track/${data.id}`);
+          navigate(`/track/${data.track.id}`);
         }}
       />
 

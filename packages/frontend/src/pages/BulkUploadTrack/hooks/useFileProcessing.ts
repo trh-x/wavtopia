@@ -150,12 +150,13 @@ export function useFileProcessing(getToken: () => string | null) {
           formData.append("coverArt", match.coverArt);
         }
 
+        // TODO: Handle quota warning if returned.
         const data = await api.track.upload(formData, getToken()!);
         console.log("Upload successful for", match.title);
 
         setState((prev) => ({
           ...prev,
-          uploadedTracks: [...prev.uploadedTracks, data.id],
+          uploadedTracks: [...prev.uploadedTracks, data.track.id],
           currentUploadIndex: i + 1,
           matches: prev.matches.map((m) =>
             m.path === match.path ? { ...m, uploaded: true } : m
