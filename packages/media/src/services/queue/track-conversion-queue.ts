@@ -74,6 +74,7 @@ async function processStem(
   type: string;
   index: number;
   mp3Url: string;
+  mp3SizeBytes: number;
   waveformData: number[];
   duration: number;
 }> {
@@ -95,6 +96,7 @@ async function processStem(
     type: stem.type,
     index,
     mp3Url,
+    mp3SizeBytes: mp3Buffer.length,
     waveformData: waveformResult.peaks,
     duration: waveformResult.duration,
   };
@@ -106,6 +108,7 @@ async function processFullTrack(
   originalName: string
 ): Promise<{
   mp3Url: string;
+  mp3SizeBytes: number;
   waveformData: number[];
   duration: number;
 }> {
@@ -133,6 +136,7 @@ async function processFullTrack(
 
   return {
     mp3Url,
+    mp3SizeBytes: mp3Buffer.length,
     waveformData: waveformResult.peaks,
     duration: waveformResult.duration,
   };
@@ -163,10 +167,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
     // TODO: Retain the original file name from the point of upload
     const originalName = track.title.replace(/[^a-zA-Z0-9._-]/g, "_");
     // const originalName = track.originalUrl.replace(/\.[^/.]+$/, "");
-
-    const coverArtFile = track.coverArt
-      ? await getLocalFile(track.coverArt)
-      : undefined;
+    const originalSizeBytes = originalFile.size;
 
     // Upload original file
     console.log("Uploading original file...");
@@ -175,7 +176,10 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
 
     // Upload cover art if provided
     let coverArtUrl: string | undefined;
-    if (coverArtFile) {
+    let coverArtSizeBytes: number | undefined;
+    if (track.coverArt) {
+      const coverArtFile = await getLocalFile(track.coverArt);
+      coverArtSizeBytes = coverArtFile.size;
       console.log("Uploading cover art...");
       coverArtUrl = await uploadFile(coverArtFile, "covers/");
       console.log("Cover art uploaded:", coverArtUrl);
@@ -191,6 +195,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
 
     const {
       mp3Url: fullTrackMp3Url,
+      mp3SizeBytes,
       waveformData,
       duration,
     } = await processFullTrack(fullTrackWavBuffer, originalName);
@@ -206,21 +211,36 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
     // Update database record
     console.log("Updating database record...");
     try {
-      const track = await prisma.track.update({
-        where: { id: trackId },
-        data: {
-          originalUrl,
-          fullTrackMp3Url,
-          waveformData,
-          duration,
-          coverArt: coverArtUrl,
-          stems: {
-            create: stemUploads,
+      // Update track and update storage usage in a transaction
+      await prisma.$transaction(async (tx) => {
+        const track = await prisma.track.update({
+          where: { id: trackId },
+          data: {
+            originalUrl,
+            fullTrackMp3Url,
+            waveformData,
+            duration,
+            coverArt: coverArtUrl,
+            mp3SizeBytes,
+            coverArtSizeBytes,
+            stems: {
+              create: stemUploads,
+            },
           },
-        },
-      });
+        });
 
-      console.log("Track updated successfully:", track.id);
+        console.log("Track updated successfully:", track.id);
+
+        // Update storage usage and get quota warning
+        const totalBytesToAdd = originalSizeBytes + (coverArtSizeBytes ?? 0);
+        const { quotaWarning } = await updateUserStorage(
+          {
+            bytesToAdd: totalBytesToAdd,
+            userId: track.userId,
+          },
+          tx
+        );
+      });
     } catch (dbError) {
       console.error("Database error during track creation:", dbError);
 

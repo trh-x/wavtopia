@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = [
   {
     key: SystemSettingKey.FREE_STORAGE_QUOTA_BYTES,
     valueType: SystemSettingValueType.NUMBER,
-    numberValue: BigInt(1024 * 1024 * 1024), // 1GB in bytes
+    numberValue: 1024 * 1024 * 1024, // 1GB in bytes
     description: "Default free storage quota for new users",
   },
 ] as const;

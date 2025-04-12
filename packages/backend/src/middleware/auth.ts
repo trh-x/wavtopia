@@ -10,9 +10,9 @@ declare global {
         id: string;
         role: Role;
         isOverStorageQuota: boolean;
-        usedStorageBytes: bigint;
-        extraQuotaBytes: bigint;
-        freeQuotaBytes: bigint;
+        usedStorageBytes: number;
+        extraQuotaBytes: number;
+        freeQuotaBytes: number;
       };
     }
   }

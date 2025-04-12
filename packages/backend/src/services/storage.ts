@@ -95,9 +95,9 @@ export async function getObject(fileName: string): Promise<internal.Readable> {
 
 interface StorageUser {
   id: string;
-  usedStorageBytes: bigint;
-  freeQuotaBytes: bigint;
-  extraQuotaBytes: bigint;
+  usedStorageBytes: number;
+  freeQuotaBytes: number;
+  extraQuotaBytes: number;
 }
 
 interface QuotaWarning {
@@ -138,8 +138,7 @@ export async function updateUserStorage(
 
   const totalQuotaBytes =
     initialUser.freeQuotaBytes + initialUser.extraQuotaBytes;
-  const newTotalUsage =
-    BigInt(initialUser.usedStorageBytes) + BigInt(params.bytesToAdd);
+  const newTotalUsage = initialUser.usedStorageBytes + params.bytesToAdd;
   const isOverQuota = newTotalUsage > totalQuotaBytes;
 
   // Update the user's storage usage
@@ -155,8 +154,8 @@ export async function updateUserStorage(
     ? {
         message:
           "You have exceeded your storage quota. Please free up some space before uploading more.",
-        currentUsage: Number(newTotalUsage),
-        quota: Number(totalQuotaBytes),
+        currentUsage: newTotalUsage,
+        quota: totalQuotaBytes,
       }
     : undefined;
 
@@ -169,7 +168,7 @@ export async function updateUserStorage(
 /**
  * Gets the default free storage quota from system settings
  */
-export async function getDefaultFreeQuota(): Promise<bigint> {
+export async function getDefaultFreeQuota(): Promise<number> {
   const setting = await prisma.systemSetting.findUnique({
     where: { key: "FREE_STORAGE_QUOTA_BYTES" },
     select: { numberValue: true },
@@ -179,5 +178,5 @@ export async function getDefaultFreeQuota(): Promise<bigint> {
     throw new Error("System storage quota not configured");
   }
 
-  return setting.numberValue;
+  return Number(setting.numberValue);
 }

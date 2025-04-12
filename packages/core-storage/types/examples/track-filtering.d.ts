@@ -43,9 +43,9 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         totalDownloads: number;
         uniqueListeners: number;
         lastPlayedAt: Date | null;
-        mp3SizeBytes: bigint | null;
-        wavSizeBytes: bigint | null;
-        flacSizeBytes: bigint | null;
+        mp3SizeBytes: number | null;
+        wavSizeBytes: number | null;
+        flacSizeBytes: number | null;
         title: string;
         primaryArtistId: string;
         primaryArtistName: string | null;
@@ -58,8 +58,8 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         metadata: import(".prisma/client/runtime/library").JsonValue | null;
         isPublic: boolean;
         userId: string;
-        originalSizeBytes: bigint | null;
-        coverArtSizeBytes: bigint | null;
+        originalSizeBytes: number | null;
+        coverArtSizeBytes: number | null;
         bpm: number | null;
         key: string | null;
         isrc: string | null;

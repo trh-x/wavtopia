@@ -251,11 +251,9 @@ router.post(
                 primaryArtistId: primaryArtist.id,
                 originalFormat,
                 originalUrl: originalFileUrl,
-                originalSizeBytes: BigInt(originalSizeBytes),
+                originalSizeBytes,
                 coverArt: coverArtUrl,
-                coverArtSizeBytes: coverArtSizeBytes
-                  ? BigInt(coverArtSizeBytes)
-                  : null,
+                coverArtSizeBytes,
                 metadata: data.metadata as Prisma.InputJsonValue,
                 userId: req.user!.id,
                 bpm: data.bpm,
@@ -291,10 +289,10 @@ router.post(
 
             // Update storage usage and get quota warning
             const totalBytesToAdd =
-              BigInt(originalSizeBytes) + BigInt(coverArtSizeBytes ?? 0);
+              originalSizeBytes + (coverArtSizeBytes ?? 0);
             const { quotaWarning } = await updateUserStorage(
               {
-                bytesToAdd: Number(totalBytesToAdd),
+                bytesToAdd: totalBytesToAdd,
                 user: req.user!,
               },
               tx

@@ -23,9 +23,9 @@ model User {
   sharedTracks          TrackShare[] @relation("SharedWithUser")
   notifications         Notification[]
   // Storage tracking
-  freeQuotaBytes        BigInt      @default(0) @map("free_quota_bytes") // Free storage quota
-  extraQuotaBytes       BigInt      @default(0) @map("extra_quota_bytes")  // Additional storage quota purchased
-  usedStorageBytes      BigInt      @default(0) @map("used_storage_bytes") // Current storage usage
+  freeQuotaBytes        Int         @default(0) @map("free_quota_bytes") // Free storage quota
+  extraQuotaBytes       Int         @default(0) @map("extra_quota_bytes")  // Additional storage quota purchased
+  usedStorageBytes      Int         @default(0) @map("used_storage_bytes") // Current storage usage
   isOverStorageQuota    Boolean     @default(false) @map("is_over_storage_quota") // Whether user has exceeded their quota
   createdAt             DateTime    @default(now()) @map("created_at")
   updatedAt             DateTime    @updatedAt @map("updated_at")
@@ -145,11 +145,11 @@ model Track {
   flacLastRequestedAt   DateTime?                  @map("flac_last_requested_at")
 
   // Storage Size Tracking
-  originalSizeBytes     BigInt?   @map("original_size_bytes")
-  mp3SizeBytes          BigInt?   @map("mp3_size_bytes")
-  wavSizeBytes          BigInt?   @map("wav_size_bytes")
-  flacSizeBytes         BigInt?   @map("flac_size_bytes")
-  coverArtSizeBytes     BigInt?   @map("cover_art_size_bytes")
+  originalSizeBytes     Int?   @map("original_size_bytes")
+  mp3SizeBytes          Int?   @map("mp3_size_bytes")
+  wavSizeBytes          Int?   @map("wav_size_bytes")
+  flacSizeBytes         Int?   @map("flac_size_bytes")
+  coverArtSizeBytes     Int?   @map("cover_art_size_bytes")
   // totalStemSizeBytes will be calculated dynamically or stored if needed for performance
 
   // Musical Information
@@ -297,9 +297,9 @@ model Stem {
   monthlyStats        MonthlyStemStats[]
 
   // Storage Size Tracking
-  mp3SizeBytes  BigInt? @map("mp3_size_bytes")
-  wavSizeBytes  BigInt? @map("wav_size_bytes")
-  flacSizeBytes BigInt? @map("flac_size_bytes")
+  mp3SizeBytes  Int? @map("mp3_size_bytes")
+  wavSizeBytes  Int? @map("wav_size_bytes")
+  flacSizeBytes Int? @map("flac_size_bytes")
 
   @@unique([trackId, index])
   @@index([trackId])

@@ -53,7 +53,7 @@ async function promptForMissingOptions(options: BootstrapOptions) {
 
 async function bootstrap(username: string, email: string, password: string) {
   try {
-    const DEFAULT_QUOTA_BYTES = BigInt(1024 * 1024 * 1024); // 1GB in bytes
+    const DEFAULT_QUOTA_BYTES = 1024 * 1024 * 1024; // 1GB in bytes
 
     // Try to get system quota, fall back to default if not set
     const quotaSetting = await prisma.systemSetting.findUnique({
