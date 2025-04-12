@@ -18,7 +18,7 @@ import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 import Notifications from "@/pages/Notifications";
 import { BulkUploadTrack } from "./pages/BulkUploadTrack";
 import { useInitializeFeatureFlags } from "./hooks/useFeatureFlags";
-import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { ToastsContainer } from "./hooks/useToasts";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { EditTrack } from "@/pages/EditTrack";
 
@@ -98,9 +98,8 @@ export default function App() {
     <Router>
       <TooltipProvider>
         <AuthProvider>
-          <NotificationsProvider>
-            <AppRoutes />
-          </NotificationsProvider>
+          <AppRoutes />
+          <ToastsContainer />
         </AuthProvider>
       </TooltipProvider>
     </Router>

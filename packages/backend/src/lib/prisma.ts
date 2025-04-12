@@ -13,11 +13,3 @@ export const prisma = prismaService.db;
 if (process.env.NODE_ENV !== "production") {
   global.prismaService = prismaService;
 }
-
-/**
- * Type for Prisma transaction clients, which lack the connection/transaction methods of the full client
- */
-export type PrismaTransactionClient = Omit<
-  typeof prisma,
-  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
->;

@@ -125,19 +125,6 @@ export class StorageService {
     } = {}
   ): Promise<string> {
     try {
-      // TODO: Implement client-side caching for downloaded files to reduce bandwidth costs
-      // Options considered:
-      // - IndexedDB: Large storage (80% of disk) but needs quota management
-      // - LocalStorage: Too small (~5-10MB)
-      // - Cache API: Good size but needs service worker
-      // Libraries available:
-      // - Workbox (Google): Full featured, handles quotas + service workers (recommended)
-      // - localforage: Simple key-value wrapper for IndexedDB
-      // - idb-keyval: Lightweight IndexedDB wrapper
-      // - StreamSaver.js: Specialized for large file downloads
-      // Recommendation: Use Workbox - handles quota management, cache expiration,
-      // and service worker setup. Implement after presigned URL work is complete.
-
       // Add response header to prompt browser to download the file
       const reqParams = {
         ...(isAttachment && {

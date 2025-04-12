@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAuthToken } from "@/hooks/useAuthToken";
@@ -10,41 +10,97 @@ import {
   HeaderDropdownItem,
 } from "./ui/HeaderDropdown";
 import { useHeaderDropdown } from "@/contexts/HeaderDropdownContext";
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { immer } from "zustand/middleware/immer";
 
 type Notification = Prisma.NotificationGetPayload<{}>;
 
+interface NotificationState {
+  unreadCount: number;
+  notifications: Notification[];
+}
+
+interface NotificationActions {
+  setUnreadCount: (count: number) => void;
+  setNotifications: (notifications: Notification[]) => void;
+  refreshUnreadCount: (token: string) => Promise<void>;
+}
+
+type NotificationStore = NotificationState & NotificationActions;
+
+export const useNotificationStore = create<NotificationStore>()(
+  devtools(
+    immer((set) => ({
+      // State
+      unreadCount: 0,
+      notifications: [],
+
+      // Actions
+      setUnreadCount: (count) =>
+        set((state) => {
+          state.unreadCount = count;
+        }),
+      setNotifications: (notifications) =>
+        set((state) => {
+          state.notifications = notifications;
+        }),
+      refreshUnreadCount: async (token) => {
+        try {
+          const { count } = await api.notifications.getUnreadCount(token);
+          set((state) => {
+            state.unreadCount = count;
+          });
+        } catch (error) {
+          console.error("Failed to load unread count:", error);
+        }
+      },
+    }))
+  )
+);
+
+// Custom hook to manage polling
+function useNotificationPolling(enabled: boolean) {
+  const { getToken } = useAuthToken();
+  const { refreshUnreadCount } = useNotificationStore();
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const token = getToken();
+    if (!token) return;
+
+    // Initial fetch
+    refreshUnreadCount(token);
+
+    // Set up polling interval
+    const intervalId = setInterval(() => {
+      refreshUnreadCount(token);
+    }, 30000);
+
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, [enabled, getToken]); // Only re-run if enabled status or token changes
+}
+
 export function NotificationBell() {
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const { user } = useAuth();
   const { getToken } = useAuthToken();
   const navigate = useNavigate();
   const { openDropdownId, setOpenDropdownId } = useHeaderDropdown();
   const isOpen = openDropdownId === "notifications";
 
-  useEffect(() => {
-    if (!user) return;
-    loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 30000); // Refresh every 30 seconds
-    return () => clearInterval(interval);
-  }, [user]);
+  const { unreadCount, notifications, setNotifications, refreshUnreadCount } =
+    useNotificationStore();
+
+  // Start polling when user is authenticated
+  useNotificationPolling(!!user);
 
   useEffect(() => {
     if (isOpen) {
       loadNotifications();
     }
   }, [isOpen]);
-
-  const loadUnreadCount = async () => {
-    try {
-      const token = getToken();
-      if (!token) return;
-      const { count } = await api.notifications.getUnreadCount(token);
-      setUnreadCount(count);
-    } catch (error) {
-      console.error("Failed to load unread count:", error);
-    }
-  };
 
   const loadNotifications = async () => {
     try {
@@ -68,7 +124,7 @@ export function NotificationBell() {
       const token = getToken();
       if (!token) return;
       await api.notifications.markAsRead(token, notificationId);
-      await loadUnreadCount();
+      await refreshUnreadCount(token);
       await loadNotifications();
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
@@ -80,8 +136,10 @@ export function NotificationBell() {
       const token = getToken();
       if (!token) return;
       await api.notifications.markAllAsRead(token);
-      setUnreadCount(0);
-      setNotifications([]);
+      useNotificationStore.setState((state) => {
+        state.unreadCount = 0;
+        state.notifications = [];
+      });
     } catch (error) {
       console.error("Failed to mark all notifications as read:", error);
     }

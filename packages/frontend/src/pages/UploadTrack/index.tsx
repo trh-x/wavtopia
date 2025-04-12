@@ -53,7 +53,8 @@ export function UploadTrack() {
             formData.append("coverArt", values.coverArt);
           }
 
-          // TODO: Handle quota warning if returned.
+          // If a storage quota warning notification is returned, it will be automatically
+          // shown as a toast. See apiRequest.
           const data = await api.track.upload(formData, getToken()!);
           navigate(`/track/${data.track.id}`);
         }}

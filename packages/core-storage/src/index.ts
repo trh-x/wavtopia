@@ -10,6 +10,11 @@ export {
   normalizeFilePath,
 } from "./services/local-storage";
 export {
+  updateUserStorage,
+  type UpdateStorageParams,
+  type StorageUpdateResult,
+} from "./services/user-storage";
+export {
   config,
   type StorageConfig,
   type DatabaseConfig,

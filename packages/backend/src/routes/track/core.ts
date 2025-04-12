@@ -2,7 +2,7 @@ import { Router } from "express";
 import { AppError } from "../../middleware/errorHandler";
 import { authenticate } from "../../middleware/auth";
 import { checkStorageQuota, uploadTrackFiles } from "../../middleware/upload";
-import { uploadFile, updateUserStorage } from "../../services/storage";
+import { uploadFile } from "../../services/storage";
 import { z } from "zod";
 import {
   deleteLocalFile,
@@ -10,6 +10,7 @@ import {
   SourceFormat,
   TrackStatus,
   Genre,
+  updateUserStorage,
 } from "@wavtopia/core-storage";
 import { prisma } from "../../lib/prisma";
 import { config } from "../../config";
@@ -195,6 +196,14 @@ router.post(
         throw new AppError(400, "No track file provided");
       }
 
+      if (req.user?.isOverStorageQuota) {
+        throw new AppError(
+          400,
+          "You have reached your storage quota. Please free up some space to continue uploading."
+          // TODO: ", or upgrade your account."
+        );
+      }
+
       console.log("Starting track upload process...");
       console.log("Files received:", {
         original: files.original?.[0]?.originalname,
@@ -243,7 +252,7 @@ router.post(
         const genres = await findOrCreateGenres(data.genreNames || []);
 
         // Create track and update storage usage in a transaction
-        const { track, quotaWarning } = await prisma.$transaction(
+        const { track, notification } = await prisma.$transaction(
           async (tx) => {
             const track = await tx.track.create({
               data: {
@@ -290,7 +299,12 @@ router.post(
             // Update storage usage and get quota warning
             const totalBytesToAdd =
               originalSizeBytes + (coverArtSizeBytes ?? 0);
-            const { quotaWarning } = await updateUserStorage(
+            // NOTE: The track files (original + cover art) are in temporary local file storage,
+            // not uploaded to Minio until the track conversion job runs. We can update the user's storage
+            // usage here, and show a warning notification if it takes them over their quota. If the user
+            // responds to a warning by deleting the track before the conversion job has run, we'll need to
+            // ensure the temporary files are removed.
+            const { notification } = await updateUserStorage(
               {
                 bytesToAdd: totalBytesToAdd,
                 user: req.user!,
@@ -298,14 +312,14 @@ router.post(
               tx
             );
 
-            return { track, quotaWarning };
+            return { track, notification };
           }
         );
 
         // If they're over quota, include a warning in the response
         const response = {
           track,
-          quotaWarning,
+          notification,
         };
 
         console.log("Track created successfully:", track.id);

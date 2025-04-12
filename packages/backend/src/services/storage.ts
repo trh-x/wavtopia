@@ -2,12 +2,11 @@ import {
   DEFAULT_URL_EXPIRY_SECONDS,
   StorageService,
   config,
-  User,
 } from "@wavtopia/core-storage";
 import { config as backendConfig } from "../config";
 import { AppError } from "../middleware/errorHandler";
 import internal from "stream";
-import { prisma, PrismaTransactionClient } from "../lib/prisma";
+import { prisma } from "../lib/prisma";
 
 // Extract complex parameter types
 type GetFileUrlParams = Parameters<StorageService["getFileUrl"]>;
@@ -91,78 +90,6 @@ export async function getObject(fileName: string): Promise<internal.Readable> {
     console.error("Failed to get object:", error);
     throw new AppError(500, "Failed to get object");
   }
-}
-
-interface StorageUser {
-  id: string;
-  usedStorageBytes: number;
-  freeQuotaBytes: number;
-  extraQuotaBytes: number;
-}
-
-interface QuotaWarning {
-  message: string;
-  currentUsage: number;
-  quota: number;
-}
-
-interface StorageUpdateResult {
-  user: User;
-  quotaWarning?: QuotaWarning;
-}
-
-type UpdateStorageParams = {
-  bytesToAdd: number;
-} & ({ user: StorageUser } | { userId: string });
-
-/**
- * Updates a user's storage usage and checks quota status
- */
-export async function updateUserStorage(
-  params: UpdateStorageParams,
-  prismaClient: typeof prisma | PrismaTransactionClient = prisma
-): Promise<StorageUpdateResult> {
-  // Get initial user state either from params or by fetching
-  const initialUser =
-    "user" in params
-      ? params.user
-      : await prismaClient.user.findUniqueOrThrow({
-          where: { id: params.userId },
-          select: {
-            id: true,
-            usedStorageBytes: true,
-            freeQuotaBytes: true,
-            extraQuotaBytes: true,
-          },
-        });
-
-  const totalQuotaBytes =
-    initialUser.freeQuotaBytes + initialUser.extraQuotaBytes;
-  const newTotalUsage = initialUser.usedStorageBytes + params.bytesToAdd;
-  const isOverQuota = newTotalUsage > totalQuotaBytes;
-
-  // Update the user's storage usage
-  const user = await prismaClient.user.update({
-    where: { id: initialUser.id },
-    data: {
-      usedStorageBytes: newTotalUsage,
-      isOverStorageQuota: isOverQuota,
-    },
-  });
-
-  const quotaWarning = isOverQuota
-    ? {
-        message:
-          "You have exceeded your storage quota. Please free up some space before uploading more.",
-        currentUsage: newTotalUsage,
-        quota: totalQuotaBytes,
-      }
-    : undefined;
-
-  return {
-    user,
-    quotaWarning,
-  };
 }
 
 /**

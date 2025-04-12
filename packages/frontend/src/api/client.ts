@@ -8,8 +8,16 @@ import {
   PlaybackSource,
   AudioFormat,
   TrackUsageResponse,
+  Notification,
 } from "@wavtopia/core-storage";
-import type { QuotaWarning } from "../types/storage";
+import { useNotificationStore } from "@/components/NotificationBell";
+import { useToastsStore } from "@/hooks/useToasts";
+
+// TODO: This should come from core-storage:
+export const NotificationType = {
+  EARLY_ACCESS_REQUEST: "EARLY_ACCESS_REQUEST",
+  STORAGE_QUOTA_WARNING: "STORAGE_QUOTA_WARNING",
+};
 
 const API_URL = "/api";
 
@@ -61,7 +69,26 @@ export const apiRequest = async <T = any>(
     throw new Error(`API request failed: ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // If a request returns a notification, show it as a toast and increment the unread count.
+  // TODO: Fix the edge case where the unread count is refreshed between the notification being
+  // created and received, which could result in the latest count being added to incorrectly.
+  if (data.notification) {
+    useToastsStore.getState().toasts.addToast({
+      title: data.notification.title,
+      message: data.notification.message,
+      type:
+        data.notification.type === NotificationType.STORAGE_QUOTA_WARNING
+          ? "warning"
+          : "info",
+    });
+    useNotificationStore
+      .getState()
+      .setUnreadCount(useNotificationStore.getState().unreadCount + 1);
+  }
+
+  return data;
 };
 
 export const api = {
@@ -227,7 +254,7 @@ export const api = {
         method: "POST",
         token,
         body: formData,
-      }) as Promise<{ track: Track; quotaWarning?: QuotaWarning }>;
+      }) as Promise<{ track: Track; notification?: Notification }>;
     },
 
     update: async (

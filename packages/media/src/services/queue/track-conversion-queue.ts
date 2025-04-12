@@ -2,7 +2,7 @@ import { Job, Worker } from "bullmq";
 import { convertModuleToWAV, ConvertedStem } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
-import { StorageFile, config } from "@wavtopia/core-storage";
+import { StorageFile, config, updateUserStorage } from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../../services/storage";
 import {
   createQueue,
@@ -163,11 +163,22 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       throw new Error(`Track ${trackId} has no original file URL`);
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: track.userId },
+    });
+
+    if (!user) {
+      throw new Error(`User not found: ${track.userId}`);
+    }
+
+    if (user.isOverStorageQuota) {
+      throw new Error(`User ${track.userId} has exceeded their storage quota`);
+    }
+
     const originalFile = await getLocalFile(track.originalUrl);
     // TODO: Retain the original file name from the point of upload
     const originalName = track.title.replace(/[^a-zA-Z0-9._-]/g, "_");
     // const originalName = track.originalUrl.replace(/\.[^/.]+$/, "");
-    const originalSizeBytes = originalFile.size;
 
     // Upload original file
     console.log("Uploading original file...");
@@ -176,10 +187,8 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
 
     // Upload cover art if provided
     let coverArtUrl: string | undefined;
-    let coverArtSizeBytes: number | undefined;
     if (track.coverArt) {
       const coverArtFile = await getLocalFile(track.coverArt);
-      coverArtSizeBytes = coverArtFile.size;
       console.log("Uploading cover art...");
       coverArtUrl = await uploadFile(coverArtFile, "covers/");
       console.log("Cover art uploaded:", coverArtUrl);
@@ -222,7 +231,6 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
             duration,
             coverArt: coverArtUrl,
             mp3SizeBytes,
-            coverArtSizeBytes,
             stems: {
               create: stemUploads,
             },
@@ -232,14 +240,22 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
         console.log("Track updated successfully:", track.id);
 
         // Update storage usage and get quota warning
-        const totalBytesToAdd = originalSizeBytes + (coverArtSizeBytes ?? 0);
-        const { quotaWarning } = await updateUserStorage(
+        const totalBytesToAdd =
+          stemUploads.reduce((acc, stem) => acc + stem.mp3SizeBytes, 0) +
+          mp3SizeBytes;
+        const { notification } = await updateUserStorage(
           {
             bytesToAdd: totalBytesToAdd,
             userId: track.userId,
           },
           tx
         );
+
+        if (notification) {
+          console.warn(
+            `User ${track.userId} has exceeded their storage quota. Quota warning: ${notification.message}`
+          );
+        }
       });
     } catch (dbError) {
       console.error("Database error during track creation:", dbError);

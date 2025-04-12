@@ -371,6 +371,7 @@ enum RequestStatus {
 
 enum NotificationType {
   EARLY_ACCESS_REQUEST
+  STORAGE_QUOTA_WARNING
   // Add more types as needed:
   // TRACK_SHARED
   // COMMENT_ADDED
