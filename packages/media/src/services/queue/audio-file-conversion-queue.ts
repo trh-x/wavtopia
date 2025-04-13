@@ -57,13 +57,16 @@ async function uploadAudioFile(
   );
 }
 
-// Utility function to update audio file conversion status
+// Utility function to update audio file conversion status.
+// If audioFileSizeBytes is provided, it will be stored with the track or stem,
+// but it won't be included in the user's storage usage.
 async function updateAudioFileConversionStatus(
   type: "full" | "stem",
   id: string,
   status: AudioFileConversionStatus,
   format: "wav" | "flac",
-  audioFileUrl?: string
+  audioFileUrl?: string,
+  audioFileSizeBytes?: number
 ): Promise<void> {
   const conversionStatusProperty =
     format === "wav" ? "wavConversionStatus" : "flacConversionStatus";
@@ -76,12 +79,17 @@ async function updateAudioFileConversionStatus(
   if (type === "full") {
     const audioFileUrlProperty =
       format === "wav" ? "fullTrackWavUrl" : "fullTrackFlacUrl";
+    const audioFileSizeBytesProperty =
+      format === "wav" ? "fullTrackWavSizeBytes" : "fullTrackFlacSizeBytes";
 
     await prisma.track.update({
       where: { id },
       data: {
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
+        ...(audioFileSizeBytes !== undefined && {
+          [audioFileSizeBytesProperty]: audioFileSizeBytes,
+        }),
         ...(status === AudioFileConversionStatus.COMPLETED && {
           [createdAtProperty]: now,
           // Initialize last requested at to now for efficiency, so we don't
@@ -93,12 +101,17 @@ async function updateAudioFileConversionStatus(
     });
   } else {
     const audioFileUrlProperty = format === "wav" ? "wavUrl" : "flacUrl";
+    const audioFileSizeBytesProperty =
+      format === "wav" ? "wavSizeBytes" : "flacSizeBytes";
 
     await prisma.stem.update({
       where: { id },
       data: {
         [conversionStatusProperty]: status,
         ...(audioFileUrl && { [audioFileUrlProperty]: audioFileUrl }),
+        ...(audioFileSizeBytes !== undefined && {
+          [audioFileSizeBytesProperty]: audioFileSizeBytes,
+        }),
         ...(status === AudioFileConversionStatus.COMPLETED && {
           [createdAtProperty]: now,
           [lastRequestedAtProperty]: now, // As above
@@ -108,6 +121,8 @@ async function updateAudioFileConversionStatus(
   }
 }
 
+// When converting audio files, the file sizes are stored but not included in the user's quota'd storage.
+// Otherwise it would be hard for users to understand how much space they are using as the converted files are temporary.
 async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
   const { trackId, type, stemId, format } = job.data;
 
@@ -174,7 +189,8 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
         trackId,
         AudioFileConversionStatus.COMPLETED,
         format,
-        audioFileUrl
+        audioFileUrl,
+        audioBuffer.length
       );
     } else if (type === "stem" && stemId) {
       const stem = track.stems.find((s) => s.id === stemId);
@@ -228,7 +244,8 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
         stemId,
         AudioFileConversionStatus.COMPLETED,
         format,
-        wavUrl
+        wavUrl,
+        audioBuffer.length
       );
     }
 
