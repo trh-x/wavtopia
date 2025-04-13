@@ -8,7 +8,7 @@ interface StorageUser {
     isOverStorageQuota: boolean;
 }
 export type UpdateStorageParams = {
-    bytesToAdd: number;
+    bytesChange: number;
 } & ({
     user: StorageUser;
 } | {

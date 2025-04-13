@@ -258,7 +258,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
           mp3SizeBytes;
         const { notification } = await updateUserStorage(
           {
-            bytesToAdd: totalBytesToAdd,
+            bytesChange: totalBytesToAdd,
             userId: track.userId,
           },
           tx

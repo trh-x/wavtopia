@@ -70,6 +70,9 @@ async function trackDeletionProcessor(job: Job<TrackDeletionJob>) {
         await tx.track.delete({
           where: { id: track.id },
         });
+
+        // Note that user storage has be preemptively updated when the track was marked for deletion,
+        // so we don't need to do anything about it here.
       });
 
       console.log(`Completed processing track ${track.id}`);

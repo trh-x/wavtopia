@@ -306,7 +306,7 @@ router.post(
             // ensure the temporary files are removed.
             const { notification } = await updateUserStorage(
               {
-                bytesToAdd: totalBytesToAdd,
+                bytesChange: totalBytesToAdd,
                 user: req.user!,
               },
               tx

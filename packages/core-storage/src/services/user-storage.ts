@@ -28,7 +28,7 @@ interface StorageUser {
 }
 
 export type UpdateStorageParams = {
-  bytesToAdd: number;
+  bytesChange: number;
 } & ({ user: StorageUser } | { userId: string });
 
 export interface StorageUpdateResult {
@@ -62,7 +62,7 @@ export async function updateUserStorage(
 
   const totalQuotaBytes =
     initialUser.freeQuotaBytes + initialUser.extraQuotaBytes;
-  const newTotalUsage = initialUser.usedStorageBytes + params.bytesToAdd;
+  const newTotalUsage = initialUser.usedStorageBytes + params.bytesChange;
   const isOverQuota = newTotalUsage > totalQuotaBytes;
 
   // Update the user's storage usage
