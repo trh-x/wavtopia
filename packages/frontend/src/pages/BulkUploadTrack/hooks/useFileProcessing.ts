@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { api } from "@/api/client";
+import { api, NotificationType } from "@/api/client";
 import { BulkUploadState, DraggedCoverArt } from "../utils/types";
 import { processFiles } from "../utils/fileMatching";
 
@@ -150,7 +150,8 @@ export function useFileProcessing(getToken: () => string | null) {
           formData.append("coverArt", match.coverArt);
         }
 
-        // TODO: Handle quota warning if returned.
+        // If a storage quota warning notification is returned, it will be automatically
+        // shown as a toast. See apiRequest.
         const data = await api.track.upload(formData, getToken()!);
         console.log("Upload successful for", match.title);
 
@@ -162,6 +163,15 @@ export function useFileProcessing(getToken: () => string | null) {
             m.path === match.path ? { ...m, uploaded: true } : m
           ),
         }));
+
+        if (
+          data.notification?.type === NotificationType.STORAGE_QUOTA_WARNING
+        ) {
+          console.warn(
+            `User ${data.notification.userId} has exceeded their storage quota. Quota warning: ${data.notification.message}`
+          );
+          return;
+        }
       } catch (error) {
         console.error(`Failed to upload ${match.title}:`, error);
         setState((prev) => ({

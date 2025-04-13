@@ -37,7 +37,8 @@ interface TrackUsageInput {
 
 export const apiRequest = async <T = any>(
   endpoint: string,
-  options: FetchOptions = {}
+  fetchOptions: FetchOptions = {},
+  options: { noToast?: boolean } = {}
 ): Promise<T> => {
   const {
     token,
@@ -45,7 +46,8 @@ export const apiRequest = async <T = any>(
     contentType,
     headers: customHeaders = {},
     ...rest
-  } = options;
+  } = fetchOptions;
+  const { noToast = false } = options;
 
   const headers = new Headers(customHeaders);
   if (token) {
@@ -66,7 +68,15 @@ export const apiRequest = async <T = any>(
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`);
+    let errorMessage: string | undefined;
+    try {
+      errorMessage = (await response.json())?.message;
+    } catch (error) {
+      console.error("Error parsing JSON response:", error);
+    }
+    throw new Error(
+      `API request failed: ${errorMessage || response.statusText}`
+    );
   }
 
   const data = await response.json();
@@ -74,7 +84,7 @@ export const apiRequest = async <T = any>(
   // If a request returns a notification, show it as a toast and increment the unread count.
   // TODO: Fix the edge case where the unread count is refreshed between the notification being
   // created and received, which could result in the latest count being added to incorrectly.
-  if (data.notification) {
+  if (data.notification && !noToast) {
     useToastsStore.getState().toasts.addToast({
       title: data.notification.title,
       message: data.notification.message,
@@ -370,10 +380,16 @@ export const api = {
     },
 
     markAsRead: async (token: string, notificationId: string) => {
-      return apiRequest(`/notifications/${notificationId}/read`, {
-        method: "POST",
-        token,
-      });
+      return apiRequest(
+        `/notifications/${notificationId}/read`,
+        {
+          method: "POST",
+          token,
+        },
+        {
+          noToast: true,
+        }
+      );
     },
 
     markAllAsRead: async (token: string) => {

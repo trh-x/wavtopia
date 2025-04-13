@@ -316,7 +316,7 @@ router.post(
           }
         );
 
-        // If they're over quota, include a warning in the response
+        // If they're over quota, the notification will be a STORAGE_QUOTA_WARNING notification.
         const response = {
           track,
           notification,

@@ -171,10 +171,6 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       throw new Error(`User not found: ${track.userId}`);
     }
 
-    if (user.isOverStorageQuota) {
-      throw new Error(`User ${track.userId} has exceeded their storage quota`);
-    }
-
     const originalFile = await getLocalFile(track.originalUrl);
     // TODO: Retain the original file name from the point of upload
     const originalName = track.title.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -194,6 +190,23 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       console.log("Cover art uploaded:", coverArtUrl);
     }
 
+    if (user.isOverStorageQuota) {
+      console.warn(
+        `User ${track.userId} has exceeded their storage quota. Stems will not be converted. The original file and cover art have been uploaded.`
+      );
+
+      await prisma.track.update({
+        where: { id: trackId },
+        data: {
+          originalUrl,
+          coverArt: coverArtUrl,
+        },
+      });
+
+      return;
+    }
+
+    // Convert module to WAV
     // Convert module to WAV
     console.log("Converting module to WAV...");
     const { fullTrackWavBuffer, stems } = await convertModuleToWAV(
