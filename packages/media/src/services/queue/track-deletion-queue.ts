@@ -59,19 +59,27 @@ async function trackDeletionProcessor(job: Job<TrackDeletionJob>) {
         const trackFailures = await deleteTrackFiles(track);
         if (trackFailures.length > 0) {
           failures.push({ trackId: track.id, failures: trackFailures });
-          return; // Skip stem/track deletion if any files failed
+          return; // Skip metadata cleanup if any files failed
         }
 
-        // Delete stems and track only if all files were deleted successfully
-        await tx.stem.deleteMany({
-          where: { trackId: track.id },
-        });
+        // Delete organizational metadata
+        await tx.trackShare.deleteMany({ where: { trackId: track.id } });
+        await tx.trackGenre.deleteMany({ where: { trackId: track.id } });
+        await tx.trackAlbum.deleteMany({ where: { trackId: track.id } });
+        await tx.trackCredit.deleteMany({ where: { trackId: track.id } });
+        await tx.trackMood.deleteMany({ where: { trackId: track.id } });
+        await tx.trackTag.deleteMany({ where: { trackId: track.id } });
 
-        await tx.track.delete({
+        // Mark track as deleted rather than removing the record
+        await tx.track.update({
           where: { id: track.id },
+          data: {
+            status: "DELETED",
+            deletedAt: new Date(),
+          },
         });
 
-        // Note that user storage has be preemptively updated when the track was marked for deletion,
+        // Note that user storage has been preemptively updated when the track was marked for deletion,
         // so we don't need to do anything about it here.
       });
 

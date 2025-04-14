@@ -1,3 +1,4 @@
+import { deleteLocalFile } from "@wavtopia/core-storage";
 import { deleteFile } from "../storage";
 
 export class FileCleanupError extends Error {
@@ -22,7 +23,11 @@ export async function retryableDeleteFile(
   let lastError: Error | undefined;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await deleteFile(fileUrl);
+      if (fileUrl.startsWith("file://")) {
+        await deleteLocalFile(fileUrl);
+      } else {
+        await deleteFile(fileUrl);
+      }
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));

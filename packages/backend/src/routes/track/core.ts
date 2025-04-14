@@ -300,10 +300,8 @@ router.post(
             const totalBytesToAdd =
               originalSizeBytes + (coverArtSizeBytes ?? 0);
             // NOTE: The track files (original + cover art) are in temporary local file storage,
-            // not uploaded to Minio until the track conversion job runs. We can update the user's storage
-            // usage here, and show a warning notification if it takes them over their quota. If the user
-            // responds to a warning by deleting the track before the conversion job has run, we'll need to
-            // ensure the temporary files are removed.
+            // not uploaded to Minio until the track conversion job runs. We still update the user's
+            // storage usage here, and show a warning notification if it takes them over their quota.
             const { notification } = await updateUserStorage(
               {
                 bytesChange: totalBytesToAdd,
