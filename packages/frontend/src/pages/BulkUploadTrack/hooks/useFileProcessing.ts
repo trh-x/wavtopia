@@ -164,6 +164,9 @@ export function useFileProcessing(getToken: () => string | null) {
           ),
         }));
 
+        // TODO: Provide a clearer return value to indicate the quota has been exceeded, also
+        // show a notice in the UI that informs the user about being over quota (in addition
+        // to the toast)
         if (
           data.notification?.type === NotificationType.STORAGE_QUOTA_WARNING
         ) {

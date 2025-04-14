@@ -51,6 +51,7 @@ enum SourceFormat {
 enum TrackStatus {
   ACTIVE
   PENDING_DELETION
+  DELETED
 }
 
 // Potential additional fields for Track model:
@@ -131,6 +132,7 @@ model Track {
   metadata              Json?
   isPublic              Boolean                    @default(false) @map("is_public")
   status                TrackStatus                @default(ACTIVE) @map("status")
+  deletedAt             DateTime?                  @map("deleted_at")
   stems                 Stem[]
   userId                String                     @map("user_id")
   user                  User                       @relation(fields: [userId], references: [id])
@@ -233,6 +235,7 @@ model Track {
   @@index([originalFormat, wavLastRequestedAt])
   @@index([originalFormat, flacLastRequestedAt])
   @@index([id, status])
+  @@index([status, deletedAt])
   @@index([status, userId, title, createdAt, id])
   @@index([status, userId, primaryArtistId, createdAt, id])
   // TODO: Add this index if it's needed for sorting:
