@@ -1,6 +1,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { FeatureFlagsAdmin } from "./FeatureFlags";
 import { InviteCodesAdmin } from "./InviteCodes";
+import { DeletedTracksAdmin } from "./DeletedTracks";
 
 export function Admin() {
   return (
@@ -11,6 +12,7 @@ export function Admin() {
         <TabsList className="w-full justify-start">
           <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
           <TabsTrigger value="invite-codes">Invite Codes</TabsTrigger>
+          <TabsTrigger value="deleted-tracks">Deleted Tracks</TabsTrigger>
         </TabsList>
 
         <TabsContent value="feature-flags">
@@ -19,6 +21,10 @@ export function Admin() {
 
         <TabsContent value="invite-codes">
           <InviteCodesAdmin />
+        </TabsContent>
+
+        <TabsContent value="deleted-tracks">
+          <DeletedTracksAdmin />
         </TabsContent>
       </Tabs>
     </div>

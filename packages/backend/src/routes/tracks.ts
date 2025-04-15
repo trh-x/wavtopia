@@ -13,9 +13,10 @@ import {
 import { AppError } from "../middleware/errorHandler";
 import { z } from "zod";
 import { config } from "../config";
+import { Role } from "@wavtopia/core-storage";
 
 const router = Router();
-const DEFAULT_PAGE_SIZE = 6;
+const DEFAULT_PAGE_SIZE = 24;
 
 // Helper function to extract pagination and sorting parameters
 function extractPaginationParams(req: Request) {
@@ -78,7 +79,6 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
     where: {
       ...where,
       ...cursorCondition,
-      status: TrackStatus.ACTIVE,
     },
     include,
     orderBy,
@@ -107,7 +107,7 @@ async function getPaginatedTracks<I extends Prisma.TrackInclude>(
 router.get("/public", async (req: Request, res: Response) => {
   const params = extractPaginationParams(req);
   const result = await getPaginatedTracks(
-    { isPublic: true },
+    { isPublic: true, status: TrackStatus.ACTIVE },
     {
       user: {
         select: {
@@ -130,7 +130,7 @@ router.get("/", async (req, res, next) => {
   try {
     const params = extractPaginationParams(req);
     const result = await getPaginatedTracks(
-      { userId: req.user!.id },
+      { userId: req.user!.id, status: TrackStatus.ACTIVE },
       {
         user: {
           select: {
@@ -160,6 +160,7 @@ router.get("/shared", async (req: Request, res: Response, next) => {
             userId: req.user!.id,
           },
         },
+        status: TrackStatus.ACTIVE,
       },
       {
         user: {
@@ -202,6 +203,7 @@ router.get("/available", async (req: Request, res: Response, next) => {
           { isPublic: true },
           { sharedWith: { some: { userId: req.user!.id } } },
         ],
+        status: TrackStatus.ACTIVE,
       },
       {
         user: {
@@ -212,6 +214,42 @@ router.get("/available", async (req: Request, res: Response, next) => {
           },
         },
       },
+      params
+    );
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Get deleted tracks (admin only)
+router.get("/deleted", async (req: Request, res: Response, next) => {
+  try {
+    // Verify admin status
+    if (req.user?.role !== Role.ADMIN) {
+      throw new AppError(403, "Unauthorized");
+    }
+
+    const params = extractPaginationParams(req);
+
+    // Allow filtering by deletion status
+    const status = req.query.status as TrackStatus | undefined;
+    const result = await getPaginatedTracks(
+      {
+        status: status || {
+          in: [TrackStatus.DELETED, TrackStatus.PENDING_DELETION],
+        },
+      },
+      {
+        user: {
+          select: {
+            id: true,
+            username: true,
+          },
+        },
+      },
+      // TODO: Add a select arg to only return the needed fields
       params
     );
 

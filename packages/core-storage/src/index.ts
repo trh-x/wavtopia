@@ -57,3 +57,4 @@ export {
   decodeCursor,
 } from "./types";
 export * from "./auth";
+export * from "./utils/formatBytes";

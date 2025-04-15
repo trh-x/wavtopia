@@ -58,6 +58,7 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         fullTrackFlacUrl: string | null;
         coverArt: string | null;
         isPublic: boolean;
+        deletedAt: Date | null;
         originalSizeBytes: number | null;
         coverArtSizeBytes: number | null;
         bpm: number | null;

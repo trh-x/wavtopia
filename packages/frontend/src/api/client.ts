@@ -9,9 +9,11 @@ import {
   AudioFormat,
   TrackUsageResponse,
   Notification,
+  TrackStatus,
 } from "@wavtopia/core-storage";
 import { useNotificationStore } from "@/components/NotificationBell";
 import { useToastsStore } from "@/hooks/useToasts";
+import type { DeletedTrack } from "@/pages/Admin/DeletedTracks";
 
 // TODO: This should come from core-storage:
 export const NotificationType = {
@@ -342,6 +344,22 @@ export const api = {
         token,
         contentType: "application/json",
         body: JSON.stringify({ trackIds: ids }),
+      });
+    },
+
+    getDeletedTracks: async (
+      token: string,
+      { status }: { status: TrackStatus | "ALL" }
+    ) => {
+      // Note, this returned a paginated list
+      const searchParams =
+        status !== "ALL" ? new URLSearchParams({ status }) : undefined;
+      return apiRequest<{
+        items: DeletedTrack[];
+        metadata: { hasNextPage: boolean };
+      }>(`/tracks/deleted`, {
+        token,
+        searchParams,
       });
     },
   },
