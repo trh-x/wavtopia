@@ -259,6 +259,23 @@ router.get("/deleted", async (req: Request, res: Response, next) => {
   }
 });
 
+// Get count of deleted tracks (admin only)
+router.get("/deleted/count", async (req, res, next) => {
+  try {
+    if (req.user?.role !== Role.ADMIN) {
+      throw new AppError(403, "Unauthorized");
+    }
+    const status = req.query.status as TrackStatus | undefined;
+    const where = status
+      ? { status }
+      : { status: { in: [TrackStatus.DELETED, TrackStatus.PENDING_DELETION] } };
+    const count = await prisma.track.count({ where });
+    res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Schema for track deletion
 const deleteTrackSchema = z.object({
   trackIds: z.array(z.string()).min(1),

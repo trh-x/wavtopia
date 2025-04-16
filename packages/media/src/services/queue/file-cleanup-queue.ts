@@ -168,6 +168,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                     fullTrackWavUrl: null,
                     wavLastRequestedAt: null,
                     wavCreatedAt: null,
+                    wavSizeBytes: null,
                   },
                 }),
             });
@@ -190,6 +191,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                     fullTrackFlacUrl: null,
                     flacLastRequestedAt: null,
                     flacCreatedAt: null,
+                    flacSizeBytes: null,
                   },
                 }),
             });
@@ -213,6 +215,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                       wavUrl: null,
                       wavLastRequestedAt: null,
                       wavCreatedAt: null,
+                      wavSizeBytes: null,
                     },
                   }),
               });
@@ -234,6 +237,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                       flacUrl: null,
                       flacLastRequestedAt: null,
                       flacCreatedAt: null,
+                      flacSizeBytes: null,
                     },
                   }),
               });

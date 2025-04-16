@@ -349,15 +349,45 @@ export const api = {
 
     getDeletedTracks: async (
       token: string,
-      { status }: { status: TrackStatus | "ALL" }
+      params: PaginationParams & {
+        status: TrackStatus | "ALL";
+        sortField?: string;
+        sortDirection?: "asc" | "desc";
+      }
     ) => {
-      // Note, this returned a paginated list
-      const searchParams =
-        status !== "ALL" ? new URLSearchParams({ status }) : undefined;
+      const searchParams = new URLSearchParams({
+        limit: String(params.limit ?? 20),
+      });
+      if (params.status !== "ALL") {
+        searchParams.set("status", params.status);
+      }
+      if (params.cursor) {
+        searchParams.set("cursor", params.cursor);
+      }
+      if (params.sortField) {
+        searchParams.set("sortField", params.sortField);
+      }
+      if (params.sortDirection) {
+        searchParams.set("sortDirection", params.sortDirection);
+      }
       return apiRequest<{
         items: DeletedTrack[];
-        metadata: { hasNextPage: boolean };
+        metadata: { hasNextPage: boolean; nextCursor?: string };
       }>(`/tracks/deleted`, {
+        token,
+        searchParams,
+      });
+    },
+
+    getDeletedTracksCount: async (
+      token: string,
+      { status }: { status: TrackStatus | "ALL" }
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (status !== "ALL") {
+        searchParams.set("status", status);
+      }
+      return apiRequest<{ count: number }>(`/tracks/deleted/count`, {
         token,
         searchParams,
       });

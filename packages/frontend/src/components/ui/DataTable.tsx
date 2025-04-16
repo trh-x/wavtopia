@@ -12,11 +12,9 @@ import {
   HeaderGroup,
   Row,
   Cell,
-  Table,
   OnChangeFn,
 } from "@tanstack/react-table";
 import { cn } from "@/utils/cn";
-import { Checkbox } from "./Checkbox";
 
 interface DataTableProps<TData> {
   data: TData[];
@@ -118,6 +116,7 @@ export function DataTable<TData>({
           </tbody>
         </table>
       </div>
+      {/*
       {table.getPageCount() > 1 && (
         <div className="flex items-center justify-between border-t p-4">
           <div className="text-sm text-gray-500">
@@ -152,10 +151,12 @@ export function DataTable<TData>({
           </div>
         </div>
       )}
+      */}
     </div>
   );
 }
 
+/*
 // Helper function to create a selection column
 export function createSelectionColumn<TData>(): ColumnDef<TData> {
   return {
@@ -177,3 +178,4 @@ export function createSelectionColumn<TData>(): ColumnDef<TData> {
     enableSorting: false,
   };
 }
+*/

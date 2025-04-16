@@ -1,15 +1,16 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { formatDistanceToNow } from "date-fns";
 import { Badge } from "@/components/ui/Badge";
 import { DataTable } from "@/components/ui/DataTable";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { formatDuration } from "@/utils/formatDuration";
 import { formatBytes } from "@/utils/formatBytes";
 import { Track, TrackStatus } from "@/types";
 import { auth } from "@/utils/auth";
 
+// FIXME: The backend should only return these fields, currently it returns everything including stems(?)
 export type DeletedTrack = Pick<
   Track,
   | "id"
@@ -29,10 +30,12 @@ export type DeletedTrack = Pick<
   };
 };
 
+const sortableColumns = ["title", "duration", "primaryArtistName"];
 const columns: ColumnDef<DeletedTrack>[] = [
   {
     accessorKey: "title",
     header: "Title",
+    enableSorting: true,
     cell: ({ row }) => (
       <div className="flex flex-col">
         <span className="font-medium">{row.original.title}</span>
@@ -45,10 +48,12 @@ const columns: ColumnDef<DeletedTrack>[] = [
   {
     accessorKey: "user.username",
     header: "Uploader",
+    enableSorting: false,
   },
   {
     accessorKey: "status",
     header: "Status",
+    enableSorting: false,
     cell: ({ row }) => {
       const status = row.original.status;
       return (
@@ -73,6 +78,7 @@ const columns: ColumnDef<DeletedTrack>[] = [
   {
     accessorKey: "deletedAt",
     header: "Deleted",
+    enableSorting: false,
     cell: ({ row }) =>
       row.original.deletedAt
         ? formatDistanceToNow(new Date(row.original.deletedAt), {
@@ -83,12 +89,14 @@ const columns: ColumnDef<DeletedTrack>[] = [
   {
     accessorKey: "duration",
     header: "Duration",
+    enableSorting: true,
     cell: ({ row }) =>
       row.original.duration ? formatDuration(row.original.duration) : "-",
   },
   {
     accessorKey: "totalSize",
     header: "Total Size",
+    enableSorting: false,
     cell: ({ row }) => {
       const totalSize =
         (row.original.originalSizeBytes || 0) +
@@ -103,16 +111,89 @@ const columns: ColumnDef<DeletedTrack>[] = [
 
 export function DeletedTracksAdmin() {
   const [status, setStatus] = useState<TrackStatus | "ALL">("ALL");
+  const [page, setPage] = useState(1);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
+  const [prevCursors, setPrevCursors] = useState<string[]>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "title", desc: false },
+  ]);
+  const pageSize = 10;
+  const token = auth.getToken();
 
-  const { data: tracks, isLoading } = useQuery({
-    queryKey: ["tracks", "deleted", status],
+  // Determine sortField and sortDirection for API
+  const sortField =
+    sorting[0]?.id && sortableColumns.includes(sorting[0].id)
+      ? sorting[0].id
+      : undefined;
+  const sortDirection = sorting[0]?.desc ? "desc" : "asc";
+
+  // Fetch count
+  const { data: countData, isLoading: isCountLoading } = useQuery({
+    queryKey: ["tracks", "deleted", "count", status, token],
     queryFn: async () => {
-      const token = auth.getToken();
       if (!token) throw new Error("No token found");
-      const response = await api.tracks.getDeletedTracks(token, { status });
-      return response.items;
+      const res = await api.tracks.getDeletedTracksCount(token, { status });
+      return res.count;
     },
+    enabled: !!token,
   });
+
+  // Fetch tracks for current page
+  const { data: tracks, isLoading } = useQuery<DeletedTrack[]>({
+    queryKey: [
+      "tracks",
+      "deleted",
+      status,
+      cursor,
+      sortField,
+      sortDirection,
+      token,
+    ],
+    queryFn: async () => {
+      if (!token) throw new Error("No token found");
+      const res = await api.tracks.getDeletedTracks(token, {
+        status,
+        cursor,
+        limit: pageSize,
+        sortField,
+        sortDirection,
+      });
+      setNextCursor(res.metadata.nextCursor);
+      return res.items;
+    },
+    placeholderData: keepPreviousData,
+    enabled: !!token,
+  });
+
+  // Reset pagination when status or sorting changes
+  useEffect(() => {
+    setPage(1);
+    setCursor(undefined);
+    setPrevCursors([]);
+  }, [status, sortField, sortDirection]);
+
+  const totalPages = countData
+    ? Math.max(1, Math.ceil(countData / pageSize))
+    : 1;
+
+  const handleNext = () => {
+    if (nextCursor) {
+      setPrevCursors((prev) => [...prev, cursor || ""]);
+      setCursor(nextCursor);
+      setPage((p) => p + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (page > 1) {
+      const prev = [...prevCursors];
+      const prevCursor = prev.pop();
+      setPrevCursors(prev);
+      setCursor(prevCursor);
+      setPage((p) => p - 1);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -130,8 +211,39 @@ export function DeletedTracksAdmin() {
       </div>
 
       {isLoading && <div className="mb-4">Loading...</div>}
-      {/* TODO: Add pagination, fetching next page on demand */}
-      <DataTable data={tracks || []} columns={columns} pageSize={6} />
+      <DataTable
+        data={tracks || []}
+        columns={columns}
+        pageSize={pageSize}
+        sorting={sorting}
+        onSortingChange={setSorting}
+      />
+      <div className="flex items-center justify-between mt-4">
+        <span>
+          Page {page}
+          {isCountLoading
+            ? ""
+            : countData !== undefined
+            ? ` of ${totalPages}`
+            : ""}
+        </span>
+        <div>
+          <button
+            className="mr-2 px-3 py-1 rounded border disabled:opacity-50"
+            onClick={handlePrev}
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+          <button
+            className="px-3 py-1 rounded border disabled:opacity-50"
+            onClick={handleNext}
+            disabled={!nextCursor}
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
