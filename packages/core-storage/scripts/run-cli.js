@@ -21,9 +21,12 @@ const getProductionPath = (devPath) => {
 };
 
 const isDev = process.env.NODE_ENV !== "production";
+// Get all arguments after the script path
+const scriptArgs = process.argv.slice(3);
+
 const result = spawnSync(
   isDev ? "ts-node" : "node",
-  [isDev ? scriptPath : getProductionPath(scriptPath)],
+  [isDev ? scriptPath : getProductionPath(scriptPath), ...scriptArgs],
   {
     stdio: "inherit",
     cwd: path.resolve(__dirname, ".."),
