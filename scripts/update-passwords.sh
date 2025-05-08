@@ -4,6 +4,7 @@ set -e  # Exit on any error
 
 # Debug mode flag
 DEBUG=0
+USE_ENV_PASSWORDS=0
 
 # Debug logging function
 debug_log() {
@@ -32,6 +33,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --debug)
             DEBUG=1
+            shift
+            ;;
+        --use-env)
+            USE_ENV_PASSWORDS=1
             shift
             ;;
         *)
@@ -118,9 +123,26 @@ update_env_file() {
     debug_log "Created $target_file"
 }
 
-prompt_new_credentials() {
+assign_new_credentials() {
     local service=$1
     local password_var
+    if [ "$USE_ENV_PASSWORDS" -eq 1 ]; then
+        case $service in
+            postgres)
+                NEW_POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+                ;;
+            minio)
+                NEW_MINIO_PASSWORD="$MINIO_PASSWORD"
+                ;;
+            pgadmin)
+                NEW_PGADMIN_PASSWORD="$PGADMIN_PASSWORD"
+                ;;
+            redis)
+                NEW_REDIS_PASSWORD="$REDIS_PASSWORD"
+                ;;
+        esac
+        return
+    fi
     case $service in
         postgres)
             echo "Current PostgreSQL user: $POSTGRES_USER"
@@ -167,7 +189,7 @@ prompt_new_credentials() {
 
 update_postgres() {
     echo "Updating PostgreSQL password..."
-    prompt_new_credentials postgres
+    assign_new_credentials postgres
     
     # Get the container info
     debug_log "Getting PostgreSQL container ID..."
@@ -222,7 +244,7 @@ update_postgres() {
 
 update_minio() {
     echo "Updating MinIO password..."
-    prompt_new_credentials minio
+    assign_new_credentials minio
     
     # Wait for MinIO to be ready by checking the health endpoint
     echo "Waiting for MinIO to be ready..."
@@ -274,26 +296,33 @@ update_minio() {
 
 update_pgadmin() {
     echo "Updating pgAdmin password..."
-    prompt_new_credentials pgadmin
+    assign_new_credentials pgadmin
 
-    # Note: pgAdmin password will be applied after copying new .env files and restarting the container
-    echo "ℹ️  pgAdmin password will be applied after updating .env files and restarting the container"
+    if [ "$USE_ENV_PASSWORDS" -eq 1 ]; then
+        echo "ℹ️  No .env file update is needed; password is already set in the current .env file. Restart the pgAdmin container to apply the change."
+    else
+        echo "ℹ️  pgAdmin password will be applied after updating .env files and restarting the container"
+    fi
 }
 
 update_redis() {
     echo "Updating Redis password..."
-    prompt_new_credentials redis
+    assign_new_credentials redis
 
-    # Note: Redis password will be applied after copying new .env files and restarting the container
-    echo "ℹ️  Redis password will be applied after updating .env files and restarting the container"
+    if [ "$USE_ENV_PASSWORDS" -eq 1 ]; then
+        echo "ℹ️  No .env file update is needed; password is already set in the current .env file. Restart the Redis container to apply the change."
+    else
+        echo "ℹ️  Redis password will be applied after updating .env files and restarting the container"
+    fi
 }
 
 show_usage() {
-    echo "Usage: $0 [--debug] [service...]"
-    echo "Updates service passwords by prompting for new values"
+    echo "Usage: $0 [--debug] [--use-env] [service...]"
+    echo "Updates service passwords by prompting for new values or using .env values"
     echo
     echo "Options:"
-    echo "  --debug    Enable debug logging"
+    echo "  --debug      Enable debug logging"
+    echo "  --use-env    Use passwords from current .env file (no prompt)"
     echo
     echo "Available services:"
     echo "  postgres   - Update PostgreSQL password"
@@ -311,8 +340,12 @@ if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     exit 0
 fi
 
-echo "This script will prompt for new passwords for each service"
-echo "The changes will be saved to new .env files for review"
+if [ "$USE_ENV_PASSWORDS" -eq 1 ]; then
+    echo "This script will use passwords from the current .env file for each service."
+else
+    echo "This script will prompt for new passwords for each service."
+    echo "The changes will be saved to new .env files for review"
+fi
 echo
 echo "Allowed password characters:"
 echo "- Letters (a-z, A-Z)"
@@ -359,7 +392,10 @@ else
 fi
 
 # After all updates are done, generate new env files
-if [ $# -eq 0 ] || [ $# -gt 0 ]; then
+if [ "$USE_ENV_PASSWORDS" -eq 1 ]; then
+    echo
+    echo "--use-env was set: No new .env files were created. Passwords were taken from the current .env file."
+elif [ $# -eq 0 ] || [ $# -gt 0 ]; then
     update_env_file ".env"
     update_env_file ".env.docker"
     echo
