@@ -24,6 +24,7 @@ export type DeletedTrack = Pick<
   | "wavSizeBytes"
   | "flacSizeBytes"
   | "coverArtSizeBytes"
+  | "totalQuotaBytes"
 > & {
   user: {
     username: string;
@@ -92,6 +93,12 @@ const columns: ColumnDef<DeletedTrack>[] = [
     enableSorting: true,
     cell: ({ row }) =>
       row.original.duration ? formatDuration(row.original.duration) : "-",
+  },
+  {
+    accessorKey: "totalQuotaBytes",
+    header: "Total Size",
+    enableSorting: false,
+    cell: ({ row }) => formatBytes(row.original.totalQuotaBytes || 0),
   },
   {
     accessorKey: "totalSize",

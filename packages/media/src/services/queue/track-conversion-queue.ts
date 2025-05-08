@@ -230,12 +230,16 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       )
     );
 
+    const totalBytesToAdd =
+      stemUploads.reduce((acc, stem) => acc + stem.mp3SizeBytes, 0) +
+      mp3SizeBytes;
+
     // Update database record
     console.log("Updating database record...");
     try {
       // Update track and update storage usage in a transaction
       await prisma.$transaction(async (tx) => {
-        const track = await prisma.track.update({
+        const trk = await prisma.track.update({
           where: { id: trackId },
           data: {
             originalUrl,
@@ -244,29 +248,27 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
             duration,
             coverArt: coverArtUrl,
             mp3SizeBytes,
+            totalQuotaBytes: (track.totalQuotaBytes ?? 0) + totalBytesToAdd,
             stems: {
               create: stemUploads,
             },
           },
         });
 
-        console.log("Track updated successfully:", track.id);
+        console.log("Track updated successfully:", trk.id);
 
         // Update storage usage and get quota warning
-        const totalBytesToAdd =
-          stemUploads.reduce((acc, stem) => acc + stem.mp3SizeBytes, 0) +
-          mp3SizeBytes;
         const { notification } = await updateUserStorage(
           {
             bytesChange: totalBytesToAdd,
-            userId: track.userId,
+            userId: trk.userId,
           },
           tx
         );
 
         if (notification) {
           console.warn(
-            `User ${track.userId} has exceeded their storage quota. Quota warning: ${notification.message}`
+            `User ${trk.userId} has exceeded their storage quota. Quota warning: ${notification.message}`
           );
         }
       });

@@ -294,15 +294,7 @@ router.delete("/", async (req, res, next) => {
       },
       select: {
         userId: true,
-        originalSizeBytes: true,
-        coverArtSizeBytes: true,
-        mp3SizeBytes: true,
-        // WAV and FLAC sizes are not needed as they aren't tracked for user's storage.
-        stems: {
-          select: {
-            mp3SizeBytes: true,
-          },
-        },
+        totalQuotaBytes: true,
       },
     });
 
@@ -326,17 +318,10 @@ router.delete("/", async (req, res, next) => {
       data: { status: TrackStatus.PENDING_DELETION },
     });
 
-    const bytesToSubtract = tracks.reduce((acc, track) => {
-      return (
-        acc +
-        (track.originalSizeBytes ?? 0) +
-        (track.coverArtSizeBytes ?? 0) +
-        (track.mp3SizeBytes ?? 0) +
-        track.stems.reduce((acc, stem) => {
-          return acc + (stem.mp3SizeBytes ?? 0);
-        }, 0)
-      );
-    }, 0);
+    const bytesToSubtract = tracks.reduce(
+      (acc, track) => acc + (track.totalQuotaBytes ?? 0),
+      0
+    );
 
     // Preemptively remove the track file sizes from the user's storage, although
     // the space won't actually be freed until the scheduled deletion job has run.

@@ -251,6 +251,8 @@ router.post(
 
         const genres = await findOrCreateGenres(data.genreNames || []);
 
+        const totalQuotaBytes = originalSizeBytes + (coverArtSizeBytes ?? 0);
+
         // Create track and update storage usage in a transaction
         const { track, notification } = await prisma.$transaction(
           async (tx) => {
@@ -263,6 +265,7 @@ router.post(
                 originalSizeBytes,
                 coverArt: coverArtUrl,
                 coverArtSizeBytes,
+                totalQuotaBytes,
                 metadata: data.metadata as Prisma.InputJsonValue,
                 userId: req.user!.id,
                 bpm: data.bpm,
@@ -296,15 +299,13 @@ router.post(
               },
             });
 
-            // Update storage usage and get quota warning
-            const totalBytesToAdd =
-              originalSizeBytes + (coverArtSizeBytes ?? 0);
+            // Update storage usage and get quota warning.
             // NOTE: The track files (original + cover art) are in temporary local file storage,
             // not uploaded to Minio until the track conversion job runs. We still update the user's
             // storage usage here, and show a warning notification if it takes them over their quota.
             const { notification } = await updateUserStorage(
               {
-                bytesChange: totalBytesToAdd,
+                bytesChange: totalQuotaBytes,
                 user: req.user!,
               },
               tx

@@ -152,6 +152,9 @@ model Track {
   wavSizeBytes          Int?   @map("wav_size_bytes")
   flacSizeBytes         Int?   @map("flac_size_bytes")
   coverArtSizeBytes     Int?   @map("cover_art_size_bytes")
+  // totalQuotaBytes is the sum of originalSizeBytes, coverArtSizeBytes, mp3SizeBytes,
+  // and the sum of mp3SizeBytes for all stems.
+  totalQuotaBytes       Int?   @map("total_quota_bytes") 
   // totalStemSizeBytes will be calculated dynamically or stored if needed for performance
 
   // Musical Information
