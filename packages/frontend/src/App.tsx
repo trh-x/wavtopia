@@ -25,6 +25,7 @@ import { EditTrack } from "@/pages/EditTrack";
 import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
 import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
 import { DeletedTracksAdmin } from "@/pages/Admin/DeletedTracks";
+import { UserTracksTab, SharedTracksTab } from "./pages/MyTracks";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -57,7 +58,11 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
-        <Route path="/my-tracks" element={<MyTracks />} />
+        <Route path="/my-tracks/*" element={<MyTracks />}>
+          <Route index element={<Navigate to="authored" replace />} />
+          <Route path="authored" element={<UserTracksTab />} />
+          <Route path="shared" element={<SharedTracksTab />} />
+        </Route>
         <Route
           path="/notifications"
           element={

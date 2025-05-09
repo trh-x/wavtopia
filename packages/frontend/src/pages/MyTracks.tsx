@@ -4,20 +4,21 @@ import { api } from "@/api/client";
 import { TrackList } from "@/components/track-list/TrackList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useState } from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
+import { Outlet, useOutletContext } from "react-router-dom";
+import { NavTabLink } from "@/components/ui/NavTabLink";
 import { BatchActionsBar } from "@/components/BatchActionsBar";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 import { useTrackSort } from "@/hooks/useTrackSort";
 
-function UserTracksTab({
-  selectedTracks,
-  onTrackSelect,
-  onDeleteTrack,
-}: {
+type MyTracksContext = {
   selectedTracks: Set<string>;
   onTrackSelect: (trackId: string) => void;
   onDeleteTrack: (trackId: string) => void;
-}) {
+};
+
+function UserTracksTab() {
+  const { selectedTracks, onTrackSelect, onDeleteTrack } =
+    useOutletContext<MyTracksContext>();
   const { sortField, sortDirection, handleSort, currentSortValue } =
     useTrackSort();
   const { tracks, isLoading, error, fetchNextPage, isFetchingNextPage } =
@@ -121,30 +122,23 @@ export function MyTracks() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Tabs defaultValue="my-tracks">
-        <TabsList className="mb-8">
-          <TabsTrigger value="my-tracks">My Tracks</TabsTrigger>
-          <TabsTrigger value="shared">Shared With Me</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="my-tracks">
-          <UserTracksTab
-            selectedTracks={selectedTracks}
-            onTrackSelect={handleTrackSelect}
-            onDeleteTrack={(trackId) =>
-              deleteTracksMutation.mutate({
-                trackIds: trackId,
-                isBatchDelete: false,
-              })
-            }
-          />
-        </TabsContent>
-
-        <TabsContent value="shared">
-          <SharedTracksTab />
-        </TabsContent>
-      </Tabs>
-
+      <div className="flex space-x-4 mb-8 pb-2">
+        <NavTabLink to="authored" end>
+          My Tracks
+        </NavTabLink>
+        <NavTabLink to="shared">Shared With Me</NavTabLink>
+      </div>
+      <Outlet
+        context={{
+          selectedTracks,
+          onTrackSelect: handleTrackSelect,
+          onDeleteTrack: (trackId: string) =>
+            deleteTracksMutation.mutate({
+              trackIds: trackId,
+              isBatchDelete: false,
+            }),
+        }}
+      />
       {selectedTracks.size > 0 && (
         <BatchActionsBar
           selectedCount={selectedTracks.size}
@@ -155,3 +149,5 @@ export function MyTracks() {
     </div>
   );
 }
+
+export { UserTracksTab, SharedTracksTab };
