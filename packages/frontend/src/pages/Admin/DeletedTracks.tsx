@@ -224,33 +224,17 @@ export function DeletedTracksAdmin() {
         pageSize={pageSize}
         sorting={sorting}
         onSortingChange={setSorting}
+        pagination={{
+          page,
+          totalPages,
+          onNext: handleNext,
+          onPrev: handlePrev,
+          isLoading,
+          isCountLoading,
+          hasNext: Boolean(nextCursor),
+          hasPrev: page > 1,
+        }}
       />
-      <div className="flex items-center justify-between mt-4">
-        <span>
-          Page {page}
-          {isCountLoading
-            ? ""
-            : countData !== undefined
-            ? ` of ${totalPages}`
-            : ""}
-        </span>
-        <div>
-          <button
-            className="mr-2 px-3 py-1 rounded border disabled:opacity-50"
-            onClick={handlePrev}
-            disabled={page === 1}
-          >
-            Previous
-          </button>
-          <button
-            className="px-3 py-1 rounded border disabled:opacity-50"
-            onClick={handleNext}
-            disabled={!nextCursor}
-          >
-            Next
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
