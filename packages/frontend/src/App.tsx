@@ -3,6 +3,7 @@ import {
   Routes,
   Route,
   Navigate,
+  Outlet,
 } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Home } from "@/pages/Home";
@@ -21,6 +22,9 @@ import { useInitializeFeatureFlags } from "./hooks/useFeatureFlags";
 import { ToastsContainer } from "./hooks/useToasts";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { EditTrack } from "@/pages/EditTrack";
+import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
+import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
+import { DeletedTracksAdmin } from "@/pages/Admin/DeletedTracks";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -85,7 +89,12 @@ function AppRoutes() {
               <Admin />
             </AdminRoute>
           }
-        />
+        >
+          <Route index element={<Navigate to="feature-flags" replace />} />
+          <Route path="feature-flags" element={<FeatureFlagsAdmin />} />
+          <Route path="invite-codes" element={<InviteCodesAdmin />} />
+          <Route path="deleted-tracks" element={<DeletedTracksAdmin />} />
+        </Route>
       </Routes>
     </Layout>
   );
