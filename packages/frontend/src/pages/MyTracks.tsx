@@ -5,7 +5,7 @@ import { TrackList } from "@/components/track-list/TrackList";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useState } from "react";
 import { Outlet, useOutletContext } from "react-router-dom";
-import { NavTabLink } from "@/components/ui/NavTabLink";
+import { NavTabLink, NavTabList } from "@/components/ui/NavTabLink";
 import { BatchActionsBar } from "@/components/BatchActionsBar";
 import { useInfiniteTracks } from "@/hooks/useInfiniteTracks";
 import { useTrackSort } from "@/hooks/useTrackSort";
@@ -122,12 +122,12 @@ export function MyTracks() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex space-x-4 mb-8 pb-2">
+      <NavTabList className="mb-8">
         <NavTabLink to="authored" end>
           My Tracks
         </NavTabLink>
         <NavTabLink to="shared">Shared With Me</NavTabLink>
-      </div>
+      </NavTabList>
       <Outlet
         context={{
           selectedTracks,
