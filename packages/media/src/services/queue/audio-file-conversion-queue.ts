@@ -80,7 +80,7 @@ async function updateAudioFileConversionStatus(
     const audioFileUrlProperty =
       format === "wav" ? "fullTrackWavUrl" : "fullTrackFlacUrl";
     const audioFileSizeBytesProperty =
-      format === "wav" ? "fullTrackWavSizeBytes" : "fullTrackFlacSizeBytes";
+      format === "wav" ? "wavSizeBytes" : "flacSizeBytes";
 
     await prisma.track.update({
       where: { id },

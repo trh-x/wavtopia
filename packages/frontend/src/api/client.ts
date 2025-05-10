@@ -296,10 +296,19 @@ export const api = {
   },
 
   tracks: {
-    list: async (token: string, params?: PaginationParams) => {
+    list: async (
+      token: string,
+      params?: PaginationParams & {
+        sortField?: string;
+        sortDirection?: "asc" | "desc";
+      }
+    ) => {
       const searchParams = new URLSearchParams();
       if (params?.cursor) searchParams.set("cursor", params.cursor);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
+      if (params?.sortField) searchParams.set("sortField", params.sortField);
+      if (params?.sortDirection)
+        searchParams.set("sortDirection", params.sortDirection);
 
       return apiRequest("/tracks", { token, searchParams }) as Promise<
         PaginatedResponse<Track>
