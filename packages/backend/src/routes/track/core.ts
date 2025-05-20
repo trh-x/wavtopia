@@ -196,7 +196,7 @@ router.post(
         throw new AppError(400, "No track file provided");
       }
 
-      if (req.user?.isOverStorageQuota) {
+      if (req.user?.isOverQuota) {
         throw new AppError(
           400,
           "You have reached your storage quota. Please free up some space to continue uploading."
@@ -251,74 +251,52 @@ router.post(
 
         const genres = await findOrCreateGenres(data.genreNames || []);
 
-        const totalQuotaBytes = originalSizeBytes + (coverArtSizeBytes ?? 0);
-
         // Create track and update storage usage in a transaction
-        const { track, notification } = await prisma.$transaction(
-          async (tx) => {
-            const track = await tx.track.create({
-              data: {
-                title: data.title,
-                primaryArtistId: primaryArtist.id,
-                originalFormat,
-                originalUrl: originalFileUrl,
-                originalSizeBytes,
-                coverArt: coverArtUrl,
-                coverArtSizeBytes,
-                totalQuotaBytes,
-                metadata: data.metadata as Prisma.InputJsonValue,
-                userId: req.user!.id,
-                bpm: data.bpm,
-                key: data.key,
-                isExplicit: data.isExplicit,
-                isPublic: data.isPublic,
-                description: data.description,
-                licenseId: data.licenseId,
-                ...(data.releaseDate && data.releaseDatePrecision
-                  ? {
-                      releaseDate: roundDateByPrecision(
-                        new Date(data.releaseDate),
-                        data.releaseDatePrecision
-                      ),
-                      releaseDatePrecision: data.releaseDatePrecision,
-                    }
-                  : {}),
-                ...(data.genreNames && data.genreNames.length > 0
-                  ? {
-                      genres: {
-                        create: genres.map((genre) => ({
-                          genre: {
-                            connect: {
-                              id: genre.id,
-                            },
-                          },
-                        })),
+        const track = await prisma.track.create({
+          data: {
+            title: data.title,
+            primaryArtistId: primaryArtist.id,
+            originalFormat,
+            originalUrl: originalFileUrl,
+            originalSizeBytes,
+            coverArt: coverArtUrl,
+            coverArtSizeBytes,
+            metadata: data.metadata as Prisma.InputJsonValue,
+            userId: req.user!.id,
+            bpm: data.bpm,
+            key: data.key,
+            isExplicit: data.isExplicit,
+            isPublic: data.isPublic,
+            description: data.description,
+            licenseId: data.licenseId,
+            ...(data.releaseDate && data.releaseDatePrecision
+              ? {
+                  releaseDate: roundDateByPrecision(
+                    new Date(data.releaseDate),
+                    data.releaseDatePrecision
+                  ),
+                  releaseDatePrecision: data.releaseDatePrecision,
+                }
+              : {}),
+            ...(data.genreNames && data.genreNames.length > 0
+              ? {
+                  genres: {
+                    create: genres.map((genre) => ({
+                      genre: {
+                        connect: {
+                          id: genre.id,
+                        },
                       },
-                    }
-                  : {}),
-              },
-            });
+                    })),
+                  },
+                }
+              : {}),
+          },
+        });
 
-            // Update storage usage and get quota warning.
-            // NOTE: The track files (original + cover art) are in temporary local file storage,
-            // not uploaded to Minio until the track conversion job runs. We still update the user's
-            // storage usage here, and show a warning notification if it takes them over their quota.
-            const { notification } = await updateUserStorage(
-              {
-                bytesChange: totalQuotaBytes,
-                user: req.user!,
-              },
-              tx
-            );
-
-            return { track, notification };
-          }
-        );
-
-        // If they're over quota, the notification will be a STORAGE_QUOTA_WARNING notification.
+        // TODO: Return `track` directly, rather than in a container object.
         const response = {
           track,
-          notification,
         };
 
         console.log("Track created successfully:", track.id);

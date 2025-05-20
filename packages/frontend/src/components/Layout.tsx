@@ -119,11 +119,6 @@ function Header() {
                       </Link>
                     </HeaderDropdownItem>
                   )}
-                  <HeaderDropdownItem>
-                    <Link to="/manage-storage" className="block">
-                      Manage Storage
-                    </Link>
-                  </HeaderDropdownItem>
                   <HeaderDropdownItem onClick={logout}>
                     Logout
                   </HeaderDropdownItem>

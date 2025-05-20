@@ -1,3 +1,5 @@
+// TODO: Reconcile with packages/frontend/src/utils/formatDuration.ts
+
 /**
  * Formats seconds into human readable string (e.g., "1.5 hours", "750 minutes", "2.1 seconds")
  */

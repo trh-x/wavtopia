@@ -3,7 +3,6 @@ import {
   Routes,
   Route,
   Navigate,
-  Outlet,
 } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Home } from "@/pages/Home";
@@ -26,7 +25,6 @@ import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
 import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
 import { DeletedTracksAdmin } from "@/pages/Admin/DeletedTracks";
 import { UserTracksTab, SharedTracksTab } from "./pages/MyTracks";
-import { ManageStorage } from "./pages/ManageStorage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -101,14 +99,6 @@ function AppRoutes() {
           <Route path="invite-codes" element={<InviteCodesAdmin />} />
           <Route path="deleted-tracks" element={<DeletedTracksAdmin />} />
         </Route>
-        <Route
-          path="/manage-storage"
-          element={
-            <PrivateRoute>
-              <ManageStorage />
-            </PrivateRoute>
-          }
-        />
       </Routes>
     </Layout>
   );

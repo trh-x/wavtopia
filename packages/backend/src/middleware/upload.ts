@@ -51,7 +51,7 @@ export function checkStorageQuota(
     return next(new AppError(401, "Authentication required"));
   }
 
-  if (req.user.isOverStorageQuota) {
+  if (req.user.isOverQuota) {
     return next(
       new AppError(
         413,

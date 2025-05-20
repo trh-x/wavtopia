@@ -294,7 +294,7 @@ router.delete("/", async (req, res, next) => {
       },
       select: {
         userId: true,
-        totalQuotaBytes: true,
+        totalQuotaSeconds: true,
       },
     });
 
@@ -318,8 +318,8 @@ router.delete("/", async (req, res, next) => {
       data: { status: TrackStatus.PENDING_DELETION },
     });
 
-    const bytesToSubtract = tracks.reduce(
-      (acc, track) => acc + (track.totalQuotaBytes ?? 0),
+    const secondsToSubtract = tracks.reduce(
+      (acc, track) => acc + (track.totalQuotaSeconds ?? 0),
       0
     );
 
@@ -328,7 +328,7 @@ router.delete("/", async (req, res, next) => {
     updateUserStorage(
       {
         userId: req.user!.id,
-        bytesChange: -bytesToSubtract,
+        secondsChange: -secondsToSubtract,
       },
       prisma
     );

@@ -2,7 +2,12 @@ import { Job, Worker } from "bullmq";
 import { convertModuleToWAV, ConvertedStem } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
-import { StorageFile, config, updateUserStorage } from "@wavtopia/core-storage";
+import {
+  StorageFile,
+  config,
+  deleteLocalFile,
+  updateUserStorage,
+} from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../../services/storage";
 import {
   createQueue,
@@ -179,6 +184,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
     // Upload original file
     console.log("Uploading original file...");
     const originalUrl = await uploadFile(originalFile, "originals/");
+    await deleteLocalFile(track.originalUrl);
     console.log("Original file uploaded:", originalUrl);
 
     // Upload cover art if provided
@@ -187,12 +193,13 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       const coverArtFile = await getLocalFile(track.coverArt);
       console.log("Uploading cover art...");
       coverArtUrl = await uploadFile(coverArtFile, "covers/");
+      await deleteLocalFile(track.coverArt);
       console.log("Cover art uploaded:", coverArtUrl);
     }
 
-    if (user.isOverStorageQuota) {
+    if (user.isOverQuota) {
       console.warn(
-        `User ${track.userId} has exceeded their storage quota. Stems will not be converted. The original file and cover art have been uploaded.`
+        `User ${track.userId} has exceeded their storage quota. The track will not be converted. The original file and cover art have been uploaded.`
       );
 
       await prisma.track.update({
@@ -206,7 +213,6 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       return;
     }
 
-    // Convert module to WAV
     // Convert module to WAV
     console.log("Converting module to WAV...");
     const { fullTrackWavBuffer, stems } = await convertModuleToWAV(
@@ -230,9 +236,8 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       )
     );
 
-    const totalBytesToAdd =
-      stemUploads.reduce((acc, stem) => acc + stem.mp3SizeBytes, 0) +
-      mp3SizeBytes;
+    const totalQuotaSeconds =
+      stemUploads.reduce((acc, stem) => acc + stem.duration, 0) + duration;
 
     // Update database record
     console.log("Updating database record...");
@@ -248,7 +253,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
             duration,
             coverArt: coverArtUrl,
             mp3SizeBytes,
-            totalQuotaBytes: (track.totalQuotaBytes ?? 0) + totalBytesToAdd,
+            totalQuotaSeconds,
             stems: {
               create: stemUploads,
             },
@@ -260,7 +265,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
         // Update storage usage and get quota warning
         const { notification } = await updateUserStorage(
           {
-            bytesChange: totalBytesToAdd,
+            secondsChange: totalQuotaSeconds,
             userId: trk.userId,
           },
           tx
