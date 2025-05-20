@@ -11,28 +11,28 @@ datasource db {
 }
 
 model User {
-  id                    String      @id @default(uuid())
-  email                 String      @unique
-  username              String      @unique
-  password              String
-  role                  Role        @default(USER)
-  inviteCode            InviteCode? @relation("UsedInviteCode", fields: [inviteCodeId], references: [id])
-  inviteCodeId          String?     @map("invite_code_id")
-  features              UserFeature[]
-  tracks                Track[]
-  sharedTracks          TrackShare[] @relation("SharedWithUser")
-  notifications         Notification[]
+  id                      String      @id @default(uuid())
+  email                   String      @unique
+  username                String      @unique
+  password                String
+  role                    Role        @default(USER)
+  inviteCode              InviteCode? @relation("UsedInviteCode", fields: [inviteCodeId], references: [id])
+  inviteCodeId            String?     @map("invite_code_id")
+  features                UserFeature[]
+  tracks                  Track[]
+  sharedTracks            TrackShare[] @relation("SharedWithUser")
+  notifications           Notification[]
   // Storage tracking
-  freeQuotaBytes        Int         @default(0) @map("free_quota_bytes") // Free storage quota
-  extraQuotaBytes       Int         @default(0) @map("extra_quota_bytes")  // Additional storage quota purchased
-  usedStorageBytes      Int         @default(0) @map("used_storage_bytes") // Current storage usage
-  isOverStorageQuota    Boolean     @default(false) @map("is_over_storage_quota") // Whether user has exceeded their quota
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt             DateTime    @updatedAt @map("updated_at")
-  trackEvents           TrackEvent[]
-  trackActivities       UserTrackActivity[]
-  stemEvents            StemEvent[]
-  stemActivities        UserStemActivity[]
+  freeQuotaSeconds        Int         @default(0) @map("free_quota_seconds") // Free storage quota in seconds
+  paidQuotaSeconds        Int         @default(0) @map("paid_quota_seconds")  // Additional storage quota purchased (seconds)
+  currentUsedQuotaSeconds Float       @default(0) @map("current_used_quota_seconds") // Current storage usage (seconds)
+  isOverQuota             Boolean     @default(false) @map("is_over_quota") // Whether user has exceeded their quota
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+  trackEvents             TrackEvent[]
+  trackActivities         UserTrackActivity[]
+  stemEvents              StemEvent[]
+  stemActivities          UserStemActivity[]
 
   @@map("users")
 }
@@ -127,7 +127,7 @@ model Track {
   fullTrackMp3Url       String?                    @map("full_track_mp3_url")
   fullTrackFlacUrl      String?                    @map("full_track_flac_url")
   waveformData          Float[]                    @map("waveform_data")
-  duration              Float?                     @map("duration")
+  duration              Float?                     @map("duration") // Duration in seconds
   coverArt              String?                    @map("cover_art")
   metadata              Json?
   isPublic              Boolean                    @default(false) @map("is_public")
@@ -152,10 +152,9 @@ model Track {
   wavSizeBytes          Int?   @map("wav_size_bytes")
   flacSizeBytes         Int?   @map("flac_size_bytes")
   coverArtSizeBytes     Int?   @map("cover_art_size_bytes")
-  // totalQuotaBytes is the sum of originalSizeBytes, coverArtSizeBytes, mp3SizeBytes,
-  // and the sum of mp3SizeBytes for all stems.
-  totalQuotaBytes       Int?   @map("total_quota_bytes") 
-  // totalStemSizeBytes will be calculated dynamically or stored if needed for performance
+  // totalQuotaSeconds is the sum of the track duration and the duration of all stems.
+  totalQuotaSeconds     Int?   @map("total_quota_seconds") 
+  // totalStemsDuration will be calculated dynamically or stored if needed for performance
 
   // Musical Information
   bpm                 Float?
@@ -280,7 +279,7 @@ model Stem {
   mp3Url                String                     @map("mp3_url")
   flacUrl               String?                    @map("flac_url")
   waveformData          Float[]                    @map("waveform_data")
-  duration              Float?                     @map("duration")
+  duration              Float?                     @map("duration") // Duration in seconds
   trackId               String                     @map("track_id")
   track                 Track                      @relation(fields: [trackId], references: [id])
   wavConversionStatus   AudioFileConversionStatus  @default(NOT_STARTED) @map("wav_conversion_status")

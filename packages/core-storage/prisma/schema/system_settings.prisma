@@ -2,7 +2,7 @@
 // It is meant to be used alongside the main schema.prisma file
 
 enum SystemSettingKey {
-  FREE_STORAGE_QUOTA_BYTES
+  FREE_STORAGE_QUOTA_SECONDS
   // Easy to add other system settings later:
   // MAX_TRACK_SIZE_BYTES
   // MAX_STEMS_PER_TRACK

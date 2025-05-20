@@ -2,13 +2,13 @@ import type { Notification, PrismaClient, User } from ".prisma/client";
 import { Prisma } from ".prisma/client";
 interface StorageUser {
     id: string;
-    usedStorageBytes: number;
-    freeQuotaBytes: number;
-    extraQuotaBytes: number;
-    isOverStorageQuota: boolean;
+    currentUsedQuotaSeconds: number;
+    freeQuotaSeconds: number;
+    paidQuotaSeconds: number;
+    isOverQuota: boolean;
 }
 export type UpdateStorageParams = {
-    bytesChange: number;
+    secondsChange: number;
 } & ({
     user: StorageUser;
 } | {

@@ -97,7 +97,7 @@ export async function getObject(fileName: string): Promise<internal.Readable> {
  */
 export async function getDefaultFreeQuota(): Promise<number> {
   const setting = await prisma.systemSetting.findUnique({
-    where: { key: "FREE_STORAGE_QUOTA_BYTES" },
+    where: { key: "FREE_STORAGE_QUOTA_SECONDS" },
     select: { numberValue: true },
   });
 

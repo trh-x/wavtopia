@@ -1,18 +1,18 @@
 import type { Notification, PrismaClient, User } from ".prisma/client";
 import { NotificationType, Prisma } from ".prisma/client";
 import { createNotification } from "./notifications";
-import { formatBytes } from "../utils/formatBytes";
+import { formatSeconds } from "../utils/formatSeconds";
 
 interface StorageUser {
   id: string;
-  usedStorageBytes: number;
-  freeQuotaBytes: number;
-  extraQuotaBytes: number;
-  isOverStorageQuota: boolean;
+  currentUsedQuotaSeconds: number;
+  freeQuotaSeconds: number;
+  paidQuotaSeconds: number;
+  isOverQuota: boolean;
 }
 
 export type UpdateStorageParams = {
-  bytesChange: number;
+  secondsChange: number;
 } & ({ user: StorageUser } | { userId: string });
 
 export interface StorageUpdateResult {
@@ -37,43 +37,44 @@ export async function updateUserStorage(
           where: { id: params.userId },
           select: {
             id: true,
-            usedStorageBytes: true,
-            freeQuotaBytes: true,
-            extraQuotaBytes: true,
-            isOverStorageQuota: true,
+            currentUsedQuotaSeconds: true,
+            freeQuotaSeconds: true,
+            paidQuotaSeconds: true,
+            isOverQuota: true,
           },
         });
 
-  const totalQuotaBytes =
-    initialUser.freeQuotaBytes + initialUser.extraQuotaBytes;
-  const newTotalUsage = initialUser.usedStorageBytes + params.bytesChange;
-  const isOverQuota = newTotalUsage > totalQuotaBytes;
+  const totalQuotaSeconds =
+    initialUser.freeQuotaSeconds + initialUser.paidQuotaSeconds;
+  const newTotalUsage =
+    initialUser.currentUsedQuotaSeconds + params.secondsChange;
+  const isOverQuota = newTotalUsage > totalQuotaSeconds;
 
   // Update the user's storage usage
   const user = await prismaClient.user.update({
     where: { id: initialUser.id },
     data: {
-      usedStorageBytes: newTotalUsage,
-      isOverStorageQuota: isOverQuota,
+      currentUsedQuotaSeconds: newTotalUsage,
+      isOverQuota,
     },
   });
 
   // Create a notification if the user just went over quota
-  if (isOverQuota && !initialUser.isOverStorageQuota) {
+  if (isOverQuota && !initialUser.isOverQuota) {
     const notification = await createNotification(
       {
         userId: user.id,
         type: NotificationType.STORAGE_QUOTA_WARNING,
         title: "Storage Quota Warning",
-        message: `You have exceeded your storage quota of ${formatBytes(
-          totalQuotaBytes
-        )}. Your current usage is ${formatBytes(
+        message: `You have exceeded your storage quota of ${formatSeconds(
+          totalQuotaSeconds
+        )}. Your current usage is ${formatSeconds(
           newTotalUsage
         )}. Please free up some space to continue uploading.`,
         // TODO: ", or upgrade your account."
         metadata: {
           currentUsage: newTotalUsage,
-          quota: totalQuotaBytes,
+          quota: totalQuotaSeconds,
         },
       },
       prismaClient

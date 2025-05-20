@@ -9,9 +9,9 @@ const prisma = new PrismaClient();
 
 const DEFAULT_SETTINGS = [
   {
-    key: SystemSettingKey.FREE_STORAGE_QUOTA_BYTES,
+    key: SystemSettingKey.FREE_STORAGE_QUOTA_SECONDS,
     valueType: SystemSettingValueType.NUMBER,
-    numberValue: 1024 * 1024 * 1024, // 1GB in bytes
+    numberValue: 600 * 60, // 10 hours in seconds
     description: "Default free storage quota for new users",
   },
 ] as const;

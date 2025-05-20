@@ -53,11 +53,11 @@ async function promptForMissingOptions(options: BootstrapOptions) {
 
 async function bootstrap(username: string, email: string, password: string) {
   try {
-    const DEFAULT_QUOTA_BYTES = 1024 * 1024 * 1024; // 1GB in bytes
+    const DEFAULT_QUOTA_SECONDS = 600 * 60; // 10 hours in seconds
 
     // Try to get system quota, fall back to default if not set
     const quotaSetting = await prisma.systemSetting.findUnique({
-      where: { key: SystemSettingKey.FREE_STORAGE_QUOTA_BYTES },
+      where: { key: SystemSettingKey.FREE_STORAGE_QUOTA_SECONDS },
       select: { numberValue: true },
     });
 
@@ -69,7 +69,7 @@ async function bootstrap(username: string, email: string, password: string) {
         email,
         password: hashedPassword,
         role: Role.ADMIN,
-        freeQuotaBytes: quotaSetting?.numberValue ?? DEFAULT_QUOTA_BYTES,
+        freeQuotaSeconds: quotaSetting?.numberValue ?? DEFAULT_QUOTA_SECONDS,
       },
     });
     console.log("Created admin user:", {

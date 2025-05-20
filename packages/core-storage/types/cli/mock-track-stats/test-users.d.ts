@@ -21,8 +21,8 @@ export declare function getTestUsers(): Promise<{
     email: string;
     role: import(".prisma/client").$Enums.Role;
     inviteCodeId: string | null;
-    freeQuotaBytes: number;
-    extraQuotaBytes: number;
-    usedStorageBytes: number;
-    isOverStorageQuota: boolean;
+    freeQuotaSeconds: number;
+    paidQuotaSeconds: number;
+    currentUsedQuotaSeconds: number;
+    isOverQuota: boolean;
 }[]>;

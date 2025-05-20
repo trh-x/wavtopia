@@ -61,6 +61,7 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         deletedAt: Date | null;
         originalSizeBytes: number | null;
         coverArtSizeBytes: number | null;
+        totalQuotaSeconds: number | null;
         bpm: number | null;
         key: string | null;
         isrc: string | null;
