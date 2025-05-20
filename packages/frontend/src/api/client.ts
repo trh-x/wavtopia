@@ -211,6 +211,18 @@ export const api = {
     },
   },
 
+  storage: {
+    getQuota: async (token: string) => {
+      return apiRequest("/storage/quota", { token }) as Promise<{
+        freeQuotaSeconds: number;
+        paidQuotaSeconds: number;
+        currentUsedQuotaSeconds: number;
+        totalQuotaSeconds: number;
+        isOverQuota: boolean;
+      }>;
+    },
+  },
+
   track: {
     get: async (id: string, token: string | null) => {
       return apiRequest(`/track/${id}`, { token }) as Promise<Track>;
