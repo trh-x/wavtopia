@@ -2,11 +2,15 @@
 import { PrismaClient } from ".prisma/client";
 import { seedFeatureFlags } from "./seeds/feature-flags";
 import { seedLicenses } from "./seeds/licenses";
+import { seedSystemSettings } from "./seeds/system-settings";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Starting database seeding...");
+
+  // Seed system settings first as other seeds might depend on them
+  await seedSystemSettings();
 
   // Seed feature flags
   await seedFeatureFlags();

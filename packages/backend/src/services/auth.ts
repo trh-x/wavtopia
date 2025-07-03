@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { AppError } from "../middleware/errorHandler";
 import { isEarlyAccessRequired } from "./featureFlags";
 import { config } from "../config";
+import { getDefaultFreeQuota } from "./storage";
 
 interface UserSignupData {
   email: string;
@@ -62,11 +63,13 @@ export async function signup(
   }
 
   const hashedPassword = await hashPassword(data.password);
+  const freeQuotaBytes = await getDefaultFreeQuota();
 
   const userData: any = {
     email: data.email,
     username: data.username,
     password: hashedPassword,
+    freeQuotaBytes,
   };
 
   // If invite code was provided and validated, link it to the user

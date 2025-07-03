@@ -27,6 +27,7 @@ import {
   OtherUploaderIcon,
 } from "./TrackIcons";
 import { EngagementIndicator } from "@/components/engagement/EngagementIndicator";
+import { useRangeSelection } from "@/hooks/useRangeSelection";
 
 interface SortOption {
   label: string;
@@ -202,6 +203,13 @@ export function TrackList({
   const { user } = useAuth();
   const observerTarget = useRef<HTMLDivElement>(null);
 
+  const { handleRangeSelect } = useRangeSelection({
+    items: tracks,
+    selectedItems: selectedTracks || new Set(),
+    getItemId: (track) => track.id,
+    onItemSelect: onTrackSelect || (() => {}),
+  });
+
   const handleSort = (value: string) => {
     const option = sortOptions.find((opt) => opt.value === value);
     if (option && onSort) {
@@ -280,10 +288,7 @@ export function TrackList({
               {selectable && onTrackSelect && (
                 <Checkbox
                   checked={selectedTracks?.has(track.id)}
-                  onCheckedChange={() => onTrackSelect(track.id)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
+                  onClick={(e) => handleRangeSelect(e, track.id)}
                 />
               )}
               {onDeleteTrack && (

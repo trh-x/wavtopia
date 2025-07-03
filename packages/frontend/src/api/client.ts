@@ -8,7 +8,18 @@ import {
   PlaybackSource,
   AudioFormat,
   TrackUsageResponse,
+  Notification,
+  TrackStatus,
 } from "@wavtopia/core-storage";
+import { useNotificationStore } from "@/components/NotificationBell";
+import { useToastsStore } from "@/hooks/useToasts";
+import type { DeletedTrack } from "@/pages/Admin/DeletedTracks";
+
+// TODO: This should come from core-storage:
+export const NotificationType = {
+  EARLY_ACCESS_REQUEST: "EARLY_ACCESS_REQUEST",
+  STORAGE_QUOTA_WARNING: "STORAGE_QUOTA_WARNING",
+};
 
 const API_URL = "/api";
 
@@ -28,7 +39,8 @@ interface TrackUsageInput {
 
 export const apiRequest = async <T = any>(
   endpoint: string,
-  options: FetchOptions = {}
+  fetchOptions: FetchOptions = {},
+  options: { noToast?: boolean } = {}
 ): Promise<T> => {
   const {
     token,
@@ -36,7 +48,8 @@ export const apiRequest = async <T = any>(
     contentType,
     headers: customHeaders = {},
     ...rest
-  } = options;
+  } = fetchOptions;
+  const { noToast = false } = options;
 
   const headers = new Headers(customHeaders);
   if (token) {
@@ -57,10 +70,37 @@ export const apiRequest = async <T = any>(
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`);
+    let errorMessage: string | undefined;
+    try {
+      errorMessage = (await response.json())?.message;
+    } catch (error) {
+      console.error("Error parsing JSON response:", error);
+    }
+    throw new Error(
+      `API request failed: ${errorMessage || response.statusText}`
+    );
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // If a request returns a notification, show it as a toast and increment the unread count.
+  // TODO: Fix the edge case where the unread count is refreshed between the notification being
+  // created and received, which could result in the latest count being added to incorrectly.
+  if (data.notification && !noToast) {
+    useToastsStore.getState().toasts.addToast({
+      title: data.notification.title,
+      message: data.notification.message,
+      type:
+        data.notification.type === NotificationType.STORAGE_QUOTA_WARNING
+          ? "warning"
+          : "info",
+    });
+    useNotificationStore
+      .getState()
+      .setUnreadCount(useNotificationStore.getState().unreadCount + 1);
+  }
+
+  return data;
 };
 
 export const api = {
@@ -171,6 +211,18 @@ export const api = {
     },
   },
 
+  storage: {
+    getQuota: async (token: string) => {
+      return apiRequest("/storage/quota", { token }) as Promise<{
+        freeQuotaSeconds: number;
+        paidQuotaSeconds: number;
+        currentUsedQuotaSeconds: number;
+        totalQuotaSeconds: number;
+        isOverQuota: boolean;
+      }>;
+    },
+  },
+
   track: {
     get: async (id: string, token: string | null) => {
       return apiRequest(`/track/${id}`, { token }) as Promise<Track>;
@@ -226,7 +278,7 @@ export const api = {
         method: "POST",
         token,
         body: formData,
-      }) as Promise<Track>;
+      }) as Promise<{ track: Track; notification?: Notification }>;
     },
 
     update: async (
@@ -256,10 +308,19 @@ export const api = {
   },
 
   tracks: {
-    list: async (token: string, params?: PaginationParams) => {
+    list: async (
+      token: string,
+      params?: PaginationParams & {
+        sortField?: string;
+        sortDirection?: "asc" | "desc";
+      }
+    ) => {
       const searchParams = new URLSearchParams();
       if (params?.cursor) searchParams.set("cursor", params.cursor);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
+      if (params?.sortField) searchParams.set("sortField", params.sortField);
+      if (params?.sortDirection)
+        searchParams.set("sortDirection", params.sortDirection);
 
       return apiRequest("/tracks", { token, searchParams }) as Promise<
         PaginatedResponse<Track>
@@ -306,6 +367,52 @@ export const api = {
         body: JSON.stringify({ trackIds: ids }),
       });
     },
+
+    getDeletedTracks: async (
+      token: string,
+      params: PaginationParams & {
+        status: TrackStatus | "ALL";
+        sortField?: string;
+        sortDirection?: "asc" | "desc";
+      }
+    ) => {
+      const searchParams = new URLSearchParams({
+        limit: String(params.limit ?? 20),
+      });
+      if (params.status !== "ALL") {
+        searchParams.set("status", params.status);
+      }
+      if (params.cursor) {
+        searchParams.set("cursor", params.cursor);
+      }
+      if (params.sortField) {
+        searchParams.set("sortField", params.sortField);
+      }
+      if (params.sortDirection) {
+        searchParams.set("sortDirection", params.sortDirection);
+      }
+      return apiRequest<{
+        items: DeletedTrack[];
+        metadata: { hasNextPage: boolean; nextCursor?: string };
+      }>(`/tracks/deleted`, {
+        token,
+        searchParams,
+      });
+    },
+
+    getDeletedTracksCount: async (
+      token: string,
+      { status }: { status: TrackStatus | "ALL" }
+    ) => {
+      const searchParams = new URLSearchParams();
+      if (status !== "ALL") {
+        searchParams.set("status", status);
+      }
+      return apiRequest<{ count: number }>(`/tracks/deleted/count`, {
+        token,
+        searchParams,
+      });
+    },
   },
 
   licenses: {
@@ -342,10 +449,16 @@ export const api = {
     },
 
     markAsRead: async (token: string, notificationId: string) => {
-      return apiRequest(`/notifications/${notificationId}/read`, {
-        method: "POST",
-        token,
-      });
+      return apiRequest(
+        `/notifications/${notificationId}/read`,
+        {
+          method: "POST",
+          token,
+        },
+        {
+          noToast: true,
+        }
+      );
     },
 
     markAllAsRead: async (token: string) => {

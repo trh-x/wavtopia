@@ -14,6 +14,7 @@ export async function createNotification({
   message: string;
   metadata?: Record<string, any>;
 }): Promise<Notification> {
+  // TODO: Consider using the core-storage createNotification function
   return prisma.notification.create({
     data: {
       userId,

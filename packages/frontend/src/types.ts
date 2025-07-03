@@ -1,5 +1,6 @@
 export type {
   Track,
+  TrackStatus,
   PaginatedResponse,
   PaginationParams,
   User,

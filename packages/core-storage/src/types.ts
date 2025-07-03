@@ -1,9 +1,4 @@
-import {
-  Prisma,
-  TrackEventType,
-  PlaybackSource,
-  AudioFormat,
-} from ".prisma/client";
+import { Prisma } from ".prisma/client";
 
 // Base Stem type - matches what Prisma gives us in track.stems
 export type Stem = Prisma.StemGetPayload<{}>;

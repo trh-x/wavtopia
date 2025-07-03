@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNotifications } from "../contexts/NotificationsContext";
+import { useToasts } from "./useToasts";
 import { useAuthToken } from "./useAuthToken";
 import { Track, Stem } from "@/types";
 
@@ -22,7 +22,7 @@ export function useAudioFileConversion({
 }: UseAudioFileConversionProps) {
   const [status, setStatus] = useState<ConversionStatus>("NOT_STARTED");
   const [isConverting, setIsConverting] = useState(false);
-  const { addNotification } = useNotifications();
+  const { addToast } = useToasts();
   const { getToken } = useAuthToken();
 
   const formatName = format === "wav" ? "WAV" : "FLAC";
@@ -62,7 +62,7 @@ export function useAudioFileConversion({
             if (data.data.conversionStatus === "COMPLETED") {
               setIsConverting(false);
               clearInterval(intervalId);
-              addNotification({
+              addToast({
                 type: "success",
                 title: `${formatName} Conversion Complete`,
                 // TODO: Create a shared constant for the file cleanup timeframe
@@ -71,7 +71,7 @@ export function useAudioFileConversion({
             } else if (data.data.conversionStatus === "FAILED") {
               setIsConverting(false);
               clearInterval(intervalId);
-              addNotification({
+              addToast({
                 type: "error",
                 title: `${formatName} Conversion Failed`,
                 message: `There was an error converting ${name} to ${formatName} format.`,
@@ -101,15 +101,7 @@ export function useAudioFileConversion({
       }
       currentController.abort(); // Clean up any pending requests when unmounting
     };
-  }, [
-    isConverting,
-    track,
-    stem,
-    format,
-    formatName,
-    getToken,
-    addNotification,
-  ]);
+  }, [isConverting, track, stem, format, formatName, getToken, addToast]);
 
   const startConversion = async () => {
     try {
@@ -135,13 +127,13 @@ export function useAudioFileConversion({
       const name = stem ? stem.name : track.title;
 
       if (data.status === "success") {
-        addNotification({
+        addToast({
           type: "info",
           title: `${formatName} Conversion Started`,
           message: `${name} is being converted to ${formatName} format.`,
         });
       } else if (data.status === "in_progress") {
-        addNotification({
+        addToast({
           type: "info",
           title: `${formatName} Conversion In Progress`,
           message: `${name} is already being converted to ${formatName} format.`,
@@ -150,7 +142,7 @@ export function useAudioFileConversion({
     } catch (error) {
       console.error(`Error starting ${formatName} conversion:`, error);
       setIsConverting(false);
-      addNotification({
+      addToast({
         type: "error",
         title: `${formatName} Conversion Error`,
         message: `Failed to start ${formatName} conversion.`,

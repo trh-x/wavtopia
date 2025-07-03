@@ -2,7 +2,12 @@ import { Job, Worker } from "bullmq";
 import { convertModuleToWAV, ConvertedStem } from "../module-converter";
 import { convertWAVToMP3 } from "../../services/mp3-converter";
 import { generateWaveformData } from "../../services/waveform";
-import { StorageFile, config } from "@wavtopia/core-storage";
+import {
+  StorageFile,
+  config,
+  deleteLocalFile,
+  updateUserStorage,
+} from "@wavtopia/core-storage";
 import { uploadFile, deleteFile, getLocalFile } from "../../services/storage";
 import {
   createQueue,
@@ -74,6 +79,7 @@ async function processStem(
   type: string;
   index: number;
   mp3Url: string;
+  mp3SizeBytes: number;
   waveformData: number[];
   duration: number;
 }> {
@@ -95,6 +101,7 @@ async function processStem(
     type: stem.type,
     index,
     mp3Url,
+    mp3SizeBytes: mp3Buffer.length,
     waveformData: waveformResult.peaks,
     duration: waveformResult.duration,
   };
@@ -106,6 +113,7 @@ async function processFullTrack(
   originalName: string
 ): Promise<{
   mp3Url: string;
+  mp3SizeBytes: number;
   waveformData: number[];
   duration: number;
 }> {
@@ -133,6 +141,7 @@ async function processFullTrack(
 
   return {
     mp3Url,
+    mp3SizeBytes: mp3Buffer.length,
     waveformData: waveformResult.peaks,
     duration: waveformResult.duration,
   };
@@ -159,26 +168,49 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       throw new Error(`Track ${trackId} has no original file URL`);
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: track.userId },
+    });
+
+    if (!user) {
+      throw new Error(`User not found: ${track.userId}`);
+    }
+
     const originalFile = await getLocalFile(track.originalUrl);
     // TODO: Retain the original file name from the point of upload
     const originalName = track.title.replace(/[^a-zA-Z0-9._-]/g, "_");
     // const originalName = track.originalUrl.replace(/\.[^/.]+$/, "");
 
-    const coverArtFile = track.coverArt
-      ? await getLocalFile(track.coverArt)
-      : undefined;
-
     // Upload original file
     console.log("Uploading original file...");
     const originalUrl = await uploadFile(originalFile, "originals/");
+    await deleteLocalFile(track.originalUrl);
     console.log("Original file uploaded:", originalUrl);
 
     // Upload cover art if provided
     let coverArtUrl: string | undefined;
-    if (coverArtFile) {
+    if (track.coverArt) {
+      const coverArtFile = await getLocalFile(track.coverArt);
       console.log("Uploading cover art...");
       coverArtUrl = await uploadFile(coverArtFile, "covers/");
+      await deleteLocalFile(track.coverArt);
       console.log("Cover art uploaded:", coverArtUrl);
+    }
+
+    if (user.isOverQuota) {
+      console.warn(
+        `User ${track.userId} has exceeded their storage quota. The track will not be converted. The original file and cover art have been uploaded.`
+      );
+
+      await prisma.track.update({
+        where: { id: trackId },
+        data: {
+          originalUrl,
+          coverArt: coverArtUrl,
+        },
+      });
+
+      return;
     }
 
     // Convert module to WAV
@@ -191,6 +223,7 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
 
     const {
       mp3Url: fullTrackMp3Url,
+      mp3SizeBytes,
       waveformData,
       duration,
     } = await processFullTrack(fullTrackWavBuffer, originalName);
@@ -203,24 +236,47 @@ async function trackConversionProcessor(job: Job<TrackConversionJob>) {
       )
     );
 
+    const totalQuotaSeconds =
+      stemUploads.reduce((acc, stem) => acc + stem.duration, 0) + duration;
+
     // Update database record
     console.log("Updating database record...");
     try {
-      const track = await prisma.track.update({
-        where: { id: trackId },
-        data: {
-          originalUrl,
-          fullTrackMp3Url,
-          waveformData,
-          duration,
-          coverArt: coverArtUrl,
-          stems: {
-            create: stemUploads,
+      // Update track and update storage usage in a transaction
+      await prisma.$transaction(async (tx) => {
+        const trk = await prisma.track.update({
+          where: { id: trackId },
+          data: {
+            originalUrl,
+            fullTrackMp3Url,
+            waveformData,
+            duration,
+            coverArt: coverArtUrl,
+            mp3SizeBytes,
+            totalQuotaSeconds,
+            stems: {
+              create: stemUploads,
+            },
           },
-        },
-      });
+        });
 
-      console.log("Track updated successfully:", track.id);
+        console.log("Track updated successfully:", trk.id);
+
+        // Update storage usage and get quota warning
+        const { notification } = await updateUserStorage(
+          {
+            secondsChange: totalQuotaSeconds,
+            userId: trk.userId,
+          },
+          tx
+        );
+
+        if (notification) {
+          console.warn(
+            `User ${trk.userId} has exceeded their storage quota. Quota warning: ${notification.message}`
+          );
+        }
+      });
     } catch (dbError) {
       console.error("Database error during track creation:", dbError);
 

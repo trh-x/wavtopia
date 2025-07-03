@@ -1,26 +1,18 @@
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
-import { FeatureFlagsAdmin } from "./FeatureFlags";
-import { InviteCodesAdmin } from "./InviteCodes";
+import { Outlet } from "react-router-dom";
+import { NavTabLink, NavTabList } from "@/components/ui/NavTabLink";
 
 export function Admin() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
-
-      <Tabs defaultValue="feature-flags">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="feature-flags">Feature Flags</TabsTrigger>
-          <TabsTrigger value="invite-codes">Invite Codes</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="feature-flags">
-          <FeatureFlagsAdmin />
-        </TabsContent>
-
-        <TabsContent value="invite-codes">
-          <InviteCodesAdmin />
-        </TabsContent>
-      </Tabs>
+      <NavTabList className="mb-6">
+        <NavTabLink to="feature-flags" end>
+          Feature Flags
+        </NavTabLink>
+        <NavTabLink to="invite-codes">Invite Codes</NavTabLink>
+        <NavTabLink to="deleted-tracks">Deleted Tracks</NavTabLink>
+      </NavTabList>
+      <Outlet />
     </div>
   );
 }

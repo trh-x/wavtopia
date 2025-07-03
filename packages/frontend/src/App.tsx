@@ -18,9 +18,14 @@ import { RequestEarlyAccess } from "@/pages/RequestEarlyAccess";
 import Notifications from "@/pages/Notifications";
 import { BulkUploadTrack } from "./pages/BulkUploadTrack";
 import { useInitializeFeatureFlags } from "./hooks/useFeatureFlags";
-import { NotificationsProvider } from "./contexts/NotificationsContext";
+import { ToastsContainer } from "./hooks/useToasts";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { EditTrack } from "@/pages/EditTrack";
+import { FeatureFlagsAdmin } from "@/pages/Admin/FeatureFlags";
+import { InviteCodesAdmin } from "@/pages/Admin/InviteCodes";
+import { DeletedTracksAdmin } from "@/pages/Admin/DeletedTracks";
+import { UserTracksTab, SharedTracksTab } from "./pages/MyTracks";
+import { ManageStorage } from "@/pages/ManageStorage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -53,7 +58,11 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
-        <Route path="/my-tracks" element={<MyTracks />} />
+        <Route path="/my-tracks/*" element={<MyTracks />}>
+          <Route index element={<Navigate to="authored" replace />} />
+          <Route path="authored" element={<UserTracksTab />} />
+          <Route path="shared" element={<SharedTracksTab />} />
+        </Route>
         <Route
           path="/notifications"
           element={
@@ -85,6 +94,19 @@ function AppRoutes() {
               <Admin />
             </AdminRoute>
           }
+        >
+          <Route index element={<Navigate to="feature-flags" replace />} />
+          <Route path="feature-flags" element={<FeatureFlagsAdmin />} />
+          <Route path="invite-codes" element={<InviteCodesAdmin />} />
+          <Route path="deleted-tracks" element={<DeletedTracksAdmin />} />
+        </Route>
+        <Route
+          path="/manage-storage"
+          element={
+            <PrivateRoute>
+              <ManageStorage />
+            </PrivateRoute>
+          }
         />
       </Routes>
     </Layout>
@@ -98,9 +120,8 @@ export default function App() {
     <Router>
       <TooltipProvider>
         <AuthProvider>
-          <NotificationsProvider>
-            <AppRoutes />
-          </NotificationsProvider>
+          <AppRoutes />
+          <ToastsContainer />
         </AuthProvider>
       </TooltipProvider>
     </Router>

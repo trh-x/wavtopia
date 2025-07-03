@@ -6,6 +6,7 @@ import {
 import { config as backendConfig } from "../config";
 import { AppError } from "../middleware/errorHandler";
 import internal from "stream";
+import { prisma } from "../lib/prisma";
 
 // Extract complex parameter types
 type GetFileUrlParams = Parameters<StorageService["getFileUrl"]>;
@@ -89,4 +90,20 @@ export async function getObject(fileName: string): Promise<internal.Readable> {
     console.error("Failed to get object:", error);
     throw new AppError(500, "Failed to get object");
   }
+}
+
+/**
+ * Gets the default free storage quota from system settings
+ */
+export async function getDefaultFreeQuota(): Promise<number> {
+  const setting = await prisma.systemSetting.findUnique({
+    where: { key: "FREE_STORAGE_QUOTA_SECONDS" },
+    select: { numberValue: true },
+  });
+
+  if (!setting?.numberValue) {
+    throw new Error("System storage quota not configured");
+  }
+
+  return Number(setting.numberValue);
 }

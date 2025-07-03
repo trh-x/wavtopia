@@ -52,31 +52,83 @@ async function trackDeletionProcessor(job: Job<TrackDeletionJob>) {
 
     // Process tracks sequentially to maintain file deletion concurrency limits
     for (const track of tracks) {
-      console.log(`Processing track ${track.id}`);
+      console.log(
+        `Processing track ${track.id} - Deleting files and cleaning up metadata`
+      );
 
       await prisma.$transaction(async (tx) => {
         // Delete all associated files for the track
+        console.log(
+          `Deleting files for track ${track.id} and its ${track.stems.length} stems`
+        );
         const trackFailures = await deleteTrackFiles(track);
         if (trackFailures.length > 0) {
           failures.push({ trackId: track.id, failures: trackFailures });
-          return; // Skip stem/track deletion if any files failed
+          console.log(
+            `Skipping metadata cleanup for track ${track.id} due to file deletion failures`
+          );
+          return; // Skip metadata cleanup if any files failed
         }
 
-        // Delete stems and track only if all files were deleted successfully
-        await tx.stem.deleteMany({
+        // Delete organizational metadata sequentially
+        console.log(`Cleaning up metadata for track ${track.id}`);
+
+        const shares = await tx.trackShare.deleteMany({
+          where: { trackId: track.id },
+        });
+        const genres = await tx.trackGenre.deleteMany({
+          where: { trackId: track.id },
+        });
+        const albums = await tx.trackAlbum.deleteMany({
+          where: { trackId: track.id },
+        });
+        const credits = await tx.trackCredit.deleteMany({
+          where: { trackId: track.id },
+        });
+        const moods = await tx.trackMood.deleteMany({
+          where: { trackId: track.id },
+        });
+        const tags = await tx.trackTag.deleteMany({
           where: { trackId: track.id },
         });
 
-        await tx.track.delete({
-          where: { id: track.id },
+        console.log(`Metadata cleanup results for track ${track.id}:`, {
+          shares: shares.count,
+          genres: genres.count,
+          albums: albums.count,
+          credits: credits.count,
+          moods: moods.count,
+          tags: tags.count,
         });
+
+        // Mark track as deleted rather than removing the record
+        console.log(`Marking track ${track.id} as deleted`);
+        await tx.track.update({
+          where: { id: track.id },
+          data: {
+            status: "DELETED",
+            deletedAt: new Date(),
+          },
+        });
+
+        // Note that user storage has been preemptively updated when the track was marked for deletion,
+        // so we don't need to do anything about it here.
       });
 
-      console.log(`Completed processing track ${track.id}`);
+      console.log(
+        `Successfully completed deletion process for track ${track.id}`
+      );
     }
 
     if (failures.length > 0) {
-      console.error("Some files failed to delete:", failures);
+      console.error(
+        `File deletion failures occurred for ${failures.length} tracks:`,
+        failures.map((f) => ({
+          trackId: f.trackId,
+          failedFiles: f.failures.map((fail) => fail.fileUrl),
+          errors: f.failures.map((fail) => fail.error.message),
+        }))
+      );
       // We could potentially:
       // 1. Retry the failed deletions
       // 2. Move failed tracks to a "failed_deletion" status
@@ -84,7 +136,9 @@ async function trackDeletionProcessor(job: Job<TrackDeletionJob>) {
       // For now, we'll just log the failures
     }
 
-    console.log("Track deletion completed successfully");
+    console.log(
+      `Track deletion job ${job.id} completed. Processed ${tracks.length} tracks with ${failures.length} failures`
+    );
   } catch (error) {
     console.error(`Error processing job ${job.id}:`, error);
     throw error;

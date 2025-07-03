@@ -1,7 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { prisma, prismaService } from "./lib/prisma";
+import { prismaService } from "./lib/prisma";
 import { errorHandler } from "./middleware/errorHandler";
 import { authRoutes } from "./routes/auth";
 import { trackRoutes } from "./routes/track";
@@ -11,6 +11,7 @@ import { config } from "./config";
 import adminRoutes from "./routes/admin";
 import { notificationRoutes } from "./routes/notifications";
 import licenseRoutes from "./routes/licenses";
+import storageRoutes from "./routes/storage";
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
 // TODO: licenses can go under /api/settings
 app.use("/api/licenses", licenseRoutes);
+app.use("/api/storage", storageRoutes);
 
 // Error handling
 app.use(errorHandler);

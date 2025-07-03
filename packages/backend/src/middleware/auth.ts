@@ -9,6 +9,10 @@ declare global {
       user?: {
         id: string;
         role: Role;
+        isOverQuota: boolean;
+        currentUsedQuotaSeconds: number;
+        freeQuotaSeconds: number;
+        paidQuotaSeconds: number;
       };
     }
   }

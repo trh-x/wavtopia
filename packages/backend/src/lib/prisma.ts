@@ -1,7 +1,7 @@
 import { PrismaService, config } from "@wavtopia/core-storage";
 
 declare global {
-  var prismaService: PrismaService | undefined;
+  var prismaService: PrismaService;
 }
 
 // Prevent multiple instances of Prisma Client in development
