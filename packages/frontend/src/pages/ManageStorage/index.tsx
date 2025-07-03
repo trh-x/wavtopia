@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api } from "@/api/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { formatSeconds } from "@/utils/formatSeconds";
 import { auth } from "@/utils/auth";
 
@@ -14,7 +13,6 @@ interface StorageQuota {
 }
 
 export function ManageStorage() {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quota, setQuota] = useState<StorageQuota | null>(null);

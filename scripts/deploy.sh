@@ -320,6 +320,9 @@ build_service() {
     debug_log "Building service: $service_name"
     debug_log "Using temporary file: $temp_file"
     
+    # Set empty registry prefix for local builds to avoid Docker Hub lookup
+    export REGISTRY_PREFIX=""
+    
     # Add --progress=plain when debug is enabled
     local build_args=""
     if [ "$DEBUG" = true ]; then
@@ -355,6 +358,8 @@ build_service() {
 # Function to build tools image (used by other build commands)
 build_tools() {
     debug_log "Building tools image..."
+    # Set empty registry prefix for local builds to avoid Docker Hub lookup
+    export REGISTRY_PREFIX=""
     docker compose --profile build build tools
 }
 
@@ -367,7 +372,16 @@ build_workspace() {
     debug_log "Running distribute-env.sh for .env.docker"
     ./scripts/distribute-env.sh .env.docker
     
-    docker compose --profile build build workspace-apt-base workspace
+    # Set empty registry prefix for local builds to avoid Docker Hub lookup
+    export REGISTRY_PREFIX=""
+    
+    # Build base image first
+    debug_log "Building workspace-apt-base..."
+    docker compose --profile build build workspace-apt-base
+    
+    # Then build workspace image
+    debug_log "Building workspace..."
+    docker compose --profile build build workspace
 }
 
 # Function to build media service (used by other build commands)
