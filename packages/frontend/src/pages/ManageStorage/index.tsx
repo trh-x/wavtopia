@@ -27,6 +27,7 @@ export function ManageStorage() {
 
         setLoading(true);
         setError(null);
+        // FIXME: We shouldn't need getQuota & its endpoint, the data should already be available on the user object.
         const data = await api.storage.getQuota(token);
         setQuota(data);
       } catch (err) {
