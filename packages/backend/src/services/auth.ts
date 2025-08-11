@@ -1,4 +1,4 @@
-import { User, Role } from "@wavtopia/core-storage";
+import { User, Role, InviteCode } from "@wavtopia/core-storage";
 import { hashPassword, comparePassword } from "@wavtopia/core-storage";
 import { prisma } from "../lib/prisma";
 import jwt from "jsonwebtoken";
@@ -40,12 +40,14 @@ export async function signup(
   // Check if early access is required
   const earlyAccessRequired = await isEarlyAccessRequired();
 
+  let inviteCode: InviteCode | null = null;
+
   if (earlyAccessRequired) {
     if (!data.inviteCode) {
       throw new AppError(400, "Invite code is required for registration");
     }
 
-    const inviteCode = await prisma.inviteCode.findUnique({
+    inviteCode = await prisma.inviteCode.findUnique({
       where: { code: data.inviteCode },
     });
 
@@ -63,34 +65,37 @@ export async function signup(
   }
 
   const hashedPassword = await hashPassword(data.password);
-  const freeQuotaBytes = await getDefaultFreeQuota();
+  const freeQuotaSeconds = await getDefaultFreeQuota();
 
   const userData: any = {
     email: data.email,
     username: data.username,
     password: hashedPassword,
-    freeQuotaBytes,
+    freeQuotaSeconds,
   };
 
   // If invite code was provided and validated, link it to the user
-  if (data.inviteCode) {
-    const inviteCode = await prisma.inviteCode.findUnique({
-      where: { code: data.inviteCode },
-    });
+  if (inviteCode) {
+    userData.inviteCodeId = inviteCode.id;
+  }
+
+  try {
+    const user = await prisma.user.create({ data: userData });
 
     if (inviteCode) {
-      userData.inviteCodeId = inviteCode.id;
       // Update the usage count
       await prisma.inviteCode.update({
         where: { id: inviteCode.id },
         data: { usedCount: { increment: 1 } },
       });
     }
-  }
 
-  const user = await prisma.user.create({ data: userData });
-  const token = generateToken(user);
-  return { user, token };
+    const token = generateToken(user);
+    return { user, token };
+  } catch (error) {
+    console.error("Error creating user:", error);
+    throw new AppError(500, "Failed to create user");
+  }
 }
 
 export async function login(
