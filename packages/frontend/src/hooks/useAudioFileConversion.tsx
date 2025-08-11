@@ -37,7 +37,6 @@ export function useAudioFileConversion({
       const checkStatus = async () => {
         try {
           const token = getToken();
-          if (!token) return;
 
           const statusUrl = stem
             ? `/api/track/${track.id}/stem/${stem.id}/audio-conversion-status`
@@ -50,7 +49,7 @@ export function useAudioFileConversion({
 
           const response = await fetch(`${statusUrl}?format=${format}`, {
             headers: {
-              Authorization: `Bearer ${token}`,
+              ...(token && { Authorization: `Bearer ${token}` }),
             },
             signal: currentController.signal,
           });
@@ -107,13 +106,12 @@ export function useAudioFileConversion({
     try {
       setIsConverting(true);
       const token = getToken();
-      if (!token) return;
 
       const response = await fetch(`/api/track/${track.id}/convert-audio`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({
           type,
