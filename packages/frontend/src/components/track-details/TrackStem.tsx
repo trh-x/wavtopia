@@ -4,6 +4,8 @@ import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetai
 import { StemDownloadButtons } from "./DownloadLink";
 import { getAudioUrl } from "../../hooks/useAuthToken";
 import { styles } from "../../styles/common";
+import { StemManagement } from "./StemManagement";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TrackStemProps {
   stem: Stem;
@@ -12,6 +14,9 @@ interface TrackStemProps {
 
 export function TrackStem({ stem, isGridView }: TrackStemProps) {
   const { track } = useTrack();
+  const { user } = useAuth();
+
+  const canEdit = !!(user && track.userId === user.id && track.isFork);
 
   return (
     <div
@@ -20,14 +25,20 @@ export function TrackStem({ stem, isGridView }: TrackStemProps) {
       }`}
     >
       <div className={`${styles.container.flexBetween} mb-4`}>
-        <div>
+        <div className="flex-1">
           <h3
             className={`${isGridView ? "font-medium" : "text-lg font-medium"}`}
           >
             {stem.name}
           </h3>
+          {stem.type && (
+            <p className="text-sm text-gray-600 mt-1">{stem.type}</p>
+          )}
         </div>
-        <StemDownloadButtons track={track} stem={stem} />
+        <div className="flex items-center gap-3">
+          <StemDownloadButtons track={track} stem={stem} />
+          <StemManagement track={track} stem={stem} canEdit={canEdit} />
+        </div>
       </div>
       <TrackDetailsWaveform
         trackId={track.id}

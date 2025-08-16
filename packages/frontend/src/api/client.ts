@@ -305,6 +305,75 @@ export const api = {
         body: JSON.stringify(data),
       }) as Promise<Track>;
     },
+
+    fork: async (
+      id: string,
+      data: {
+        title?: string;
+        description?: string;
+        isPublic?: boolean;
+      },
+      token: string
+    ) => {
+      return apiRequest(`/track/${id}/fork`, {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      }) as Promise<Track>;
+    },
+
+    getForks: async (id: string, token: string | null) => {
+      return apiRequest(`/track/${id}/forks`, { token }) as Promise<{
+        original: {
+          id: string;
+          title: string;
+          primaryArtistName: string;
+          createdAt: string;
+          isPublic: boolean;
+          forkCount: number;
+          user: {
+            id: string;
+            username: string;
+          };
+        };
+        forks: Array<{
+          id: string;
+          title: string;
+          primaryArtistName: string;
+          createdAt: string;
+          isPublic: boolean;
+          forkCount: number;
+          user: {
+            id: string;
+            username: string;
+          };
+        }>;
+        total: number;
+      }>;
+    },
+  },
+
+  stem: {
+    update: async (
+      trackId: string,
+      stemId: string,
+      data: FormData,
+      token: string
+    ) => {
+      return apiRequest(`/track/${trackId}/stem/${stemId}`, {
+        method: "PATCH",
+        token,
+        body: data,
+      });
+    },
+
+    delete: async (trackId: string, stemId: string, token: string) => {
+      return apiRequest(`/track/${trackId}/stem/${stemId}`, {
+        method: "DELETE",
+        token,
+      });
+    },
   },
 
   tracks: {

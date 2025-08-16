@@ -141,6 +141,13 @@ model Track {
   sharedWith            TrackShare[]               @relation("SharedTracks")
   createdAt             DateTime                   @default(now()) @map("created_at")
   updatedAt             DateTime                   @updatedAt @map("updated_at")
+  
+  // Track forking support
+  forkedFromId          String?                    @map("forked_from_id")
+  forkedFrom            Track?                     @relation("TrackForks", fields: [forkedFromId], references: [id], onDelete: SetNull)
+  forks                 Track[]                    @relation("TrackForks")
+  isFork                Boolean                    @default(false) @map("is_fork")
+  forkCount             Int                        @default(0) @map("fork_count")
   wavConversionStatus   AudioFileConversionStatus  @default(NOT_STARTED) @map("wav_conversion_status")
   flacConversionStatus  AudioFileConversionStatus  @default(NOT_STARTED) @map("flac_conversion_status")
   wavCreatedAt          DateTime?                  @map("wav_created_at")
