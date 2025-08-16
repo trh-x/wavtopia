@@ -5,6 +5,7 @@ import {
   trackConversionQueue,
   queueAudioFileConversion,
   audioFileConversionQueue,
+  queueAudioProcessing,
   fileCleanupQueue,
 } from "../services/queue";
 import { queueTrackDeletion } from "../services/queue/track-deletion-queue";
@@ -48,6 +49,26 @@ router.post("/convert-module", async (req, res, next) => {
       data: {
         jobId,
         message: "Track conversion has been queued",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Process uploaded audio files (WAV/FLAC) - generates MP3 and waveform data
+router.post("/process-audio", async (req, res, next) => {
+  try {
+    // Parse options
+    const options = conversionOptionsSchema.parse(req.body);
+
+    const jobId = await queueAudioProcessing(options.trackId);
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Audio processing has been queued",
       },
     });
   } catch (error) {

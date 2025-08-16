@@ -46,6 +46,8 @@ enum SourceFormat {
   XM  @map("xm")  // FastTracker2
   IT  @map("it")  // Impulse Tracker
   MOD @map("mod") // ProTracker/NoiseTracker
+  WAV @map("wav") // WAV audio files
+  FLAC @map("flac") // FLAC audio files
 }
 
 enum TrackStatus {

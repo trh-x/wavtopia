@@ -233,6 +233,8 @@ router.post(
         xm: SourceFormat.XM,
         it: SourceFormat.IT,
         mod: SourceFormat.MOD,
+        wav: SourceFormat.WAV,
+        flac: SourceFormat.FLAC,
       }[data.originalFormat];
 
       if (!originalFormat) {
@@ -301,19 +303,25 @@ router.post(
 
         console.log("Track created successfully:", track.id);
 
-        // Now POST to the media service to convert the track
+        // Now POST to the media service to process the track
         const mediaServiceUrl = config.services.mediaServiceUrl;
         if (mediaServiceUrl) {
-          const response = await fetch(
-            mediaServiceUrl + "/api/media/convert-module",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ trackId: track.id }),
-            }
-          );
+          // Determine the endpoint based on the original format
+          const isTrackerModule =
+            originalFormat === SourceFormat.XM ||
+            originalFormat === SourceFormat.IT ||
+            originalFormat === SourceFormat.MOD;
+          const endpoint = isTrackerModule
+            ? "/api/media/convert-module"
+            : "/api/media/process-audio";
+
+          const response = await fetch(mediaServiceUrl + endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ trackId: track.id }),
+          });
           const data = await response.json();
           console.log("Media service response:", data);
         } else {
@@ -391,6 +399,8 @@ router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
           xm: SourceFormat.XM,
           it: SourceFormat.IT,
           mod: SourceFormat.MOD,
+          wav: SourceFormat.WAV,
+          flac: SourceFormat.FLAC,
         }[data.originalFormat]
       : undefined;
 
