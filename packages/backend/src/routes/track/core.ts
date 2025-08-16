@@ -22,6 +22,12 @@ import { DatePrecision } from "@wavtopia/core-storage";
 
 const router = Router();
 
+// Schema for stem metadata
+const stemMetadataSchema = z.object({
+  name: z.string().min(1),
+  type: z.string().optional().default("audio"),
+});
+
 // Schema for track creation/update
 export const trackSchema = z.object({
   title: z.string().min(1),
@@ -43,6 +49,8 @@ export const trackSchema = z.object({
   genreNames: z.array(z.string()).optional(),
   // License
   licenseId: z.string().uuid("License ID must be a valid UUID"),
+  // Stem metadata (for WAV/FLAC uploads with stems)
+  stemMetadata: z.array(stemMetadataSchema).optional(),
 });
 
 // Get single track
@@ -208,6 +216,7 @@ router.post(
       console.log("Files received:", {
         original: files.original?.[0]?.originalname,
         coverArt: files.coverArt?.[0]?.originalname,
+        stems: files.stems?.map((f) => f.originalname) || [],
       });
 
       const originalFile = files.original[0];
@@ -229,6 +238,27 @@ router.post(
         console.log("Cover art size:", coverArtSizeBytes, "bytes");
       }
 
+      // Store stem files if provided (for WAV/FLAC uploads)
+      const stemFiles: { url: string; size: number; originalName: string }[] =
+        [];
+      if (files.stems) {
+        for (const stemFile of files.stems) {
+          const stemUrl = "file://" + stemFile.path;
+          stemFiles.push({
+            url: stemUrl,
+            size: stemFile.size,
+            originalName: stemFile.originalname,
+          });
+          console.log(
+            "Stem file:",
+            stemFile.originalname,
+            "Size:",
+            stemFile.size,
+            "bytes"
+          );
+        }
+      }
+
       const originalFormat = {
         xm: SourceFormat.XM,
         it: SourceFormat.IT,
@@ -242,6 +272,30 @@ router.post(
           400,
           `Invalid original format: ${data.originalFormat}`
         );
+      }
+
+      // Validate stem files are only provided for WAV/FLAC tracks
+      if (stemFiles.length > 0) {
+        if (
+          originalFormat !== SourceFormat.WAV &&
+          originalFormat !== SourceFormat.FLAC
+        ) {
+          throw new AppError(
+            400,
+            "Stem files can only be uploaded with WAV or FLAC tracks"
+          );
+        }
+
+        // Validate stem metadata matches stem files
+        if (
+          data.stemMetadata &&
+          data.stemMetadata.length !== stemFiles.length
+        ) {
+          throw new AppError(
+            400,
+            "Number of stem files must match stem metadata entries"
+          );
+        }
       }
 
       console.log("Creating database record...");
@@ -320,10 +374,21 @@ router.post(
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ trackId: track.id }),
+            body: JSON.stringify({
+              trackId: track.id,
+              stemFiles: stemFiles.map((stem, index) => ({
+                url: stem.url,
+                size: stem.size,
+                originalName: stem.originalName,
+                metadata: data.stemMetadata?.[index] || {
+                  name: stem.originalName,
+                  type: "audio",
+                },
+              })),
+            }),
           });
-          const data = await response.json();
-          console.log("Media service response:", data);
+          const responseData = await response.json();
+          console.log("Media service response:", responseData);
         } else {
           console.warn("Media service URL not set");
         }
@@ -335,11 +400,12 @@ router.post(
         // Clean up uploaded files if database operation fails
         console.log("Cleaning up uploaded files...");
         try {
-          await Promise.all([
-            // Delete the local files
+          const filesToCleanup = [
             deleteLocalFile(originalFileUrl),
             ...(coverArtUrl ? [deleteLocalFile(coverArtUrl)] : []),
-          ]);
+            ...stemFiles.map((stem) => deleteLocalFile(stem.url)),
+          ];
+          await Promise.all(filesToCleanup);
           console.log("Cleanup completed");
         } catch (cleanupError) {
           console.error("Error during cleanup:", cleanupError);

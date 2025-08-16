@@ -25,6 +25,23 @@ const conversionOptionsSchema = z.object({
   trackId: z.string().uuid(),
 });
 
+const audioProcessingOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+  stemFiles: z
+    .array(
+      z.object({
+        url: z.string(),
+        size: z.number(),
+        originalName: z.string(),
+        metadata: z.object({
+          name: z.string(),
+          type: z.string().optional().default("audio"),
+        }),
+      })
+    )
+    .optional(),
+});
+
 const audioFileConversionOptionsSchema = z.object({
   trackId: z.string().uuid(),
   type: z.enum(["full", "stem"]),
@@ -60,9 +77,12 @@ router.post("/convert-module", async (req, res, next) => {
 router.post("/process-audio", async (req, res, next) => {
   try {
     // Parse options
-    const options = conversionOptionsSchema.parse(req.body);
+    const options = audioProcessingOptionsSchema.parse(req.body);
 
-    const jobId = await queueAudioProcessing(options.trackId);
+    const jobId = await queueAudioProcessing(
+      options.trackId,
+      options.stemFiles
+    );
 
     res.json({
       status: "success",

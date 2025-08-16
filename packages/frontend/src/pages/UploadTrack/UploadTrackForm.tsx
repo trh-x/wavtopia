@@ -1,4 +1,5 @@
 import { DropZone } from "@/components/ui/DropZone";
+import { StemUpload, StemFile } from "@/components/ui/StemUpload";
 import { TrackForm, BaseTrackFormData } from "@/components/forms/TrackForm";
 import { useForm } from "@/hooks/useForm";
 import type { License } from "@wavtopia/core-storage";
@@ -7,6 +8,7 @@ export interface UploadTrackFormData extends BaseTrackFormData {
   original: File | null;
   coverArt: File | null;
   originalFormat: string | undefined;
+  stemFiles: StemFile[];
 }
 
 interface UploadTrackFormProps {
@@ -31,6 +33,7 @@ const EMPTY_FORM_VALUES: UploadTrackFormData = {
   original: null,
   coverArt: null,
   originalFormat: undefined,
+  stemFiles: [],
 };
 
 type FileField = "original" | "coverArt";
@@ -116,6 +119,18 @@ export function UploadTrackForm({
         error={submitError || undefined}
         showPreview={true}
       />
+
+      {/* Show stem upload only for WAV/FLAC tracks */}
+      {values.originalFormat &&
+        ["wav", "flac"].includes(values.originalFormat) && (
+          <StemUpload
+            stemFiles={values.stemFiles}
+            onStemFilesChange={(stemFiles) =>
+              handleChange("stemFiles", stemFiles)
+            }
+            disabled={disabled || isSubmitting}
+          />
+        )}
 
       <TrackForm
         values={values}

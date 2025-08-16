@@ -13,6 +13,7 @@ import {
 import { uploadFile, getLocalFile } from "../storage";
 import { convertWAVToMP3 } from "../mp3-converter";
 import { generateWaveformData } from "../waveform";
+import { convertAudioToFormat } from "../audio-file-converter";
 import { AppError } from "../../middleware/errorHandler";
 
 // Utility function to upload an MP3 file
@@ -39,15 +40,29 @@ export const audioProcessingQueue =
 // Set up monitoring
 setupQueueMonitoring(audioProcessingQueue, "Audio Processing");
 
+interface StemFileData {
+  url: string;
+  size: number;
+  originalName: string;
+  metadata: {
+    name: string;
+    type: string;
+  };
+}
+
 interface AudioProcessingJob {
   trackId: string;
+  stemFiles?: StemFileData[];
 }
 
 // Queue a track for audio processing
-export async function queueAudioProcessing(trackId: string): Promise<string> {
+export async function queueAudioProcessing(
+  trackId: string,
+  stemFiles?: StemFileData[]
+): Promise<string> {
   const job = await audioProcessingQueue.add(
     "process-audio",
-    { trackId },
+    { trackId, stemFiles },
     standardJobOptions
   );
   return job.id!;
@@ -58,7 +73,7 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
   console.log(`Processing audio job ${job.id} for track: ${job.data.trackId}`);
 
   try {
-    const { trackId } = job.data;
+    const { trackId, stemFiles } = job.data;
 
     // First check if track exists
     const track = await prisma.track.findUnique({
@@ -123,10 +138,10 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
       // WAV file can be used directly
       audioBuffer = originalFile.buffer;
     } else {
-      // FLAC file - for now, we'll process it directly as the convertWAVToMP3
-      // function might handle FLAC input too (depending on ffmpeg capabilities)
-      // TODO: Implement proper FLAC to WAV conversion if needed
-      audioBuffer = originalFile.buffer;
+      // FLAC file - convert to WAV first for processing
+      console.log("Converting FLAC to WAV for processing...");
+      audioBuffer = await convertAudioToFormat(originalFile.buffer, "wav");
+      console.log("FLAC to WAV conversion completed");
     }
 
     // Generate MP3 from the audio file
@@ -161,9 +176,112 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
 
     console.log(`Audio processing completed for track ${trackId}`);
 
-    // Note: For uploaded audio files, we don't create individual stems
-    // since the user uploaded the full track, not separated stems.
-    // If users want to upload stems separately, that would be a different flow.
+    // Process stem files if provided
+    const processedStems: any[] = [];
+    if (stemFiles && stemFiles.length > 0) {
+      console.log(`Processing ${stemFiles.length} stem files...`);
+
+      for (let i = 0; i < stemFiles.length; i++) {
+        const stemFile = stemFiles[i];
+        console.log(
+          `Processing stem ${i + 1}/${stemFiles.length}: ${
+            stemFile.metadata.name
+          }`
+        );
+
+        try {
+          // Get the stem file
+          const stemFileData = await getLocalFile(stemFile.url);
+
+          // Convert stem to WAV if it's FLAC
+          let stemAudioBuffer: Buffer;
+          const stemExtension = stemFile.originalName
+            .split(".")
+            .pop()
+            ?.toLowerCase();
+          if (stemExtension === "flac") {
+            console.log(
+              `Converting FLAC stem ${stemFile.metadata.name} to WAV for processing...`
+            );
+            stemAudioBuffer = await convertAudioToFormat(
+              stemFileData.buffer,
+              "wav"
+            );
+          } else {
+            stemAudioBuffer = stemFileData.buffer;
+          }
+
+          // Generate MP3 from the stem file
+          const stemMp3Buffer = await convertWAVToMP3(stemAudioBuffer, 192); // Lower quality for stems
+
+          // Generate waveform data for stem
+          const stemWaveformResult = await generateWaveformData(
+            stemAudioBuffer
+          );
+
+          // Upload stem MP3
+          const stemMp3Url = await uploadMp3File(
+            stemMp3Buffer,
+            `${originalName}_${stemFile.metadata.name.replace(
+              /[^a-z0-9]/gi,
+              "_"
+            )}`,
+            "stems/"
+          );
+
+          // Upload original stem file
+          const stemOriginalUrl = await uploadFile(stemFileData, "stems/");
+
+          // Create stem record in database
+          const stem = await prisma.stem.create({
+            data: {
+              index: i,
+              name: stemFile.metadata.name,
+              type: stemFile.metadata.type,
+              trackId: trackId,
+              mp3Url: stemMp3Url,
+              mp3SizeBytes: stemMp3Buffer.length,
+              wavUrl:
+                track.originalFormat === SourceFormat.WAV
+                  ? stemOriginalUrl
+                  : undefined,
+              flacUrl:
+                track.originalFormat === SourceFormat.FLAC
+                  ? stemOriginalUrl
+                  : undefined,
+              wavSizeBytes:
+                track.originalFormat === SourceFormat.WAV
+                  ? stemFileData.size
+                  : undefined,
+              flacSizeBytes:
+                track.originalFormat === SourceFormat.FLAC
+                  ? stemFileData.size
+                  : undefined,
+              waveformData: stemWaveformResult.peaks,
+              duration: stemWaveformResult.duration,
+            },
+          });
+
+          // Clean up temporary stem file
+          await deleteLocalFile(stemFile.url);
+
+          processedStems.push({
+            id: stem.id,
+            name: stem.name,
+            mp3Url: stemMp3Url,
+            duration: stemWaveformResult.duration,
+          });
+
+          console.log(`Stem ${stemFile.metadata.name} processed successfully`);
+        } catch (stemError) {
+          console.error(
+            `Error processing stem ${stemFile.metadata.name}:`,
+            stemError
+          );
+          // Continue processing other stems even if one fails
+        }
+      }
+    }
 
     return {
       trackId,
@@ -171,6 +289,8 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
       mp3Url,
       waveformData: waveformResult.peaks,
       duration: waveformResult.duration,
+      stemsProcessed: processedStems.length,
+      stems: processedStems,
     };
   } catch (error) {
     console.error(

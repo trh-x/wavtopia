@@ -46,12 +46,24 @@ export function UploadTrack() {
                 releaseDate: values.releaseDate.toISOString(),
                 releaseDatePrecision: values.releaseDatePrecision,
               }),
+              // Include stem metadata for WAV/FLAC uploads
+              ...(values.stemFiles.length > 0 && {
+                stemMetadata: values.stemFiles.map((stem) => ({
+                  name: stem.name,
+                  type: stem.type,
+                })),
+              }),
             })
           );
           formData.append("original", values.original!);
           if (values.coverArt) {
             formData.append("coverArt", values.coverArt);
           }
+
+          // Append stem files
+          values.stemFiles.forEach((stem) => {
+            formData.append("stems", stem.file);
+          });
 
           // If a storage quota warning notification is returned, it will be automatically
           // shown as a toast. See apiRequest.
