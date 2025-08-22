@@ -355,6 +355,14 @@ export const api = {
   },
 
   stem: {
+    create: async (trackId: string, data: FormData, token: string) => {
+      return apiRequest(`/track/${trackId}/stem`, {
+        method: "POST",
+        token,
+        body: data,
+      });
+    },
+
     update: async (
       trackId: string,
       stemId: string,

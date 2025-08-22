@@ -371,6 +371,151 @@ router.patch(
   }
 );
 
+// Add new stem to a forked track
+router.post(
+  "/:id/stem",
+  authenticate,
+  uploadTrackFiles,
+  async (req, res, next) => {
+    try {
+      const data = updateStemSchema.parse(JSON.parse(req.body.data || "{}"));
+      const { id: trackId } = req.params;
+
+      // Verify track ownership and that it's a fork
+      const track = await prisma.track.findUnique({
+        where: {
+          id: trackId,
+          userId: req.user!.id,
+          status: TrackStatus.ACTIVE,
+          isFork: true,
+        },
+        include: {
+          stems: true,
+        },
+      });
+
+      if (!track) {
+        throw new AppError(
+          404,
+          "Forked track not found or you don't have permission"
+        );
+      }
+
+      // Check if stem file was provided
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      if (!files.stemFile?.[0]) {
+        throw new AppError(400, "No stem file provided");
+      }
+
+      const stemFile = files.stemFile[0];
+      const stemFileUrl = "file://" + stemFile.path;
+      const stemSizeBytes = stemFile.size;
+
+      // Get the next index for the new stem
+      const maxIndex = track.stems.reduce(
+        (max, stem) => Math.max(max, stem.index),
+        -1
+      );
+      const nextIndex = maxIndex + 1;
+
+      // Create the new stem
+      const newStem = await prisma.stem.create({
+        data: {
+          index: nextIndex,
+          name: data.name || stemFile.originalname,
+          type: data.type || "audio",
+          mp3Url: stemFileUrl,
+          mp3SizeBytes: stemSizeBytes,
+          trackId: track.id,
+          // Start with conversion status not started
+          wavConversionStatus: "NOT_STARTED",
+          flacConversionStatus: "NOT_STARTED",
+        },
+      });
+
+      // Update user storage for the new stem
+      await updateUserStorage(
+        {
+          userId: req.user!.id,
+          secondsChange: 0, // We'll recalculate actual duration from file
+        },
+        prisma
+      );
+
+      // Call media service to process the uploaded stem file
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+      if (mediaServiceUrl) {
+        try {
+          const response = await fetch(
+            mediaServiceUrl + "/api/media/process-stem",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                stemId: newStem.id,
+                stemFileUrl,
+                stemFileName: stemFile.originalname,
+                trackId: track.id,
+                userId: req.user!.id,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            console.error(
+              "Failed to queue stem processing:",
+              await response.text()
+            );
+          } else {
+            console.log("Stem processing queued successfully");
+          }
+        } catch (error) {
+          console.error("Error calling media service:", error);
+        }
+
+        // Queue track regeneration after adding new stem
+        try {
+          const regenerationResponse = await fetch(
+            mediaServiceUrl + "/api/media/regenerate-track",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                trackId: track.id,
+                reason: "stem_added",
+                updatedStemId: newStem.id,
+              }),
+            }
+          );
+
+          if (!regenerationResponse.ok) {
+            console.error(
+              "Failed to queue track regeneration:",
+              await regenerationResponse.text()
+            );
+          } else {
+            console.log("Track regeneration queued successfully");
+          }
+        } catch (error) {
+          console.error("Error calling track regeneration service:", error);
+        }
+      }
+
+      res.status(201).json(newStem);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        next(new AppError(400, "Invalid request data"));
+      } else {
+        next(error);
+      }
+    }
+  }
+);
+
 // Delete stem from a forked track
 router.delete("/:id/stem/:stemId", authenticate, async (req, res, next) => {
   try {

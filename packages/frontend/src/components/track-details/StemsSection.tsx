@@ -2,6 +2,8 @@ import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { PlayModeToggle } from "./PlayModeToggle";
 import { ViewModeToggle, ViewMode } from "./ViewModeToggle";
 import { TrackStem } from "./TrackStem";
+import { AddStemButton } from "./AddStemButton";
+import { useAuth } from "@/contexts/AuthContext";
 import { styles } from "../../styles/common";
 
 interface StemsSectionProps {
@@ -14,12 +16,16 @@ export function StemsSection({
   onViewModeChange,
 }: StemsSectionProps) {
   const { track } = useTrack();
+  const { user } = useAuth();
+
+  const canEdit = !!(user && track.userId === user.id && track.isFork);
 
   return (
     <div className={styles.layout.stack}>
       <div className={styles.container.flexBetween}>
         <h2 className={styles.text.heading}>Stems</h2>
         <div className={styles.container.flexRow}>
+          <AddStemButton track={track} canEdit={canEdit} />
           <PlayModeToggle />
           <ViewModeToggle
             viewMode={viewMode}
