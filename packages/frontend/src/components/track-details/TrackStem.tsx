@@ -18,6 +18,15 @@ export function TrackStem({ stem, isGridView }: TrackStemProps) {
 
   const canEdit = !!(user && track.userId === user.id && track.isFork);
 
+  // Debug: Log stem data changes
+  console.log(`TrackStem render for ${stem.name}:`, {
+    stemId: stem.id,
+    waveformLength: stem.waveformData?.length || 0,
+    duration: stem.duration,
+    mp3Url: stem.mp3Url,
+    key: `${stem.id}-${stem.waveformData?.length || 0}`,
+  });
+
   return (
     <div
       className={`${styles.container.card} ${
@@ -41,6 +50,7 @@ export function TrackStem({ stem, isGridView }: TrackStemProps) {
         </div>
       </div>
       <TrackDetailsWaveform
+        key={`${stem.id}-${stem.waveformData?.length || 0}`}
         trackId={track.id}
         stemId={stem.id}
         waveformData={stem.waveformData}

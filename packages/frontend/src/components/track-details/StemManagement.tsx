@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { useAuthToken } from "@/hooks/useAuthToken";
+import { useToasts } from "@/hooks/useToasts";
+import { useStemProcessingSimple } from "@/hooks/useStemProcessingSimple";
 import { Button } from "../ui/Button";
 import {
   AlertDialog,
@@ -33,6 +35,7 @@ interface StemUpdateFormData {
 
 export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<StemUpdateFormData>({
     name: stem.name,
     type: stem.type,
@@ -41,6 +44,27 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
 
   const { getToken } = useAuthToken();
   const queryClient = useQueryClient();
+  const { addToast } = useToasts();
+
+  // Use the stem processing hook to detect when processing is complete
+  console.log(
+    `StemManagement render - isProcessing: ${isProcessing} for stem: ${stem.name}`
+  );
+
+  useStemProcessingSimple({
+    track,
+    stem,
+    isProcessing,
+    onProcessingComplete: () => {
+      console.log(`🎊 Simple hook completion callback for stem: ${stem.name}`);
+      setIsProcessing(false);
+      addToast({
+        type: "success",
+        title: "Stem Processing Complete",
+        message: `${stem.name} has been processed successfully. The waveform has been updated.`,
+      });
+    },
+  });
 
   const updateMutation = useMutation({
     mutationFn: async (data: StemUpdateFormData) => {
@@ -62,8 +86,29 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
 
       return api.stem.update(track.id, stem.id, formDataObj, token);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["track", track.id] });
+    onSuccess: (_, variables) => {
+      // If a file was uploaded, start processing detection
+      if (variables.file) {
+        console.log(
+          `Setting isProcessing=true for stem: ${stem.name} (${stem.id})`
+        );
+        setIsProcessing(true);
+        addToast({
+          type: "info",
+          title: "Processing Stem",
+          message: `${stem.name} is being processed. You'll be notified when it's complete.`,
+        });
+        console.log(`Started processing for stem: ${stem.name}`);
+      } else {
+        // If only metadata was updated, invalidate immediately
+        queryClient.invalidateQueries({ queryKey: ["track", track.id] });
+        addToast({
+          type: "success",
+          title: "Stem Updated",
+          message: `${stem.name} has been updated successfully.`,
+        });
+      }
+
       setShowEditDialog(false);
       setFormData({
         name: stem.name,
@@ -234,7 +279,7 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
                   disabled={updateMutation.isPending}
                   className="flex items-center gap-2"
                 >
-                  Save Changes
+                  {updateMutation.isPending ? "Updating..." : "Save Changes"}
                 </Button>
               </div>
 

@@ -158,6 +158,14 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
     }
 
     // Update the stem in the database
+    console.log(`Updating stem ${stemId} in database with:`, {
+      mp3Url,
+      mp3SizeBytes: mp3Buffer.length,
+      waveformDataLength: waveformResult.peaks.length,
+      duration: waveformResult.duration,
+      waveformDataSample: waveformResult.peaks.slice(0, 10), // First 10 values for debugging
+    });
+
     await prisma.stem.update({
       where: { id: stemId },
       data: {
@@ -172,6 +180,8 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
         flacConversionStatus: "NOT_STARTED",
       },
     });
+
+    console.log(`Database update completed for stem: ${stemId}`);
 
     // Update user storage with the actual duration
     await updateUserStorage(
