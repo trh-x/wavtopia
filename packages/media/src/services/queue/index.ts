@@ -1,6 +1,7 @@
 import { cleanup as cleanupTrackConversion } from "./track-conversion-queue";
 import { cleanup as cleanupAudioFileConversion } from "./audio-file-conversion-queue";
 import { cleanup as cleanupAudioProcessing } from "./audio-processing-queue";
+import { cleanup as cleanupStemProcessing } from "./stem-processing-queue";
 import {
   cleanup as cleanupFileCleanup,
   scheduleCleanupJob,
@@ -25,6 +26,12 @@ export {
 } from "./audio-processing-queue";
 
 export {
+  queueStemProcessing,
+  stemProcessingQueue,
+  worker as stemProcessingWorker,
+} from "./stem-processing-queue";
+
+export {
   fileCleanupQueue,
   worker as fileCleanupWorker,
 } from "./file-cleanup-queue";
@@ -40,6 +47,7 @@ export async function cleanupAllWorkers(): Promise<void> {
     cleanupAudioFileConversion(),
     cleanupTrackConversion(),
     cleanupAudioProcessing(),
+    cleanupStemProcessing(),
     cleanupFileCleanup(),
   ]);
 }

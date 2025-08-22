@@ -69,4 +69,5 @@ export const uploadTrackFiles = upload.fields([
   { name: "original", maxCount: 1 },
   { name: "coverArt", maxCount: 1 },
   { name: "stems", maxCount: 20 }, // Allow up to 20 stem files
+  { name: "stemFile", maxCount: 1 }, // For individual stem file updates
 ]);

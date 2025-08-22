@@ -6,6 +6,7 @@ import { Prisma, TrackStatus, updateUserStorage } from "@wavtopia/core-storage";
 import { prisma } from "../../lib/prisma";
 import { authenticateTrackAccess } from "./middleware";
 import { uploadTrackFiles } from "../../middleware/upload";
+import { config } from "../../config";
 
 const router = Router();
 
@@ -293,6 +294,40 @@ router.patch(
             },
             prisma
           );
+        }
+
+        // Call media service to process the uploaded stem file
+        const mediaServiceUrl = config.services.mediaServiceUrl;
+        if (mediaServiceUrl) {
+          try {
+            const response = await fetch(
+              mediaServiceUrl + "/api/media/process-stem",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  stemId: updatedStem.id,
+                  stemFileUrl,
+                  stemFileName: files.stemFile[0].originalname,
+                  trackId: track.id,
+                  userId: req.user!.id,
+                }),
+              }
+            );
+
+            if (!response.ok) {
+              console.error(
+                "Failed to queue stem processing:",
+                await response.text()
+              );
+            } else {
+              console.log("Stem processing queued successfully");
+            }
+          } catch (error) {
+            console.error("Error calling media service:", error);
+          }
         }
       }
 

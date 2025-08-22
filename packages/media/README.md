@@ -29,6 +29,12 @@ The service uses BullMQ for reliable job queue processing with the following que
   - Converts track or stem to WAV/FLAC
   - Body: `{ trackId: string, type: "full" | "stem", stemId?: string, format: "wav" | "flac" }`
 
+### Stem Processing
+
+- `POST /api/media/process-stem`
+  - Processes an individual uploaded stem file (generates MP3, waveform data)
+  - Body: `{ stemId: string, stemFileUrl: string, stemFileName: string, trackId: string, userId: string }`
+
 ### Status Endpoints
 
 - `GET /api/media/status/:jobId`

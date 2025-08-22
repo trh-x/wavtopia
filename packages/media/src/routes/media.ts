@@ -6,6 +6,7 @@ import {
   queueAudioFileConversion,
   audioFileConversionQueue,
   queueAudioProcessing,
+  queueStemProcessing,
   fileCleanupQueue,
 } from "../services/queue";
 import { queueTrackDeletion } from "../services/queue/track-deletion-queue";
@@ -51,6 +52,14 @@ const audioFileConversionOptionsSchema = z.object({
 
 const trackDeletionSchema = z.object({
   trackIds: z.array(z.string().uuid()).min(1),
+});
+
+const stemProcessingOptionsSchema = z.object({
+  stemId: z.string().uuid(),
+  stemFileUrl: z.string(),
+  stemFileName: z.string(),
+  trackId: z.string().uuid(),
+  userId: z.string().uuid(),
 });
 
 // Convert track module file to MP3/FLAC format
@@ -290,6 +299,31 @@ router.post("/trigger-cleanup", async (req, res, next) => {
             ? ` (cleaning files older than ${timeframe.value} ${timeframe.unit})`
             : ""
         }`,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Process individual stem file
+router.post("/process-stem", async (req, res, next) => {
+  try {
+    const options = stemProcessingOptionsSchema.parse(req.body);
+
+    const jobId = await queueStemProcessing(
+      options.stemId,
+      options.stemFileUrl,
+      options.stemFileName,
+      options.trackId,
+      options.userId
+    );
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Stem processing has been queued",
       },
     });
   } catch (error) {
