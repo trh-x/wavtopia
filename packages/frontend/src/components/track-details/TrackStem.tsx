@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Stem } from "@/types";
 import { useTrack } from "@/pages/TrackDetails/contexts/TrackContext";
 import { TrackDetailsWaveform } from "@/pages/TrackDetails/components/TrackDetailsWaveform";
@@ -12,7 +13,10 @@ interface TrackStemProps {
   isGridView: boolean;
 }
 
-export function TrackStem({ stem, isGridView }: TrackStemProps) {
+const TrackStemComponent = function TrackStem({
+  stem,
+  isGridView,
+}: TrackStemProps) {
   const { track } = useTrack();
   const { user } = useAuth();
 
@@ -62,4 +66,34 @@ export function TrackStem({ stem, isGridView }: TrackStemProps) {
       />
     </div>
   );
-}
+};
+
+// Memoize the component to prevent unnecessary re-renders
+export const TrackStem = memo(TrackStemComponent, (prevProps, nextProps) => {
+  // Only re-render if the stem data or view mode actually changed
+  const stemChanged =
+    prevProps.stem.id !== nextProps.stem.id ||
+    prevProps.stem.name !== nextProps.stem.name ||
+    prevProps.stem.type !== nextProps.stem.type ||
+    prevProps.stem.mp3Url !== nextProps.stem.mp3Url ||
+    prevProps.stem.duration !== nextProps.stem.duration ||
+    JSON.stringify(prevProps.stem.waveformData) !==
+      JSON.stringify(nextProps.stem.waveformData);
+
+  const viewModeChanged = prevProps.isGridView !== nextProps.isGridView;
+
+  const shouldUpdate = stemChanged || viewModeChanged;
+
+  console.log(`TrackStem memo check for ${prevProps.stem.name}:`, {
+    stemChanged,
+    viewModeChanged,
+    shouldUpdate,
+    reason: stemChanged
+      ? "stem data changed"
+      : viewModeChanged
+      ? "view mode changed"
+      : "no change",
+  });
+
+  return !shouldUpdate; // Return true to prevent re-render, false to allow re-render
+});

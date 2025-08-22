@@ -108,13 +108,14 @@ export function useStemProcessingSimple({
                   );
                 }
 
-                // Trigger completion
+                // Trigger completion callback first
                 console.log(`🎊 Calling independent completion callback`);
                 onProcessingComplete?.();
 
-                // Force page reload as a fallback to ensure UI updates
-                console.log(`🔄 Forcing page reload to update UI`);
-                window.location.reload();
+                // Let React handle the UI update through the callback
+                console.log(
+                  `✅ Completion handled, letting React update UI naturally`
+                );
               } else {
                 console.log(
                   `⏳ Independent polling continues for stem: ${stem.id}`

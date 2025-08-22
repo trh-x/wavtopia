@@ -58,10 +58,20 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
     onProcessingComplete: () => {
       console.log(`🎊 Simple hook completion callback for stem: ${stem.name}`);
       setIsProcessing(false);
+
+      // Show success toast
       addToast({
         type: "success",
         title: "Stem Processing Complete",
         message: `${stem.name} has been processed successfully. The waveform has been updated.`,
+      });
+
+      // Trigger a targeted update by invalidating the track query
+      // The key-based approach in TrackStem should handle the waveform update
+      console.log(`🎯 Triggering targeted track data refresh`);
+      queryClient.invalidateQueries({
+        queryKey: ["track", track.id],
+        refetchType: "active", // Only refetch if the query is currently being observed
       });
     },
   });
