@@ -328,6 +328,35 @@ router.patch(
           } catch (error) {
             console.error("Error calling media service:", error);
           }
+
+          // Queue track regeneration after stem update
+          try {
+            const regenerationResponse = await fetch(
+              mediaServiceUrl + "/api/media/regenerate-track",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  trackId: track.id,
+                  reason: "stem_updated",
+                  updatedStemId: updatedStem.id,
+                }),
+              }
+            );
+
+            if (!regenerationResponse.ok) {
+              console.error(
+                "Failed to queue track regeneration:",
+                await regenerationResponse.text()
+              );
+            } else {
+              console.log("Track regeneration queued successfully");
+            }
+          } catch (error) {
+            console.error("Error calling track regeneration service:", error);
+          }
         }
       }
 
@@ -397,6 +426,40 @@ router.delete("/:id/stem/:stemId", authenticate, async (req, res, next) => {
       },
       prisma
     );
+
+    // Queue track regeneration after stem deletion
+    const mediaServiceUrl = config.services.mediaServiceUrl;
+    if (mediaServiceUrl) {
+      try {
+        const regenerationResponse = await fetch(
+          mediaServiceUrl + "/api/media/regenerate-track",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              trackId: track.id,
+              reason: "stem_deleted",
+              updatedStemId: stem.id,
+            }),
+          }
+        );
+
+        if (!regenerationResponse.ok) {
+          console.error(
+            "Failed to queue track regeneration:",
+            await regenerationResponse.text()
+          );
+        } else {
+          console.log(
+            "Track regeneration queued successfully after stem deletion"
+          );
+        }
+      } catch (error) {
+        console.error("Error calling track regeneration service:", error);
+      }
+    }
 
     res.json({ message: "Stem deleted successfully" });
   } catch (error) {

@@ -10,6 +10,7 @@ import {
   fileCleanupQueue,
 } from "../services/queue";
 import { queueTrackDeletion } from "../services/queue/track-deletion-queue";
+import { queueTrackRegeneration } from "../services/queue/track-regeneration-queue";
 import { runCleanupJobNow } from "../services/queue/file-cleanup-queue";
 import { z } from "zod";
 import {
@@ -60,6 +61,12 @@ const stemProcessingOptionsSchema = z.object({
   stemFileName: z.string(),
   trackId: z.string().uuid(),
   userId: z.string().uuid(),
+});
+
+const trackRegenerationOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+  reason: z.enum(["stem_updated", "stem_deleted"]),
+  updatedStemId: z.string().uuid().optional(),
 });
 
 // Convert track module file to MP3/FLAC format
@@ -338,6 +345,29 @@ router.post("/tracks/delete", async (req, res, next) => {
 
     const jobId = await queueTrackDeletion(trackIds);
     res.status(202).json({ jobId });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Regenerate track audio files from stems
+router.post("/regenerate-track", async (req, res, next) => {
+  try {
+    const options = trackRegenerationOptionsSchema.parse(req.body);
+
+    const jobId = await queueTrackRegeneration(
+      options.trackId,
+      options.reason,
+      options.updatedStemId
+    );
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Track regeneration has been queued",
+      },
+    });
   } catch (error) {
     next(error);
   }
