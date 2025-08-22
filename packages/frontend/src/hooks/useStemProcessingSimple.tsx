@@ -24,26 +24,20 @@ export function useStemProcessingSimple({
 
   useEffect(() => {
     if (isProcessing && !pollingRegistry.has(stem.id)) {
-      console.log(`🚀 Starting independent polling for stem: ${stem.id}`);
       initialStemRef.current = stem;
 
       const checkProcessingStatus = async () => {
         try {
           const registry = pollingRegistry.get(stem.id);
           if (!registry || !registry.isActive) {
-            console.log(`🚫 Polling cancelled for stem: ${stem.id}`);
             return;
           }
-
-          console.log(`🔍 Independent check for stem: ${stem.id}`);
 
           // Get auth token from localStorage directly to avoid dependencies
           const token = localStorage.getItem("wavtopia:auth:token");
           if (!token) {
-            console.log("❌ No token available for polling");
             return;
           }
-          console.log("✅ Token found for independent polling");
 
           const response = await fetch(
             `/api/track/${track.id}?_t=${Date.now()}`,
@@ -62,12 +56,6 @@ export function useStemProcessingSimple({
             );
 
             if (updatedStem) {
-              console.log(`📊 Independent stem data:`, {
-                stemId: updatedStem.id,
-                mp3Url: updatedStem.mp3Url,
-                waveformLength: updatedStem.waveformData?.length || 0,
-              });
-
               const hasWaveformData =
                 updatedStem.waveformData && updatedStem.waveformData.length > 0;
               const hasDuration =
@@ -80,58 +68,35 @@ export function useStemProcessingSimple({
                 JSON.stringify(updatedStem.waveformData) !==
                 JSON.stringify(initialStemRef.current.waveformData);
 
-              console.log(`🔍 Independent completion check:`, {
-                isProcessedMp3Url,
-                hasWaveformData,
-                hasDuration,
-                hasNewWaveformData,
-              });
-
               if (
                 isProcessedMp3Url &&
                 hasWaveformData &&
                 hasDuration &&
                 hasNewWaveformData
               ) {
-                console.log(
-                  `🎉 INDEPENDENT COMPLETION DETECTED for stem: ${stem.id}`
-                );
-
                 // Stop polling
                 const registry = pollingRegistry.get(stem.id);
                 if (registry) {
                   registry.isActive = false;
                   clearInterval(registry.intervalId);
                   pollingRegistry.delete(stem.id);
-                  console.log(
-                    `🛑 Independent polling stopped for stem: ${stem.id}`
-                  );
                 }
 
                 // Trigger completion callback first
-                console.log(`🎊 Calling independent completion callback`);
                 onProcessingComplete?.();
 
                 // Let React handle the UI update through the callback
-                console.log(
-                  `✅ Completion handled, letting React update UI naturally`
-                );
-              } else {
-                console.log(
-                  `⏳ Independent polling continues for stem: ${stem.id}`
-                );
               }
             }
           }
         } catch (error) {
-          console.error("❌ Independent polling error:", error);
+          console.error("Polling error:", error);
         }
       };
 
       // Create independent polling
       const intervalId = setInterval(checkProcessingStatus, 3000);
       pollingRegistry.set(stem.id, { intervalId, isActive: true });
-      console.log(`⏰ Independent interval created: ${intervalId}`);
 
       // Run first check immediately
       checkProcessingStatus();
@@ -141,7 +106,6 @@ export function useStemProcessingSimple({
       // Cleanup only when component unmounts
       const registry = pollingRegistry.get(stem.id);
       if (registry) {
-        console.log(`🧹 Independent cleanup for stem: ${stem.id}`);
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(stem.id);
@@ -154,9 +118,6 @@ export function useStemProcessingSimple({
     if (!isProcessing) {
       const registry = pollingRegistry.get(stem.id);
       if (registry) {
-        console.log(
-          `🛑 Stopping independent polling due to isProcessing=false`
-        );
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(stem.id);

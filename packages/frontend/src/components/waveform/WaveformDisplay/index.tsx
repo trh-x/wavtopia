@@ -39,14 +39,6 @@ export function WaveformDisplay({
   trackId,
   stemId,
 }: WaveformDisplayProps) {
-  // Debug: Log when component receives new props
-  console.log(`WaveformDisplay render for ${stemId || "full-track"}:`, {
-    trackId,
-    stemId,
-    waveformLength: waveformData?.length || 0,
-    duration,
-    audioUrl: audioUrl.substring(0, 50) + "...",
-  });
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -262,14 +254,6 @@ export function WaveformDisplay({
 
   // Update waveform data when it changes without recreating the entire instance
   useEffect(() => {
-    console.log(
-      `WaveformDisplay useEffect triggered for ${stemId || "full-track"}:`,
-      {
-        hasWavesurfer: !!wavesurferRef.current,
-        waveformLength: waveformData?.length || 0,
-      }
-    );
-
     const currentWavesurfer = wavesurferRef.current;
     if (!currentWavesurfer || !waveformData?.length) {
       console.log(`Skipping waveform update - missing wavesurfer or data`);
@@ -282,16 +266,8 @@ export function WaveformDisplay({
       const currentData = Array.from(currentPeaks[0]);
       const newData = Array.from(waveformData);
 
-      console.log(`Comparing waveform data for ${stemId}:`, {
-        currentLength: currentData.length,
-        newLength: newData.length,
-        dataChanged: JSON.stringify(currentData) !== JSON.stringify(newData),
-      });
-
       // Only update if the data has actually changed
       if (JSON.stringify(currentData) !== JSON.stringify(newData)) {
-        console.log("Updating waveform data for stem:", stemId);
-
         const currentTime = currentWavesurfer.getCurrentTime();
         const wasPlaying = currentWavesurfer.isPlaying();
 

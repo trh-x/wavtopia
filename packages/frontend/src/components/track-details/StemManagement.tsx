@@ -46,17 +46,11 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
   const queryClient = useQueryClient();
   const { addToast } = useToasts();
 
-  // Use the stem processing hook to detect when processing is complete
-  console.log(
-    `StemManagement render - isProcessing: ${isProcessing} for stem: ${stem.name}`
-  );
-
   useStemProcessingSimple({
     track,
     stem,
     isProcessing,
     onProcessingComplete: () => {
-      console.log(`🎊 Simple hook completion callback for stem: ${stem.name}`);
       setIsProcessing(false);
 
       // Show success toast
@@ -68,7 +62,6 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
 
       // Trigger a targeted update by invalidating the track query
       // The key-based approach in TrackStem should handle the waveform update
-      console.log(`🎯 Triggering targeted track data refresh`);
       queryClient.invalidateQueries({
         queryKey: ["track", track.id],
         refetchType: "active", // Only refetch if the query is currently being observed
@@ -99,16 +92,12 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
     onSuccess: (_, variables) => {
       // If a file was uploaded, start processing detection
       if (variables.file) {
-        console.log(
-          `Setting isProcessing=true for stem: ${stem.name} (${stem.id})`
-        );
         setIsProcessing(true);
         addToast({
           type: "info",
           title: "Processing Stem",
           message: `${stem.name} is being processed. You'll be notified when it's complete.`,
         });
-        console.log(`Started processing for stem: ${stem.name}`);
       } else {
         // If only metadata was updated, invalidate immediately
         queryClient.invalidateQueries({ queryKey: ["track", track.id] });
