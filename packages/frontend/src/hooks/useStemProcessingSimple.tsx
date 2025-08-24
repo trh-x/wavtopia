@@ -24,16 +24,8 @@ export function useStemProcessingSimple({
 
   useEffect(() => {
     const stemId = stem.id;
-    console.log(`🔄 useStemProcessingSimple useEffect triggered:`, {
-      stemId,
-      stemName: stem.name,
-      isProcessing,
-      hasRegistryEntry: pollingRegistry.has(stemId),
-      willStartPolling: isProcessing && !pollingRegistry.has(stemId),
-    });
 
     if (isProcessing && !pollingRegistry.has(stemId)) {
-      console.log(`🚀 Starting new polling for stem ${stemId} (${stem.name})`);
       initialStemRef.current = stem;
 
       const checkProcessingStatus = async () => {
@@ -94,25 +86,7 @@ export function useStemProcessingSimple({
                   hasDuration &&
                   hasNewWaveformData;
 
-              console.log(`🔍 Polling stem ${stem.id} (${stem.name}):`, {
-                hasWaveformData,
-                hasDuration,
-                isProcessedMp3Url,
-                hasNewWaveformData,
-                isNewlyCreatedStem,
-                shouldComplete,
-                currentMp3Url: updatedStem.mp3Url,
-                waveformLength: updatedStem.waveformData?.length || 0,
-                duration: updatedStem.duration,
-                initialWaveformLength:
-                  initialStemRef.current.waveformData?.length || 0,
-              });
-
               if (shouldComplete) {
-                console.log(
-                  `🎉 PROCESSING COMPLETE for stem ${stem.id} (${stem.name})`
-                );
-
                 // Stop polling
                 const registry = pollingRegistry.get(stem.id);
                 if (registry) {
@@ -122,9 +96,6 @@ export function useStemProcessingSimple({
                 }
 
                 // Trigger completion callback first
-                console.log(
-                  `🔔 Calling onProcessingComplete callback for stem ${stem.id}`
-                );
                 onProcessingComplete?.();
 
                 // Let React handle the UI update through the callback
@@ -146,50 +117,23 @@ export function useStemProcessingSimple({
 
     return () => {
       // Cleanup only when component unmounts
-      console.log(
-        `🧹 Cleaning up polling for stem ${stem.id} due to useEffect cleanup - dependency change detected`
-      );
-      console.log(`🧹 Current state when cleaning up:`, {
-        stemId: stem.id,
-        isProcessing,
-        hadRegistry: pollingRegistry.has(stem.id),
-      });
       const registry = pollingRegistry.get(stem.id);
       if (registry) {
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(stem.id);
-        console.log(
-          `🛑 Polling stopped for stem ${stem.id} (useEffect cleanup)`
-        );
       }
     };
   }, [isProcessing]); // Only depend on isProcessing to avoid restarting on stem object changes
 
   useEffect(() => {
     // Stop polling when isProcessing becomes false
-    console.log(`🔄 isProcessing useEffect triggered:`, {
-      stemId: stem.id,
-      isProcessing,
-      willStopPolling: !isProcessing && pollingRegistry.has(stem.id),
-    });
-
     if (!isProcessing) {
-      console.log(
-        `🛑 Stopping polling for stem ${stem.id} because isProcessing=false`
-      );
       const registry = pollingRegistry.get(stem.id);
       if (registry) {
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(stem.id);
-        console.log(
-          `✅ Polling stopped for stem ${stem.id} (isProcessing=false)`
-        );
-      } else {
-        console.log(
-          `ℹ️ No registry found for stem ${stem.id} when trying to stop`
-        );
       }
     }
   }, [isProcessing]); // Only depend on isProcessing

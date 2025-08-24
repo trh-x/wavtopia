@@ -23,32 +23,19 @@ export function useStemProcessingById({
   const initialProcessingRef = useRef(false);
 
   useEffect(() => {
-    console.log(`🔄 useStemProcessingById useEffect triggered:`, {
-      stemId,
-      trackId,
-      isProcessing,
-      hasRegistryEntry: pollingRegistry.has(stemId),
-      willStartPolling: isProcessing && !pollingRegistry.has(stemId),
-    });
-
     if (isProcessing && !pollingRegistry.has(stemId)) {
-      console.log(`🚀 Starting new polling for stem ${stemId}`);
       initialProcessingRef.current = true;
 
       const checkProcessingStatus = async () => {
         try {
           const registry = pollingRegistry.get(stemId);
           if (!registry || !registry.isActive) {
-            console.log(
-              `⚠️ Registry inactive for stem ${stemId}, stopping polling check`
-            );
             return;
           }
 
           // Get auth token from localStorage directly to avoid dependencies
           const token = localStorage.getItem("wavtopia:auth:token");
           if (!token) {
-            console.log("No token available for polling");
             return;
           }
 
@@ -74,18 +61,8 @@ export function useStemProcessingById({
               const hasDuration =
                 updatedStem.duration && updatedStem.duration > 0;
 
-              console.log(`🔍 Polling stem ${stemId}:`, {
-                hasWaveformData,
-                hasDuration,
-                currentMp3Url: updatedStem.mp3Url,
-                waveformLength: updatedStem.waveformData?.length || 0,
-                duration: updatedStem.duration,
-              });
-
               // For newly created stems, complete when we have waveform data and duration
               if (hasWaveformData && hasDuration) {
-                console.log(`🎉 PROCESSING COMPLETE for stem ${stemId}`);
-
                 // Stop polling
                 const registry = pollingRegistry.get(stemId);
                 if (registry) {
@@ -95,9 +72,6 @@ export function useStemProcessingById({
                 }
 
                 // Trigger completion callback
-                console.log(
-                  `🔔 Calling onProcessingComplete callback for stem ${stemId}`
-                );
                 onProcessingComplete?.();
               }
             } else {
@@ -121,13 +95,11 @@ export function useStemProcessingById({
 
     return () => {
       // Cleanup only when component unmounts or isProcessing changes
-      console.log(`🧹 Cleaning up polling for stem ${stemId}`);
       const registry = pollingRegistry.get(stemId);
       if (registry) {
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(stemId);
-        console.log(`🛑 Polling stopped for stem ${stemId} (cleanup)`);
       }
     };
   }, [isProcessing]); // Only depend on isProcessing
@@ -135,17 +107,11 @@ export function useStemProcessingById({
   useEffect(() => {
     // Stop polling when isProcessing becomes false
     if (!isProcessing) {
-      console.log(
-        `🛑 Stopping polling for stem ${stemId} because isProcessing=false`
-      );
       const registry = pollingRegistry.get(stemId);
       if (registry) {
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(stemId);
-        console.log(
-          `✅ Polling stopped for stem ${stemId} (isProcessing=false)`
-        );
       }
     }
   }, [isProcessing]);

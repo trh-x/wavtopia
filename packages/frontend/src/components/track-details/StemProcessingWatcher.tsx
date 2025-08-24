@@ -20,29 +20,11 @@ export function StemProcessingWatcher({
   const queryClient = useQueryClient();
   const { addToast } = useToasts();
 
-  // Debug logging for stem processing lifecycle
-  useEffect(() => {
-    console.log(
-      `🎯 StemProcessingWatcher: Starting to watch stem ${stem.id} (${stem.name})`
-    );
-    console.log(`🎯 Initial stem state:`, {
-      id: stem.id,
-      name: stem.name,
-      mp3Url: stem.mp3Url,
-      waveformData: stem.waveformData?.length || 0,
-      duration: stem.duration,
-    });
-  }, [stem.id]); // Only run once per stem ID
-
   useStemProcessingById({
     trackId: track.id,
     stemId: stem.id,
     isProcessing,
     onProcessingComplete: () => {
-      console.log(
-        `🎉 StemProcessingWatcher: Processing complete for stem ${stem.id} (${stem.name})`
-      );
-
       // Show completion toast
       addToast({
         type: "success",

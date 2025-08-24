@@ -42,45 +42,13 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
       createdStemData
     : null;
 
-  // Debug logging for state changes - COMPREHENSIVE
-  useEffect(() => {
-    console.log(`🎛️ AddStemButton render state:`, {
-      processingStemId,
-      isProcessing,
-      processingStemFound: !!processingStem,
-      processingStemName: processingStem?.name,
-      hasCreatedStemData: !!createdStemData,
-      createdStemDataId: createdStemData?.id,
-      stemFromTrackData: !!track.stems.find(
-        (stem) => stem.id === processingStemId
-      ),
-      usingCreatedStemData: processingStem === createdStemData,
-      totalStems: track.stems.length,
-      stemIds: track.stems.map((s) => s.id),
-      watcherWillRender: !!(processingStemId && isProcessing && processingStem),
-    });
-  }, [
-    processingStemId,
-    isProcessing,
-    processingStem,
-    track.stems,
-    createdStemData,
-  ]);
-
   // Handle case where stem is not found yet (still being fetched)
   useEffect(() => {
     // If we have a processing stem ID but can't find the stem in track data,
     // it might mean the track data hasn't been refreshed yet
     if (processingStemId && !processingStem && isProcessing) {
-      console.log(
-        `⏳ Waiting for stem ${processingStemId} to appear in track data...`
-      );
-
       // Set up a timeout to stop waiting after 30 seconds (increased from 10)
       const timeout = setTimeout(() => {
-        console.log(
-          `⏰ Timeout: Stem ${processingStemId} didn't appear in track data after 30s, stopping processing`
-        );
         setIsProcessing(false);
         setProcessingStemId(null);
         setCreatedStemData(null);
@@ -116,19 +84,6 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
       return api.stem.create(track.id, formDataObj, token);
     },
     onSuccess: (newStem: Stem) => {
-      console.log(`🎉 Stem created successfully:`, {
-        stemId: newStem.id,
-        stemName: newStem.name,
-        trackId: track.id,
-        mp3Url: newStem.mp3Url,
-        hasWaveformData: !!newStem.waveformData,
-        duration: newStem.duration,
-      });
-
-      // Start processing detection using stem ID and store the created stem data
-      console.log(
-        `🎛️ Setting processing state: stemId=${newStem.id}, isProcessing=true`
-      );
       setProcessingStemId(newStem.id);
       setCreatedStemData(newStem);
       setIsProcessing(true);
@@ -150,9 +105,6 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
 
       // Delay the refresh to let the polling start first, and add debugging
       setTimeout(() => {
-        console.log(
-          `🔄 Invalidating track query for track ${track.id} after adding stem ${newStem.id}`
-        );
         queryClient.invalidateQueries({ queryKey: ["track", track.id] });
       }, 500); // Increased delay to 500ms
     },
@@ -213,9 +165,6 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
           stem={processingStem}
           isProcessing={isProcessing}
           onProcessingComplete={() => {
-            console.log(
-              `🎊 AddStemButton: Processing completed for stem ${processingStemId}, cleaning up state`
-            );
             setIsProcessing(false);
             setProcessingStemId(null);
             setCreatedStemData(null);
