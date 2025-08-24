@@ -516,6 +516,134 @@ router.post(
   }
 );
 
+// Replace the full track audio file for a forked track
+router.patch(
+  "/:id/audio",
+  authenticate,
+  uploadTrackFiles,
+  async (req, res, next) => {
+    try {
+      const { id: trackId } = req.params;
+
+      // Verify track ownership and that it's a fork
+      const track = await prisma.track.findUnique({
+        where: {
+          id: trackId,
+          userId: req.user!.id,
+          status: TrackStatus.ACTIVE,
+          isFork: true,
+        },
+      });
+
+      if (!track) {
+        throw new AppError(
+          404,
+          "Forked track not found or you don't have permission"
+        );
+      }
+
+      // Check if audio file was provided
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      if (!files.original?.[0]) {
+        throw new AppError(400, "No audio file provided");
+      }
+
+      const audioFile = files.original[0];
+      const audioFileUrl = "file://" + audioFile.path;
+      const audioFileSizeBytes = audioFile.size;
+
+      // Validate file format (WAV or FLAC only for track replacement)
+      const allowedFormats = [".wav", ".flac"];
+      const fileExtension = audioFile.originalname.toLowerCase();
+      const isValidFormat = allowedFormats.some((format) =>
+        fileExtension.endsWith(format)
+      );
+
+      if (!isValidFormat) {
+        throw new AppError(
+          400,
+          "Only WAV and FLAC files are supported for track audio replacement"
+        );
+      }
+
+      // Determine the source format
+      const originalFormat = fileExtension.endsWith(".wav") ? "WAV" : "FLAC";
+
+      // Update the track with new audio file
+      const updatedTrack = await prisma.track.update({
+        where: { id: trackId },
+        data: {
+          originalUrl: audioFileUrl,
+          originalFormat: originalFormat as any,
+          originalSizeBytes: audioFileSizeBytes,
+          // Reset all converted files and conversion status when original is replaced
+          fullTrackMp3Url: null,
+          fullTrackWavUrl: null,
+          fullTrackFlacUrl: null,
+          wavConversionStatus: "NOT_STARTED",
+          flacConversionStatus: "NOT_STARTED",
+          // Reset waveform data and duration as they'll be regenerated
+          waveformData: [],
+          duration: null,
+          // Reset derived size tracking
+          mp3SizeBytes: null,
+          wavSizeBytes: null,
+          flacSizeBytes: null,
+        },
+      });
+
+      // Update user storage
+      const sizeDiff = audioFileSizeBytes - (track.originalSizeBytes || 0);
+      if (sizeDiff !== 0) {
+        await updateUserStorage(
+          {
+            userId: req.user!.id,
+            secondsChange: 0, // Duration will be recalculated from the new file
+          },
+          prisma
+        );
+      }
+
+      // Call media service to process the new audio file
+      const mediaServiceUrl = config.services.mediaServiceUrl;
+      if (mediaServiceUrl) {
+        try {
+          const response = await fetch(
+            mediaServiceUrl + "/api/media/process-audio",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                trackId: updatedTrack.id,
+              }),
+            }
+          );
+
+          if (!response.ok) {
+            console.error(
+              "Failed to queue track conversion:",
+              await response.text()
+            );
+          } else {
+            console.log("Track conversion queued successfully");
+          }
+        } catch (error) {
+          console.error("Error calling media service:", error);
+        }
+      }
+
+      res.json({
+        message: "Track audio replaced successfully",
+        track: updatedTrack,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 // Delete stem from a forked track
 router.delete("/:id/stem/:stemId", authenticate, async (req, res, next) => {
   try {

@@ -352,6 +352,14 @@ export const api = {
         total: number;
       }>;
     },
+
+    replaceAudio: async (id: string, formData: FormData, token: string) => {
+      return apiRequest(`/track/${id}/audio`, {
+        method: "PATCH",
+        token,
+        body: formData,
+      }) as Promise<{ message: string; track: Track }>;
+    },
   },
 
   stem: {
