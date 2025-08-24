@@ -4,6 +4,7 @@ import { api } from "@/api/client";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { useToasts } from "@/hooks/useToasts";
 import { useStemProcessingSimple } from "@/hooks/useStemProcessingSimple";
+import { useTrackRegeneration } from "@/pages/TrackDetails/contexts/TrackRegenerationContext";
 import { Button } from "../ui/Button";
 import {
   AlertDialog,
@@ -41,6 +42,13 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
     type: stem.type,
     file: null,
   });
+
+  const { isTrackRegenerating, startTrackRegeneration } =
+    useTrackRegeneration();
+
+  console.log(
+    `🔄 [StemManagement] Render - track ${track.id}, stem ${stem.id}, isTrackRegenerating: ${isTrackRegenerating}`
+  );
 
   const { getToken } = useAuthToken();
   const queryClient = useQueryClient();
@@ -119,13 +127,34 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
+      console.log(
+        `🗑️ [StemManagement] Deleting stem ${stem.id} from track ${track.id}`
+      );
+
       const token = getToken();
       if (!token) throw new Error("Authentication required");
 
       return api.stem.delete(track.id, stem.id, token);
     },
     onSuccess: () => {
+      console.log(
+        `✅ [StemManagement] Stem ${stem.id} deleted successfully from track ${track.id}`
+      );
+
+      // Start track regeneration through context
+      startTrackRegeneration();
+
+      // Invalidate the query to immediately remove the deleted stem from the UI
+      console.log(
+        `🔄 [StemManagement] Invalidating queries to remove deleted stem for track ${track.id}`
+      );
       queryClient.invalidateQueries({ queryKey: ["track", track.id] });
+    },
+    onError: (error) => {
+      console.error(
+        `❌ [StemManagement] Error deleting stem ${stem.id} from track ${track.id}:`,
+        error
+      );
     },
   });
 

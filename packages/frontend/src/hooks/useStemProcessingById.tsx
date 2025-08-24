@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { Track } from "@/types";
 
 interface UseStemProcessingByIdProps {
   trackId: string;

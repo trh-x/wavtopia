@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStemProcessingById } from "@/hooks/useStemProcessingById";
 import { useToasts } from "@/hooks/useToasts";
