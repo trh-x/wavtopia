@@ -30,7 +30,17 @@ export function TrackDetails() {
     refetch,
   } = useQuery({
     queryKey: ["track", id],
-    queryFn: () => api.track.get(id!, token),
+    queryFn: async () => {
+      console.log(`🔄 TrackDetails: Fetching track data for track ${id}`);
+      const result = await api.track.get(id!, token);
+      console.log(`✅ TrackDetails: Track data received:`, {
+        trackId: result.id,
+        stemsCount: result.stems.length,
+        stemIds: result.stems.map((s) => s.id),
+        stemNames: result.stems.map((s) => s.name),
+      });
+      return result;
+    },
     enabled: !!id,
   });
 

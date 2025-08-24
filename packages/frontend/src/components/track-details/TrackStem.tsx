@@ -22,6 +22,9 @@ const TrackStemComponent = function TrackStem({
 
   const canEdit = !!(user && track.userId === user.id && track.isFork);
 
+  // Check if stem is still processing (no waveform data yet)
+  const isProcessing = !stem.waveformData || stem.waveformData.length === 0;
+
   return (
     <div
       className={`${styles.container.card} ${
@@ -44,17 +47,29 @@ const TrackStemComponent = function TrackStem({
           <StemManagement track={track} stem={stem} canEdit={canEdit} />
         </div>
       </div>
-      <TrackDetailsWaveform
-        key={`${stem.id}-${stem.waveformData?.length || 0}`}
-        trackId={track.id}
-        stemId={stem.id}
-        waveformData={stem.waveformData}
-        duration={stem.duration ?? undefined}
-        height={isGridView ? 48 : 64}
-        color="#4b5563"
-        progressColor="#6366f1"
-        audioUrl={getAudioUrl(`/api/track/${track.id}/stem/${stem.id}.mp3`)}
-      />
+      {isProcessing ? (
+        <div
+          className={`flex items-center justify-center bg-gray-100 rounded-md border-2 border-dashed border-gray-300`}
+          style={{ height: isGridView ? 48 : 64 }}
+        >
+          <div className="flex items-center gap-2 text-gray-600">
+            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+            <span className="text-sm">Processing audio...</span>
+          </div>
+        </div>
+      ) : (
+        <TrackDetailsWaveform
+          key={`${stem.id}-${stem.waveformData?.length || 0}`}
+          trackId={track.id}
+          stemId={stem.id}
+          waveformData={stem.waveformData}
+          duration={stem.duration ?? undefined}
+          height={isGridView ? 48 : 64}
+          color="#4b5563"
+          progressColor="#6366f1"
+          audioUrl={getAudioUrl(`/api/track/${track.id}/stem/${stem.id}.mp3`)}
+        />
+      )}
     </div>
   );
 };
@@ -73,7 +88,14 @@ export const TrackStem = memo(TrackStemComponent, (prevProps, nextProps) => {
 
   const viewModeChanged = prevProps.isGridView !== nextProps.isGridView;
 
-  const shouldUpdate = stemChanged || viewModeChanged;
+  // Check if processing state changed
+  const prevIsProcessing =
+    !prevProps.stem.waveformData || prevProps.stem.waveformData.length === 0;
+  const nextIsProcessing =
+    !nextProps.stem.waveformData || nextProps.stem.waveformData.length === 0;
+  const processingStateChanged = prevIsProcessing !== nextIsProcessing;
+
+  const shouldUpdate = stemChanged || viewModeChanged || processingStateChanged;
 
   return !shouldUpdate; // Return true to prevent re-render, false to allow re-render
 });

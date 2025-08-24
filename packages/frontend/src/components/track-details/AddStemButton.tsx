@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { useAuthToken } from "@/hooks/useAuthToken";
 import { useToasts } from "@/hooks/useToasts";
+import { StemProcessingWatcher } from "./StemProcessingWatcher";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { DropZone } from "../ui/DropZone";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import { Track } from "@/types";
+import { Track, Stem } from "@/types";
 
 interface AddStemButtonProps {
   track: Track;
@@ -22,6 +23,9 @@ interface StemCreateFormData {
 
 export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStemId, setProcessingStemId] = useState<string | null>(null);
+  const [createdStemData, setCreatedStemData] = useState<Stem | null>(null);
   const [formData, setFormData] = useState<StemCreateFormData>({
     name: "",
     type: "",
@@ -31,6 +35,66 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
   const { getToken } = useAuthToken();
   const queryClient = useQueryClient();
   const { addToast } = useToasts();
+
+  // Find the processing stem from the track data using the ID, or fall back to created stem data
+  const processingStem = processingStemId
+    ? track.stems.find((stem) => stem.id === processingStemId) ||
+      createdStemData
+    : null;
+
+  // Debug logging for state changes - COMPREHENSIVE
+  useEffect(() => {
+    console.log(`🎛️ AddStemButton render state:`, {
+      processingStemId,
+      isProcessing,
+      processingStemFound: !!processingStem,
+      processingStemName: processingStem?.name,
+      hasCreatedStemData: !!createdStemData,
+      createdStemDataId: createdStemData?.id,
+      stemFromTrackData: !!track.stems.find(
+        (stem) => stem.id === processingStemId
+      ),
+      usingCreatedStemData: processingStem === createdStemData,
+      totalStems: track.stems.length,
+      stemIds: track.stems.map((s) => s.id),
+      watcherWillRender: !!(processingStemId && isProcessing && processingStem),
+    });
+  }, [
+    processingStemId,
+    isProcessing,
+    processingStem,
+    track.stems,
+    createdStemData,
+  ]);
+
+  // Handle case where stem is not found yet (still being fetched)
+  useEffect(() => {
+    // If we have a processing stem ID but can't find the stem in track data,
+    // it might mean the track data hasn't been refreshed yet
+    if (processingStemId && !processingStem && isProcessing) {
+      console.log(
+        `⏳ Waiting for stem ${processingStemId} to appear in track data...`
+      );
+
+      // Set up a timeout to stop waiting after 30 seconds (increased from 10)
+      const timeout = setTimeout(() => {
+        console.log(
+          `⏰ Timeout: Stem ${processingStemId} didn't appear in track data after 30s, stopping processing`
+        );
+        setIsProcessing(false);
+        setProcessingStemId(null);
+        setCreatedStemData(null);
+        addToast({
+          type: "error",
+          title: "Processing Timeout",
+          message:
+            "The stem didn't appear in the track data. Please try refreshing the page.",
+        });
+      }, 30000); // Increased to 30 seconds
+
+      return () => clearTimeout(timeout);
+    }
+  }, [processingStemId, processingStem, isProcessing, addToast]);
 
   const createMutation = useMutation({
     mutationFn: async (data: StemCreateFormData) => {
@@ -51,19 +115,46 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
 
       return api.stem.create(track.id, formDataObj, token);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["track", track.id] });
-      addToast({
-        type: "success",
-        title: "Stem Added",
-        message: `${formData.name} has been added and is being processed.`,
+    onSuccess: (newStem: Stem) => {
+      console.log(`🎉 Stem created successfully:`, {
+        stemId: newStem.id,
+        stemName: newStem.name,
+        trackId: track.id,
+        mp3Url: newStem.mp3Url,
+        hasWaveformData: !!newStem.waveformData,
+        duration: newStem.duration,
       });
+
+      // Start processing detection using stem ID and store the created stem data
+      console.log(
+        `🎛️ Setting processing state: stemId=${newStem.id}, isProcessing=true`
+      );
+      setProcessingStemId(newStem.id);
+      setCreatedStemData(newStem);
+      setIsProcessing(true);
+
+      // Show initial toast
+      addToast({
+        type: "info",
+        title: "Stem Added",
+        message: `${formData.name} has been added and is being processed. You'll be notified when it's complete.`,
+      });
+
+      // Close dialog and reset form
       setShowCreateDialog(false);
       setFormData({
         name: "",
         type: "",
         file: null,
       });
+
+      // Delay the refresh to let the polling start first, and add debugging
+      setTimeout(() => {
+        console.log(
+          `🔄 Invalidating track query for track ${track.id} after adding stem ${newStem.id}`
+        );
+        queryClient.invalidateQueries({ queryKey: ["track", track.id] });
+      }, 500); // Increased delay to 500ms
     },
     onError: (error) => {
       addToast({
@@ -114,14 +205,33 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
 
   return (
     <>
+      {/* Conditionally render the processing watcher when we have a processing stem ID */}
+      {processingStemId && isProcessing && processingStem && (
+        <StemProcessingWatcher
+          key={processingStemId} // Stable key to prevent unmount/remount on object changes
+          track={track}
+          stem={processingStem}
+          isProcessing={isProcessing}
+          onProcessingComplete={() => {
+            console.log(
+              `🎊 AddStemButton: Processing completed for stem ${processingStemId}, cleaning up state`
+            );
+            setIsProcessing(false);
+            setProcessingStemId(null);
+            setCreatedStemData(null);
+          }}
+        />
+      )}
+
       <Button
         variant="outline"
         size="sm"
         onClick={() => setShowCreateDialog(true)}
+        disabled={isProcessing}
         className="flex items-center gap-2"
       >
         <PlusIcon className="w-4 h-4" />
-        Add Stem
+        {isProcessing ? "Processing..." : "Add Stem"}
       </Button>
 
       {/* Create Dialog */}
