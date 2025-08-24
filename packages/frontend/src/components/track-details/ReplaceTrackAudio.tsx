@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../contexts/AuthContext";
 import { useAuthToken } from "../../hooks/useAuthToken";
 import { useToasts } from "../../hooks/useToasts";
+import { useTrackAudioProcessingPolling } from "../../hooks/useTrackAudioProcessingPolling";
 import { api } from "../../api/client";
 import { Track } from "@/types";
 import {
@@ -18,6 +19,7 @@ interface ReplaceTrackAudioProps {
 export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isAudioProcessing, setIsAudioProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { getToken } = useAuthToken();
@@ -26,6 +28,15 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
 
   // Only show for forked tracks owned by the current user
   const canReplaceAudio = track.isFork && user && track.userId === user.id;
+
+  // Track audio processing polling
+  useTrackAudioProcessingPolling({
+    trackId: track.id,
+    isProcessing: isAudioProcessing,
+    onProcessingComplete: () => {
+      setIsAudioProcessing(false);
+    },
+  });
 
   const replaceAudioMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -44,6 +55,9 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
         message:
           "Track audio has been successfully replaced and is being processed.",
       });
+
+      // Start audio processing polling
+      setIsAudioProcessing(true);
 
       // Invalidate and refetch track data
       queryClient.invalidateQueries({ queryKey: ["track", track.id] });
@@ -113,11 +127,11 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        disabled={replaceAudioMutation.isPending}
+        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={replaceAudioMutation.isPending || isAudioProcessing}
       >
         <ArrowUpTrayIcon className="h-4 w-4" />
-        Replace Audio
+        {isAudioProcessing ? "Processing..." : "Replace Audio"}
       </button>
 
       {isOpen && (
@@ -173,7 +187,10 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
                                 className="sr-only"
                                 accept=".wav,.flac"
                                 onChange={handleFileSelect}
-                                disabled={replaceAudioMutation.isPending}
+                                disabled={
+                                  replaceAudioMutation.isPending ||
+                                  isAudioProcessing
+                                }
                               />
                             </label>
                             <p className="pl-1">or drag and drop</p>
@@ -205,7 +222,10 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
                               }
                             }}
                             className="p-1 hover:bg-gray-200 rounded"
-                            disabled={replaceAudioMutation.isPending}
+                            disabled={
+                              replaceAudioMutation.isPending ||
+                              isAudioProcessing
+                            }
                           >
                             <XMarkIcon className="h-4 w-4 text-gray-500" />
                           </button>
@@ -220,7 +240,11 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={!selectedFile || replaceAudioMutation.isPending}
+                  disabled={
+                    !selectedFile ||
+                    replaceAudioMutation.isPending ||
+                    isAudioProcessing
+                  }
                   className="w-full inline-flex justify-center items-center gap-2 rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {replaceAudioMutation.isPending && (
@@ -246,7 +270,7 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  disabled={replaceAudioMutation.isPending}
+                  disabled={replaceAudioMutation.isPending || isAudioProcessing}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
