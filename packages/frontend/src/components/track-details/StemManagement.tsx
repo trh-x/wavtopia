@@ -46,10 +46,6 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
   const { isTrackRegenerating, startTrackRegeneration } =
     useTrackRegeneration();
 
-  console.log(
-    `🔄 [StemManagement] Render - track ${track.id}, stem ${stem.id}, isTrackRegenerating: ${isTrackRegenerating}`
-  );
-
   const { getToken } = useAuthToken();
   const queryClient = useQueryClient();
   const { addToast } = useToasts();
@@ -127,27 +123,14 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      console.log(
-        `🗑️ [StemManagement] Deleting stem ${stem.id} from track ${track.id}`
-      );
-
       const token = getToken();
       if (!token) throw new Error("Authentication required");
 
       return api.stem.delete(track.id, stem.id, token);
     },
     onSuccess: () => {
-      console.log(
-        `✅ [StemManagement] Stem ${stem.id} deleted successfully from track ${track.id}`
-      );
-
       // Start track regeneration through context
       startTrackRegeneration();
-
-      // Invalidate the query to immediately remove the deleted stem from the UI
-      console.log(
-        `🔄 [StemManagement] Invalidating queries to remove deleted stem for track ${track.id}`
-      );
       queryClient.invalidateQueries({ queryKey: ["track", track.id] });
     },
     onError: (error) => {

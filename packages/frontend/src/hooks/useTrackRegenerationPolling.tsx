@@ -101,68 +101,35 @@ export function useTrackRegenerationPolling({
       const intervalId = setInterval(checkRegenerationStatus, 2000); // 2 seconds instead of 3
       pollingRegistry.set(trackId, { intervalId, isActive: true });
 
-      console.log(
-        `⏰ [TrackRegenPolling] Set up 2s interval for track ${trackId}, interval ID:`,
-        intervalId
-      );
-
-      // Run first check immediately to set up the baseline
-      console.log(
-        `🎯 [TrackRegenPolling] Running initial check for track ${trackId}`
-      );
       checkRegenerationStatus();
     }
 
     return () => {
       // Cleanup only when component unmounts or isRegenerating changes
-      console.log(
-        `🧹 [TrackRegenPolling] Cleanup triggered for track ${trackId}`
-      );
       const registry = pollingRegistry.get(trackId);
       if (registry) {
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(trackId);
-        console.log(
-          `🗑️ [TrackRegenPolling] Cleaned up polling for track ${trackId} in effect cleanup`
-        );
       }
     };
   }, [isRegenerating]); // Only depend on isRegenerating
 
   useEffect(() => {
-    console.log(
-      `🔄 [TrackRegenPolling] isRegenerating change for track ${trackId}:`,
-      isRegenerating
-    );
-
     // Stop polling when isRegenerating becomes false
     if (!isRegenerating) {
-      console.log(
-        `🛑 [TrackRegenPolling] Stopping polling for track ${trackId} (isRegenerating = false)`
-      );
       const registry = pollingRegistry.get(trackId);
       if (registry) {
         registry.isActive = false;
         clearInterval(registry.intervalId);
         pollingRegistry.delete(trackId);
-        console.log(
-          `🗑️ [TrackRegenPolling] Cleaned up polling for track ${trackId} due to isRegenerating = false`
-        );
       }
       // Reset the reference when stopping
       initialTrackDataRef.current = null;
-      console.log(
-        `🔄 [TrackRegenPolling] Reset initial track data ref for track ${trackId}`
-      );
     }
   }, [isRegenerating]);
 
   const isPolling = pollingRegistry.has(trackId);
-  console.log(`📊 [TrackRegenPolling] Hook return for track ${trackId}:`, {
-    isPolling,
-    isRegenerating,
-  });
 
   return {
     isPolling,

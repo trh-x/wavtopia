@@ -32,7 +32,6 @@ const createToastsSlice: StateCreator<
     items: [],
     addToast: (toast) => {
       const id = Math.random().toString(36).substr(2, 9);
-      console.log(`🍞 [Toast] Adding toast with id ${id}:`, toast);
 
       set((state) => {
         state.toasts.items.push({ ...toast, id });
@@ -40,7 +39,6 @@ const createToastsSlice: StateCreator<
 
       // Automatically remove notification after 5 seconds
       setTimeout(() => {
-        console.log(`🗑️ [Toast] Removing toast with id ${id} after 5s`);
         set((state) => {
           state.toasts.items = state.toasts.items.filter((n) => n.id !== id);
         });
