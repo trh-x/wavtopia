@@ -60,17 +60,6 @@ export function useTrackAudioProcessingPolling({
           if (response.ok) {
             const trackData: Track = await response.json();
 
-            console.log("Audio processing polling - track data:", {
-              id: trackData.id,
-              waveformDataLength: trackData.waveformData?.length,
-              fullTrackMp3Url: trackData.fullTrackMp3Url,
-              fullTrackWavUrl: trackData.fullTrackWavUrl,
-              fullTrackFlacUrl: trackData.fullTrackFlacUrl,
-              duration: trackData.duration,
-              wavConversionStatus: (trackData as any).wavConversionStatus,
-              flacConversionStatus: (trackData as any).flacConversionStatus,
-            });
-
             // Initialize reference data on first call
             if (!initialTrackDataRef.current) {
               initialTrackDataRef.current = {
@@ -82,10 +71,6 @@ export function useTrackAudioProcessingPolling({
                 wavConversionStatus: (trackData as any).wavConversionStatus,
                 flacConversionStatus: (trackData as any).flacConversionStatus,
               };
-              console.log(
-                "Initialized reference data:",
-                initialTrackDataRef.current
-              );
               // Don't return immediately - continue to check if processing already happened
             }
 
@@ -110,14 +95,6 @@ export function useTrackAudioProcessingPolling({
               trackData.fullTrackFlacUrl !== initial.fullTrackFlacUrl;
 
             const hasDuration = trackData.duration && trackData.duration > 0;
-
-            console.log("Status check:", {
-              hasNewWaveformData,
-              hasNewMp3Url,
-              hasNewWavUrl,
-              hasNewFlacUrl,
-              hasDuration,
-            });
 
             // Audio processing is complete when we have new audio data and duration
             // Focus on the key indicators: waveform data and MP3 URL changes
