@@ -65,7 +65,7 @@ const stemProcessingOptionsSchema = z.object({
 
 const trackRegenerationOptionsSchema = z.object({
   trackId: z.string().uuid(),
-  reason: z.enum(["stem_updated", "stem_deleted"]),
+  reason: z.enum(["stem_updated", "stem_deleted", "stem_added"]),
   updatedStemId: z.string().uuid().optional(),
 });
 

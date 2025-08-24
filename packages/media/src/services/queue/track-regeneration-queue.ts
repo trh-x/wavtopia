@@ -20,8 +20,8 @@ const execAsync = promisify(exec);
 
 interface TrackRegenerationJob {
   trackId: string;
-  reason: "stem_updated" | "stem_deleted";
-  updatedStemId?: string; // The stem that was updated/deleted
+  reason: "stem_updated" | "stem_deleted" | "stem_added";
+  updatedStemId?: string; // The stem that was updated/deleted/added
 }
 
 // Create queue
@@ -320,7 +320,7 @@ setupQueueMonitoring(trackRegenerationQueue, "Track Regeneration");
 // Export queue function
 export const queueTrackRegeneration = async (
   trackId: string,
-  reason: "stem_updated" | "stem_deleted",
+  reason: "stem_updated" | "stem_deleted" | "stem_added",
   updatedStemId?: string
 ) => {
   const job = await trackRegenerationQueue.add(
