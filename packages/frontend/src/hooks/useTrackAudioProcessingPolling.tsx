@@ -86,14 +86,6 @@ export function useTrackAudioProcessingPolling({
               trackData.fullTrackMp3Url &&
               trackData.fullTrackMp3Url !== initial.fullTrackMp3Url;
 
-            const hasNewWavUrl =
-              trackData.fullTrackWavUrl &&
-              trackData.fullTrackWavUrl !== initial.fullTrackWavUrl;
-
-            const hasNewFlacUrl =
-              trackData.fullTrackFlacUrl &&
-              trackData.fullTrackFlacUrl !== initial.fullTrackFlacUrl;
-
             const hasDuration = trackData.duration && trackData.duration > 0;
 
             // Audio processing is complete when we have new audio data and duration

@@ -43,8 +43,7 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
     file: null,
   });
 
-  const { isTrackRegenerating, startTrackRegeneration } =
-    useTrackRegeneration();
+  const { startTrackRegeneration } = useTrackRegeneration();
 
   const { getToken } = useAuthToken();
   const queryClient = useQueryClient();
