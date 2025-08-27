@@ -95,7 +95,12 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
         AND: [
           {
             originalFormat: {
-              in: [SourceFormat.IT, SourceFormat.MOD, SourceFormat.XM],
+              in: [
+                SourceFormat.IT,
+                SourceFormat.S3M,
+                SourceFormat.MOD,
+                SourceFormat.XM,
+              ],
             },
           },
           {

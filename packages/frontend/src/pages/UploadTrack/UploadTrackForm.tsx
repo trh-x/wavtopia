@@ -82,11 +82,13 @@ export function UploadTrackForm({
         label="Drop track files here"
         sublabel={
           <div className="space-y-1.5">
-            <p>.xm, .it, .mod, .wav, .flac files and optional cover art</p>
+            <p>
+              .xm, .it, .s3m, .mod, .wav, .flac files and optional cover art
+            </p>
             <p className="text-gray-400">Click to select files</p>
           </div>
         }
-        accept=".xm,.it,.mod,.wav,.flac,image/*"
+        accept=".xm,.it,.s3m,.mod,.wav,.flac,image/*"
         multiple={true}
         onFileSelect={(files) => {
           // First process any image files to ensure they're handled first for preview
@@ -94,7 +96,7 @@ export function UploadTrackForm({
             file.type.startsWith("image/")
           );
           const trackFiles = files.filter((file) =>
-            file.name.toLowerCase().match(/\.(xm|it|mod|wav|flac)$/)
+            file.name.toLowerCase().match(/\.(xm|it|s3m|mod|wav|flac)$/)
           );
 
           // Always update with the latest files

@@ -41,6 +41,7 @@ export function processFiles(
     if (
       (ext === "xm" ||
         ext === "it" ||
+        ext === "s3m" ||
         ext === "mod" ||
         ext === "wav" ||
         ext === "flac") &&

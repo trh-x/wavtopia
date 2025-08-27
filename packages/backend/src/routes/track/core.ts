@@ -262,6 +262,7 @@ router.post(
       const originalFormat = {
         xm: SourceFormat.XM,
         it: SourceFormat.IT,
+        s3m: SourceFormat.S3M,
         mod: SourceFormat.MOD,
         wav: SourceFormat.WAV,
         flac: SourceFormat.FLAC,
@@ -364,6 +365,7 @@ router.post(
           const isTrackerModule =
             originalFormat === SourceFormat.XM ||
             originalFormat === SourceFormat.IT ||
+            originalFormat === SourceFormat.S3M ||
             originalFormat === SourceFormat.MOD;
           const endpoint = isTrackerModule
             ? "/api/media/convert-module"
@@ -464,6 +466,7 @@ router.patch("/:id", authenticate, uploadTrackFiles, async (req, res, next) => {
       ? {
           xm: SourceFormat.XM,
           it: SourceFormat.IT,
+          s3m: SourceFormat.S3M,
           mod: SourceFormat.MOD,
           wav: SourceFormat.WAV,
           flac: SourceFormat.FLAC,

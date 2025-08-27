@@ -38,7 +38,7 @@ async function convertFullTrack(
     return { stdout, stderr };
   }
 
-  if (moduleFormat === SourceFormat.IT) {
+  if (moduleFormat === SourceFormat.IT || moduleFormat === SourceFormat.S3M) {
     const { stdout, stderr } = await execAsync(
       `"${config.tools.schismTrackerPath}" --headless --diskwrite="${join(
         tempDir,
@@ -68,7 +68,7 @@ async function convertStems(
     return { stdout, stderr };
   }
 
-  if (moduleFormat === SourceFormat.IT) {
+  if (moduleFormat === SourceFormat.IT || moduleFormat === SourceFormat.S3M) {
     const { stdout, stderr } = await execAsync(
       `"${config.tools.schismTrackerPath}" --headless --diskwrite="${join(
         tempDir,

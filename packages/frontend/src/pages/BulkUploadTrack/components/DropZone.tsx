@@ -16,7 +16,7 @@ export function DropZone({
   label = "Drop track files here",
   sublabel = (
     <div className="space-y-1.5">
-      <p>.xm, .it, .mod, .wav, .flac files and optional cover art</p>
+      <p>.xm, .it, .s3m, .mod, .wav, .flac files and optional cover art</p>
       <p className="text-gray-400">Click to select files</p>
     </div>
   ),
@@ -27,7 +27,7 @@ export function DropZone({
       disabled={disabled}
       isDragging={isDragging}
       multiple={true}
-      accept=".xm,.it,.mod,.wav,.flac,image/*"
+      accept=".xm,.it,.s3m,.mod,.wav,.flac,image/*"
     >
       <div className="space-y-3">
         <p className="text-xl font-medium">{label}</p>

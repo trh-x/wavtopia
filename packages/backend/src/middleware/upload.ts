@@ -22,10 +22,11 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Accept .xm, .it, .mod, .wav, and .flac files (case-insensitive) and images for cover art
+    // Accept .xm, .it, .s3m, .mod, .wav, and .flac files (case-insensitive) and images for cover art
     if (
       file.originalname.toLowerCase().endsWith(".xm") ||
       file.originalname.toLowerCase().endsWith(".it") ||
+      file.originalname.toLowerCase().endsWith(".s3m") ||
       file.originalname.toLowerCase().endsWith(".mod") ||
       file.originalname.toLowerCase().endsWith(".wav") ||
       file.originalname.toLowerCase().endsWith(".flac") ||
@@ -36,7 +37,7 @@ const upload = multer({
       cb(
         new AppError(
           400,
-          "Only .xm, .it, .mod, .wav, .flac files and images are allowed"
+          "Only .xm, .it, .s3m, .mod, .wav, .flac files and images are allowed"
         )
       );
     }
