@@ -16,7 +16,7 @@ import storageRoutes from "./routes/storage";
 const app = express();
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: "1mb" })); // Default limit is sufficient for track metadata
 app.use(cors());
 
 // Health check endpoint

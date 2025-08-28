@@ -19,7 +19,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 500 * 1024 * 1024, // 500MB limit for large audio files
   },
   fileFilter: (req, file, cb) => {
     // Accept .xm, .it, .s3m, .mod, .wav, and .flac files (case-insensitive) and images for cover art
