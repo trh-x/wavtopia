@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Prisma, TrackStatus, updateUserStorage } from "@wavtopia/core-storage";
 import { prisma } from "../../lib/prisma";
 import { authenticateTrackAccess } from "./middleware";
-import { uploadTrackFiles } from "../../middleware/upload";
+import { uploadStemFile } from "../../middleware/upload";
 import { config } from "../../config";
 
 const router = Router();
@@ -213,7 +213,7 @@ router.post("/:id/fork", authenticate, async (req, res, next) => {
 router.patch(
   "/:id/stem/:stemId",
   authenticate,
-  uploadTrackFiles,
+  uploadStemFile,
   async (req, res, next) => {
     try {
       const data = updateStemSchema.parse(JSON.parse(req.body.data || "{}"));
@@ -252,12 +252,12 @@ router.patch(
       }
 
       // Handle file replacement if provided
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const file = req.file as Express.Multer.File;
       let stemFileUrl: string | undefined;
       let stemSizeBytes: number | undefined;
 
-      if (files.stemFile?.[0]) {
-        const stemFile = files.stemFile[0];
+      if (file) {
+        const stemFile = file;
         stemFileUrl = "file://" + stemFile.path;
         stemSizeBytes = stemFile.size;
       }
@@ -310,7 +310,7 @@ router.patch(
                 body: JSON.stringify({
                   stemId: updatedStem.id,
                   stemFileUrl,
-                  stemFileName: files.stemFile[0].originalname,
+                  stemFileName: file.originalname,
                   trackId: track.id,
                   userId: req.user!.id,
                 }),
@@ -375,7 +375,7 @@ router.patch(
 router.post(
   "/:id/stem",
   authenticate,
-  uploadTrackFiles,
+  uploadStemFile,
   async (req, res, next) => {
     try {
       const data = updateStemSchema.parse(JSON.parse(req.body.data || "{}"));
@@ -402,12 +402,12 @@ router.post(
       }
 
       // Check if stem file was provided
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      if (!files.stemFile?.[0]) {
+      const file = req.file as Express.Multer.File;
+      if (!file) {
         throw new AppError(400, "No stem file provided");
       }
 
-      const stemFile = files.stemFile[0];
+      const stemFile = file;
       const stemFileUrl = "file://" + stemFile.path;
       const stemSizeBytes = stemFile.size;
 
@@ -456,7 +456,7 @@ router.post(
               body: JSON.stringify({
                 stemId: newStem.id,
                 stemFileUrl,
-                stemFileName: stemFile.originalname,
+                stemFileName: file.originalname,
                 trackId: track.id,
                 userId: req.user!.id,
               }),
@@ -520,7 +520,7 @@ router.post(
 router.patch(
   "/:id/audio",
   authenticate,
-  uploadTrackFiles,
+  uploadStemFile,
   async (req, res, next) => {
     try {
       const { id: trackId } = req.params;
@@ -543,18 +543,17 @@ router.patch(
       }
 
       // Check if audio file was provided
-      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-      if (!files.original?.[0]) {
+      const file = req.file as Express.Multer.File;
+      if (!file) {
         throw new AppError(400, "No audio file provided");
       }
 
-      const audioFile = files.original[0];
-      const audioFileUrl = "file://" + audioFile.path;
-      const audioFileSizeBytes = audioFile.size;
+      const audioFileUrl = "file://" + file.path;
+      const audioFileSizeBytes = file.size;
 
       // Validate file format (WAV or FLAC only for track replacement)
       const allowedFormats = [".wav", ".flac"];
-      const fileExtension = audioFile.originalname.toLowerCase();
+      const fileExtension = file.originalname.toLowerCase();
       const isValidFormat = allowedFormats.some((format) =>
         fileExtension.endsWith(format)
       );
