@@ -189,6 +189,12 @@ function roundDateByPrecision(
   return roundedDate;
 }
 
+function isAudioFormat(originalFormat: SourceFormat) {
+  return (
+    originalFormat === SourceFormat.WAV || originalFormat === SourceFormat.FLAC
+  );
+}
+
 // Create track with files
 router.post(
   "/",
@@ -277,13 +283,10 @@ router.post(
 
       // Validate stem files are only provided for WAV/FLAC tracks
       if (stemFiles.length > 0) {
-        if (
-          originalFormat !== SourceFormat.WAV &&
-          originalFormat !== SourceFormat.FLAC
-        ) {
+        if (!isAudioFormat(originalFormat)) {
           throw new AppError(
             400,
-            "Stem files can only be uploaded with WAV or FLAC tracks"
+            "Stem files can only be uploaded with audio tracks"
           );
         }
 
@@ -362,14 +365,9 @@ router.post(
         const mediaServiceUrl = config.services.mediaServiceUrl;
         if (mediaServiceUrl) {
           // Determine the endpoint based on the original format
-          const isTrackerModule =
-            originalFormat === SourceFormat.XM ||
-            originalFormat === SourceFormat.IT ||
-            originalFormat === SourceFormat.S3M ||
-            originalFormat === SourceFormat.MOD;
-          const endpoint = isTrackerModule
-            ? "/api/media/convert-module"
-            : "/api/media/process-audio";
+          const endpoint = isAudioFormat(originalFormat)
+            ? "/api/media/process-audio"
+            : "/api/media/convert-module";
 
           const response = await fetch(mediaServiceUrl + endpoint, {
             method: "POST",
