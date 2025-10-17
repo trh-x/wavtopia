@@ -1,8 +1,5 @@
 ---
-description:
-globs:
-- "**/*.ts"
-- "**/*.tsx"
+globs: **/*.ts, **/*.tsx
 alwaysApply: false
 ---
 
@@ -11,8 +8,10 @@ alwaysApply: false
 When editing files:
 
 ✅ DO:
+
 - Keep all code/comments unless explicitly asked to modify
 
 ❌ DON'T:
+
 - Remove/modify code unrelated to the change
-- "Clean up" or reorganize without being asked 
+- "Clean up" or reorganize without being asked
