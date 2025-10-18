@@ -61,6 +61,7 @@ const stemProcessingOptionsSchema = z.object({
   stemFileName: z.string(),
   trackId: z.string().uuid(),
   userId: z.string().uuid(),
+  operation: z.enum(["add_stem", "replace_stem"]),
 });
 
 const trackRegenerationOptionsSchema = z.object({
@@ -323,7 +324,8 @@ router.post("/process-stem", async (req, res, next) => {
       options.stemFileUrl,
       options.stemFileName,
       options.trackId,
-      options.userId
+      options.userId,
+      options.operation
     );
 
     res.json({
@@ -355,11 +357,7 @@ router.post("/regenerate-track", async (req, res, next) => {
   try {
     const options = trackRegenerationOptionsSchema.parse(req.body);
 
-    const jobId = await queueTrackRegeneration(
-      options.trackId,
-      options.reason,
-      options.updatedStemId
-    );
+    const jobId = await queueTrackRegeneration(options.trackId, options.reason);
 
     res.json({
       status: "success",

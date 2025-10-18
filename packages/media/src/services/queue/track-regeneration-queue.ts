@@ -2,8 +2,8 @@ import { Job, Worker } from "bullmq";
 import { convertWAVToMP3 } from "../mp3-converter";
 import { generateWaveformData } from "../waveform";
 import { convertAudioToFormat } from "../audio-file-converter";
-import { uploadFile, getObject } from "../storage";
-import { config } from "@wavtopia/core-storage";
+import { uploadFile, getObject, deleteFile } from "../storage";
+import { AudioFileConversionStatus, config } from "@wavtopia/core-storage";
 import {
   createQueue,
   prisma,
@@ -21,7 +21,6 @@ const execAsync = promisify(exec);
 interface TrackRegenerationJob {
   trackId: string;
   reason: "stem_updated" | "stem_deleted" | "stem_added";
-  updatedStemId?: string; // The stem that was updated/deleted/added
 }
 
 // Create queue
@@ -29,6 +28,7 @@ export const trackRegenerationQueue =
   createQueue<TrackRegenerationJob>("track-regeneration");
 
 // Utility function to upload an audio file with proper naming
+// TODO: DRY this with other similar functions
 async function uploadAudioFile(
   buffer: Buffer,
   filename: string,
@@ -134,7 +134,7 @@ export async function mixStemsToFullTrack(
 }
 
 async function trackRegenerationProcessor(job: Job<TrackRegenerationJob>) {
-  const { trackId, reason, updatedStemId } = job.data;
+  const { trackId, reason } = job.data;
 
   console.log(
     `Processing track regeneration job ${job.id} for track: ${trackId} (reason: ${reason})`
@@ -183,6 +183,8 @@ async function trackRegenerationProcessor(job: Job<TrackRegenerationJob>) {
         audioUrl = stem.flacUrl;
         console.log(`Using FLAC for stem ${stem.name}`);
       } else if (stem.mp3Url) {
+        // TODO: If there's no WAV/FLAC, it's a tracker module source, and the
+        // WAVs for the track should be generated rather than using MP3 as a source
         audioUrl = stem.mp3Url;
         console.log(`Using MP3 for stem ${stem.name} (will convert to WAV)`);
       } else {
@@ -254,14 +256,8 @@ async function trackRegenerationProcessor(job: Job<TrackRegenerationJob>) {
     // Upload all three formats
     const trackName = track.title.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-    const [mp3Url, wavUrl, flacUrl] = await Promise.all([
+    const [mp3Url, flacUrl] = await Promise.all([
       uploadAudioFile(mp3Buffer, `${trackName}_full`, "tracks/", "mp3"),
-      uploadAudioFile(
-        fullTrackWavBuffer,
-        `${trackName}_full`,
-        "tracks/",
-        "wav"
-      ),
       uploadAudioFile(flacBuffer, `${trackName}_full`, "tracks/", "flac"),
     ]);
 
@@ -272,17 +268,40 @@ async function trackRegenerationProcessor(job: Job<TrackRegenerationJob>) {
       where: { id: trackId },
       data: {
         fullTrackMp3Url: mp3Url,
-        fullTrackWavUrl: wavUrl,
+        fullTrackWavUrl: null,
         fullTrackFlacUrl: flacUrl,
+        isFlacSource: true,
         waveformData: waveformResult.peaks,
         duration: waveformResult.duration,
         mp3SizeBytes: mp3Buffer.length,
-        wavSizeBytes: fullTrackWavBuffer.length,
+        wavSizeBytes: null,
         flacSizeBytes: flacBuffer.length,
         // Reset conversion status since we have new files
-        wavConversionStatus: "COMPLETED",
-        flacConversionStatus: "COMPLETED",
+        wavConversionStatus: AudioFileConversionStatus.NOT_STARTED,
+        flacConversionStatus: AudioFileConversionStatus.NOT_STARTED,
+        wavCreatedAt: null,
+        flacCreatedAt: new Date(),
+        wavLastRequestedAt: null,
+        flacLastRequestedAt: null,
       },
+    });
+
+    // Delete the previous full track audio files
+    [
+      track.fullTrackWavUrl,
+      track.fullTrackMp3Url,
+      track.fullTrackFlacUrl,
+    ].forEach(async (url) => {
+      if (url) {
+        try {
+          await deleteFile(url);
+        } catch (error) {
+          console.error(
+            `Error deleting previous full track audio file ${url}:`,
+            error
+          );
+        }
+      }
     });
 
     console.log(`Track regeneration completed for: ${trackId}`);
@@ -290,10 +309,8 @@ async function trackRegenerationProcessor(job: Job<TrackRegenerationJob>) {
     return {
       trackId,
       mp3Url,
-      wavUrl,
       flacUrl,
       mp3SizeBytes: mp3Buffer.length,
-      wavSizeBytes: fullTrackWavBuffer.length,
       flacSizeBytes: flacBuffer.length,
       waveformData: waveformResult.peaks,
       duration: waveformResult.duration,
@@ -320,15 +337,13 @@ setupQueueMonitoring(trackRegenerationQueue, "Track Regeneration");
 // Export queue function
 export const queueTrackRegeneration = async (
   trackId: string,
-  reason: "stem_updated" | "stem_deleted" | "stem_added",
-  updatedStemId?: string
+  reason: "stem_updated" | "stem_deleted" | "stem_added"
 ) => {
   const job = await trackRegenerationQueue.add(
     "regenerate-track",
     {
       trackId,
       reason,
-      updatedStemId,
     },
     standardJobOptions
   );

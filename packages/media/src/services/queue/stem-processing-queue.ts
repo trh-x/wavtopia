@@ -2,11 +2,14 @@ import { Job, Worker } from "bullmq";
 import { convertWAVToMP3 } from "../mp3-converter";
 import { generateWaveformData } from "../waveform";
 import { convertAudioToFormat } from "../audio-file-converter";
-import { getLocalFile, uploadFile } from "../storage";
+import { deleteFile, getLocalFile, uploadFile } from "../storage";
 import {
   updateUserStorage,
   deleteLocalFile,
   config,
+  AudioFileConversionStatus,
+  SourceFormat,
+  Stem,
 } from "@wavtopia/core-storage";
 import {
   createQueue,
@@ -14,6 +17,7 @@ import {
   setupQueueMonitoring,
   standardJobOptions,
 } from "./common";
+import { queueTrackRegeneration } from "./track-regeneration-queue";
 
 interface StemProcessingJob {
   stemId: string;
@@ -21,6 +25,7 @@ interface StemProcessingJob {
   stemFileName: string;
   trackId: string;
   userId: string;
+  operation: "add_stem" | "replace_stem";
 }
 
 // Create queue
@@ -44,59 +49,25 @@ async function uploadMp3File(
   );
 }
 
-// Utility function to convert any audio format to WAV using FFmpeg
-async function convertAudioToWAV(
-  audioBuffer: Buffer,
-  sourceFormat: string
-): Promise<Buffer> {
-  const { promisify } = require("util");
-  const { exec } = require("child_process");
-  const { writeFile, mkdtemp, rm, readFile } = require("fs/promises");
-  const { join } = require("path");
-  const { tmpdir } = require("os");
-
-  const execAsync = promisify(exec);
-
-  try {
-    // Create temporary directory
-    const tempDir = await mkdtemp(join(tmpdir(), "wavtopia-audio-"));
-    const inputPath = join(tempDir, `input.${sourceFormat}`);
-    const outputPath = join(tempDir, "output.wav");
-
-    try {
-      // Write audio file to temp directory
-      await writeFile(inputPath, audioBuffer);
-
-      // Convert to WAV using FFmpeg
-      const { stderr } = await execAsync(
-        `ffmpeg -loglevel error -i "${inputPath}" -c:a pcm_s16le "${outputPath}"`
-      );
-
-      if (stderr) {
-        console.error(
-          `${sourceFormat.toUpperCase()} to WAV conversion stderr:`,
-          stderr
-        );
-      }
-
-      // Read the WAV file
-      const wavBuffer = await readFile(outputPath);
-      return wavBuffer;
-    } finally {
-      // Clean up temporary directory
-      await rm(tempDir, { recursive: true, force: true });
-    }
-  } catch (error) {
-    console.error(
-      `Error converting ${sourceFormat.toUpperCase()} to WAV:`,
-      error
-    );
-    throw new Error(`Failed to convert ${sourceFormat.toUpperCase()} to WAV`);
-  }
+async function uploadFlacFile(
+  buffer: Buffer,
+  filename: string,
+  directory: string
+): Promise<string> {
+  return uploadFile(
+    {
+      buffer,
+      originalname: `${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}.flac`,
+      mimetype: "audio/flac",
+      size: buffer.length,
+    },
+    directory
+  );
 }
 
 async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
-  const { stemId, stemFileUrl, stemFileName, trackId, userId } = job.data;
+  const { stemId, stemFileUrl, stemFileName, trackId, userId, operation } =
+    job.data;
 
   console.log(
     `Processing stem file ${job.id} for stem: ${stemId} (track: ${trackId})`
@@ -107,26 +78,22 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
     console.log(`Attempting to read stem file from: ${stemFileUrl}`);
     const stemFile = await getLocalFile(stemFileUrl);
 
-    // Detect file format and convert to WAV if needed for waveform generation
+    // Detect file format and convert to WAV for waveform generation
+    // or FLAC for storage as needed
     let wavBuffer: Buffer;
+    let flacBuffer: Buffer;
     const fileExtension = stemFileName.toLowerCase().split(".").pop();
 
     console.log(`Processing ${fileExtension} file for stem: ${stemId}`);
 
     if (fileExtension === "wav") {
       wavBuffer = stemFile.buffer;
+      flacBuffer = await convertAudioToFormat(stemFile.buffer, "flac");
     } else if (fileExtension === "flac") {
-      console.log(`Converting FLAC to WAV for waveform generation: ${stemId}`);
+      flacBuffer = stemFile.buffer;
       wavBuffer = await convertAudioToFormat(stemFile.buffer, "wav");
     } else {
-      // For other formats (like MP3), we'll use FFmpeg to convert to WAV
-      console.log(
-        `Converting ${fileExtension} to WAV for processing: ${stemId}`
-      );
-      wavBuffer = await convertAudioToWAV(
-        stemFile.buffer,
-        fileExtension || "unknown"
-      );
+      throw new Error(`Unsupported file format: ${fileExtension}`);
     }
 
     // Generate waveform data from WAV buffer
@@ -137,7 +104,7 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
     // Convert to MP3 from WAV buffer
     console.log(`Converting stem to MP3: ${stemId}`);
     const kbps = 192; // TODO: Make this configurable
-    const mp3Buffer = await convertWAVToMP3(wavBuffer, kbps);
+    const mp3Buffer = await convertWAVToMP3(flacBuffer, kbps);
     console.log(`MP3 conversion complete for stem: ${stemId}`);
 
     // Upload MP3 file
@@ -145,6 +112,10 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
     const sanitizedName = stemName.replace(/[^a-zA-Z0-9._-]/g, "_");
     const mp3Url = await uploadMp3File(mp3Buffer, sanitizedName, "stems/");
     console.log(`MP3 uploaded for stem: ${stemId}`);
+
+    // Upload FLAC file
+    const flacUrl = await uploadFlacFile(flacBuffer, sanitizedName, "stems/");
+    console.log(`FLAC uploaded for stem: ${stemId}`);
 
     // Delete the local file only after successful processing
     try {
@@ -157,6 +128,11 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
       );
     }
 
+    // Retrieve the current state of the stem, in order to delete its audio files after it has been updated
+    const prevStem = await prisma.stem.findUnique({
+      where: { id: stemId },
+    });
+
     // Update the stem in the database
     console.log(`Updating stem ${stemId} in database with:`, {
       mp3Url,
@@ -166,33 +142,80 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
       waveformDataSample: waveformResult.peaks.slice(0, 10), // First 10 values for debugging
     });
 
+    let secondsChange = 0;
+
+    if (operation === "add_stem") {
+      secondsChange = waveformResult.duration;
+    } else if (operation === "replace_stem") {
+      const stem = await prisma.stem.findUnique({
+        where: { id: stemId },
+      });
+      if (!stem) {
+        throw new Error(`Stem ${stemId} not found`);
+      }
+      secondsChange = waveformResult.duration - (stem.duration || 0);
+    }
+
     await prisma.stem.update({
       where: { id: stemId },
       data: {
         mp3Url,
+        wavSizeBytes: null,
         mp3SizeBytes: mp3Buffer.length,
+        flacSizeBytes: flacBuffer.length,
         waveformData: waveformResult.peaks,
         duration: waveformResult.duration,
-        // Reset conversion status when file is processed
+        isFlacSource: true,
         wavUrl: null,
-        flacUrl: null,
-        wavConversionStatus: "NOT_STARTED",
-        flacConversionStatus: "NOT_STARTED",
+        flacUrl,
+        // Reset conversion status and timestamps when file is processed
+        wavConversionStatus: AudioFileConversionStatus.NOT_STARTED,
+        flacConversionStatus: AudioFileConversionStatus.NOT_STARTED,
+        wavCreatedAt: null,
+        flacCreatedAt: new Date(),
+        wavLastRequestedAt: null,
+        flacLastRequestedAt: null,
       },
     });
 
     console.log(`Database update completed for stem: ${stemId}`);
 
-    // Update user storage with the actual duration
-    await updateUserStorage(
-      {
-        userId,
-        secondsChange: waveformResult.duration,
-      },
-      prisma
-    );
+    if (secondsChange > 0) {
+      // Update user storage with the actual duration
+      await updateUserStorage(
+        {
+          userId,
+          secondsChange,
+        },
+        prisma
+      );
+    }
+
+    // Delete the stem's previous audio files
+    if (prevStem) {
+      [prevStem.mp3Url, prevStem.flacUrl, prevStem.wavUrl].forEach(
+        async (url) => {
+          if (url) {
+            try {
+              await deleteFile(url);
+            } catch (error) {
+              console.error(
+                `Error deleting previous stem audio file ${url} for stem ${stemId}:`,
+                error
+              );
+            }
+          }
+        }
+      );
+    }
 
     console.log(`Stem processing completed for: ${stemId}`);
+
+    // Queue track regeneration to regenerate the track with the new stem
+    const jobId = await queueTrackRegeneration(
+      trackId,
+      operation === "add_stem" ? "stem_added" : "stem_updated"
+    );
 
     return {
       stemId,
@@ -200,6 +223,7 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
       mp3SizeBytes: mp3Buffer.length,
       waveformData: waveformResult.peaks,
       duration: waveformResult.duration,
+      trackRegenerationJobId: jobId,
     };
   } catch (error) {
     console.error(`Error processing stem ${stemId}:`, error);
@@ -246,7 +270,8 @@ export const queueStemProcessing = async (
   stemFileUrl: string,
   stemFileName: string,
   trackId: string,
-  userId: string
+  userId: string,
+  operation: "add_stem" | "replace_stem"
 ) => {
   const job = await stemProcessingQueue.add(
     "process-stem",
@@ -256,6 +281,7 @@ export const queueStemProcessing = async (
       stemFileName,
       trackId,
       userId,
+      operation,
     },
     standardJobOptions
   );

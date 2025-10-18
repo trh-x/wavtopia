@@ -2,7 +2,12 @@ import { Router } from "express";
 import { AppError } from "../../middleware/errorHandler";
 import { authenticate } from "../../middleware/auth";
 import { z } from "zod";
-import { Prisma, TrackStatus, updateUserStorage } from "@wavtopia/core-storage";
+import {
+  AudioFileConversionStatus,
+  Prisma,
+  TrackStatus,
+  updateUserStorage,
+} from "@wavtopia/core-storage";
 import { prisma } from "../../lib/prisma";
 import { authenticateTrackAccess } from "./middleware";
 import { uploadStemFile } from "../../middleware/upload";
@@ -255,47 +260,36 @@ router.patch(
       const file = req.file as Express.Multer.File;
       let stemFileUrl: string | undefined;
       let stemSizeBytes: number | undefined;
+      let stemFileFormat: string | undefined;
 
       if (file) {
         const stemFile = file;
         stemFileUrl = "file://" + stemFile.path;
         stemSizeBytes = stemFile.size;
-      }
+        stemFileFormat = stemFile.originalname.toLowerCase().split(".").pop();
 
-      // Update the stem
-      const updatedStem = await prisma.stem.update({
-        where: { id: stemId },
-        data: {
-          ...(data.name && { name: data.name }),
-          ...(data.type && { type: data.type }),
-          ...(stemFileUrl && {
-            mp3Url: stemFileUrl,
-            // Reset conversion status when file is replaced
-            wavUrl: null,
-            flacUrl: null,
-            wavConversionStatus: "NOT_STARTED",
-            flacConversionStatus: "NOT_STARTED",
-          }),
-          ...(stemSizeBytes && { mp3SizeBytes: stemSizeBytes }),
-        },
-      });
-
-      // Update user storage if file was replaced
-      if (stemFileUrl) {
-        // Calculate the size difference for the new file vs old file
-        const sizeDiff = stemSizeBytes
-          ? stemSizeBytes - (stem.mp3SizeBytes || 0)
-          : 0;
-        if (sizeDiff !== 0) {
-          await updateUserStorage(
-            {
-              userId: req.user!.id,
-              secondsChange: 0, // We'll recalculate actual duration from file
-            },
-            prisma
+        if (!stemFileFormat || !["wav", "flac"].includes(stemFileFormat)) {
+          throw new AppError(
+            400,
+            "Only WAV and FLAC files are supported for stem replacement"
           );
         }
+      }
 
+      if (
+        (data.name && data.name !== stem.name) ||
+        (data.type && data.type !== stem.type)
+      ) {
+        await prisma.stem.update({
+          where: { id: stemId },
+          data: {
+            ...(data.name && { name: data.name }),
+            ...(data.type && { type: data.type }),
+          },
+        });
+      }
+
+      if (stemFileUrl) {
         // Call media service to process the uploaded stem file
         const mediaServiceUrl = config.services.mediaServiceUrl;
         if (mediaServiceUrl) {
@@ -308,11 +302,12 @@ router.patch(
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  stemId: updatedStem.id,
+                  stemId,
                   stemFileUrl,
                   stemFileName: file.originalname,
                   trackId: track.id,
                   userId: req.user!.id,
+                  operation: "replace_stem",
                 }),
               }
             );
@@ -328,39 +323,12 @@ router.patch(
           } catch (error) {
             console.error("Error calling media service:", error);
           }
-
-          // Queue track regeneration after stem update
-          try {
-            const regenerationResponse = await fetch(
-              mediaServiceUrl + "/api/media/regenerate-track",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  trackId: track.id,
-                  reason: "stem_updated",
-                  updatedStemId: updatedStem.id,
-                }),
-              }
-            );
-
-            if (!regenerationResponse.ok) {
-              console.error(
-                "Failed to queue track regeneration:",
-                await regenerationResponse.text()
-              );
-            } else {
-              console.log("Track regeneration queued successfully");
-            }
-          } catch (error) {
-            console.error("Error calling track regeneration service:", error);
-          }
         }
       }
 
-      res.json(updatedStem);
+      res.json({
+        message: "Stem updated successfully",
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         next(new AppError(400, "Invalid request data"));
@@ -459,6 +427,7 @@ router.post(
                 stemFileName: file.originalname,
                 trackId: track.id,
                 userId: req.user!.id,
+                operation: "add_stem",
               }),
             }
           );
@@ -616,6 +585,7 @@ router.patch(
               },
               body: JSON.stringify({
                 trackId: updatedTrack.id,
+                operation: "replace_track",
               }),
             }
           );
