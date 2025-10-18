@@ -28,6 +28,13 @@ const updateStemSchema = z.object({
   type: z.string().optional(),
 });
 
+function isAllowedStemFormat(format: string | undefined): boolean {
+  if (format === undefined) {
+    return false;
+  }
+  return format === "wav" || format === "flac";
+}
+
 // Fork a track
 router.post("/:id/fork", authenticate, async (req, res, next) => {
   try {
@@ -268,7 +275,7 @@ router.patch(
         stemSizeBytes = stemFile.size;
         stemFileFormat = stemFile.originalname.toLowerCase().split(".").pop();
 
-        if (!stemFileFormat || !["wav", "flac"].includes(stemFileFormat)) {
+        if (!isAllowedStemFormat(stemFileFormat)) {
           throw new AppError(
             400,
             "Only WAV and FLAC files are supported for stem replacement"
@@ -377,7 +384,6 @@ router.post(
 
       const stemFile = file;
       const stemFileUrl = "file://" + stemFile.path;
-      const stemSizeBytes = stemFile.size;
 
       // Get the next index for the new stem
       const maxIndex = track.stems.reduce(
@@ -392,23 +398,9 @@ router.post(
           index: nextIndex,
           name: data.name || stemFile.originalname,
           type: data.type || "audio",
-          mp3Url: stemFileUrl,
-          mp3SizeBytes: stemSizeBytes,
           trackId: track.id,
-          // Start with conversion status not started
-          wavConversionStatus: "NOT_STARTED",
-          flacConversionStatus: "NOT_STARTED",
         },
       });
-
-      // Update user storage for the new stem
-      await updateUserStorage(
-        {
-          userId: req.user!.id,
-          secondsChange: 0, // We'll recalculate actual duration from file
-        },
-        prisma
-      );
 
       // Call media service to process the uploaded stem file
       const mediaServiceUrl = config.services.mediaServiceUrl;
@@ -442,35 +434,6 @@ router.post(
           }
         } catch (error) {
           console.error("Error calling media service:", error);
-        }
-
-        // Queue track regeneration after adding new stem
-        try {
-          const regenerationResponse = await fetch(
-            mediaServiceUrl + "/api/media/regenerate-track",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                trackId: track.id,
-                reason: "stem_added",
-                updatedStemId: newStem.id,
-              }),
-            }
-          );
-
-          if (!regenerationResponse.ok) {
-            console.error(
-              "Failed to queue track regeneration:",
-              await regenerationResponse.text()
-            );
-          } else {
-            console.log("Track regeneration queued successfully");
-          }
-        } catch (error) {
-          console.error("Error calling track regeneration service:", error);
         }
       }
 
@@ -520,14 +483,9 @@ router.patch(
       const audioFileUrl = "file://" + file.path;
       const audioFileSizeBytes = file.size;
 
-      // Validate file format (WAV or FLAC only for track replacement)
-      const allowedFormats = [".wav", ".flac"];
-      const fileExtension = file.originalname.toLowerCase();
-      const isValidFormat = allowedFormats.some((format) =>
-        fileExtension.endsWith(format)
-      );
+      const fileExtension = file.originalname.toLowerCase().split(".").pop();
 
-      if (!isValidFormat) {
+      if (!isAllowedStemFormat(fileExtension)) {
         throw new AppError(
           400,
           "Only WAV and FLAC files are supported for track audio replacement"
@@ -535,7 +493,7 @@ router.patch(
       }
 
       // Determine the source format
-      const originalFormat = fileExtension.endsWith(".wav") ? "WAV" : "FLAC";
+      const originalFormat = fileExtension === "wav" ? "WAV" : "FLAC";
 
       // Update the track with new audio file
       const updatedTrack = await prisma.track.update({

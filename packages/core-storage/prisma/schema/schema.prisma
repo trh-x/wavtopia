@@ -292,7 +292,7 @@ model Stem {
   // Whether this stem is a source whose FLAC file should not be cleaned up
   isFlacSource          Boolean                    @default(false) @map("is_flac_source")
   wavUrl                String?                    @map("wav_url")
-  mp3Url                String                     @map("mp3_url")
+  mp3Url                String?                    @map("mp3_url")
   flacUrl               String?                    @map("flac_url")
   waveformData          Float[]                    @map("waveform_data")
   duration              Float?                     @map("duration") // Duration in seconds
