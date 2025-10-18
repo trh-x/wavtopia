@@ -262,11 +262,11 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
                 </label>
                 <DropZone
                   onFileSelect={handleFileChange}
-                  accept=".mp3,.wav,.flac"
+                  accept=".wav,.flac"
                   multiple={false}
-                  className="h-24"
-                  label="Drop new audio file or click to browse"
-                  sublabel="MP3, WAV, or FLAC files"
+                  className="h-32"
+                  label="Drop audio file or click to browse"
+                  sublabel=".wav or .flac files"
                 />
                 {formData.file && (
                   <p className="text-sm text-green-600">

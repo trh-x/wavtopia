@@ -201,11 +201,11 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
                 <label className="text-sm font-medium">Audio File *</label>
                 <DropZone
                   onFileSelect={handleFileChange}
-                  accept=".mp3,.wav,.flac"
+                  accept=".wav,.flac"
                   multiple={false}
                   className="h-32"
                   label="Drop audio file or click to browse"
-                  sublabel="MP3, WAV, or FLAC files"
+                  sublabel=".wav or .flac files"
                 />
                 {formData.file && (
                   <p className="text-sm text-green-600">
