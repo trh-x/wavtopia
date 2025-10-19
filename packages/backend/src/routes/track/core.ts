@@ -364,29 +364,45 @@ router.post(
         // Now POST to the media service to process the track
         const mediaServiceUrl = config.services.mediaServiceUrl;
         if (mediaServiceUrl) {
-          // Determine the endpoint based on the original format
-          const endpoint = isAudioFormat(originalFormat)
-            ? "/api/media/process-audio"
-            : "/api/media/convert-module";
+          let response: Response;
 
-          const response = await fetch(mediaServiceUrl + endpoint, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              trackId: track.id,
-              stemFiles: stemFiles.map((stem, index) => ({
-                url: stem.url,
-                size: stem.size,
-                originalName: stem.originalName,
-                metadata: data.stemMetadata?.[index] || {
-                  name: stem.originalName,
-                  type: "audio",
+          if (isAudioFormat(originalFormat)) {
+            response = await fetch(
+              mediaServiceUrl + "/api/media/process-audio",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
                 },
-              })),
-            }),
-          });
+                body: JSON.stringify({
+                  trackId: track.id,
+                  stemFiles: stemFiles.map((stem, index) => ({
+                    url: stem.url,
+                    size: stem.size,
+                    originalName: stem.originalName,
+                    metadata: data.stemMetadata?.[index] || {
+                      name: stem.originalName,
+                      type: "audio",
+                    },
+                  })),
+                }),
+              }
+            );
+          } else {
+            response = await fetch(
+              mediaServiceUrl + "/api/media/convert-module",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  trackId: track.id,
+                }),
+              }
+            );
+          }
+
           const responseData = await response.json();
           console.log("Media service response:", responseData);
         } else {

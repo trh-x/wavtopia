@@ -3,6 +3,7 @@ import {
   SourceFormat,
   TrackStatus,
   deleteLocalFile,
+  updateUserStorage,
 } from "@wavtopia/core-storage";
 import {
   createQueue,
@@ -17,6 +18,7 @@ import { convertAudioToFormat } from "../audio-file-converter";
 import { AppError } from "../../middleware/errorHandler";
 
 // Utility function to upload an MP3 file
+// TODO: DRY this with duplicate functions in codebase
 async function uploadMp3File(
   buffer: Buffer,
   filename: string,
@@ -27,6 +29,24 @@ async function uploadMp3File(
       buffer,
       originalname: `${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}.mp3`,
       mimetype: "audio/mpeg",
+      size: buffer.length,
+    },
+    directory
+  );
+}
+
+// Utility function to upload a FLAC file
+// TODO: DRY this with duplicate functions in codebase
+async function uploadFlacFile(
+  buffer: Buffer,
+  filename: string,
+  directory: string
+): Promise<string> {
+  return uploadFile(
+    {
+      buffer,
+      originalname: `${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}.flac`,
+      mimetype: "audio/flac",
       size: buffer.length,
     },
     directory
@@ -96,6 +116,30 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
       throw new Error(`User not found: ${track.userId}`);
     }
 
+    if (user.isOverQuota) {
+      if (track.originalUrl) {
+        await deleteLocalFile(track.originalUrl);
+      }
+
+      if (track.coverArt) {
+        await deleteLocalFile(track.coverArt);
+      }
+
+      console.warn(
+        `User ${track.userId} has exceeded their storage quota. The track will not be converted. The original file and cover art have been cleared.`
+      );
+
+      await prisma.track.update({
+        where: { id: trackId },
+        data: {
+          originalUrl: null,
+          coverArt: null,
+        },
+      });
+
+      return;
+    }
+
     // Check if this is actually an audio file
     if (
       track.originalFormat !== SourceFormat.WAV &&
@@ -107,12 +151,6 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
     const originalFile = await getLocalFile(track.originalUrl);
     const originalName = track.title.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-    // Upload original file to permanent storage
-    console.log("Uploading original file...");
-    const originalUrl = await uploadFile(originalFile, "originals/");
-    await deleteLocalFile(track.originalUrl);
-    console.log("Original file uploaded:", originalUrl);
-
     // Upload cover art if provided
     let coverArtUrl: string | undefined;
     if (track.coverArt) {
@@ -123,33 +161,30 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
       console.log("Cover art uploaded:", coverArtUrl);
     }
 
-    if (user.isOverQuota) {
-      console.warn(
-        `User ${user.id} is over quota but processing uploaded audio file anyway...`
-      );
-    }
-
     // For audio files, we process them as a single "full track"
     // We don't extract stems since they weren't separated at upload time
     console.log("Processing audio file...");
 
-    let audioBuffer: Buffer;
+    let wavBuffer: Buffer;
+    let flacBuffer: Buffer;
     if (track.originalFormat === SourceFormat.WAV) {
       // WAV file can be used directly
-      audioBuffer = originalFile.buffer;
+      wavBuffer = originalFile.buffer;
+      flacBuffer = await convertAudioToFormat(originalFile.buffer, "flac");
     } else {
       // FLAC file - convert to WAV first for processing
       console.log("Converting FLAC to WAV for processing...");
-      audioBuffer = await convertAudioToFormat(originalFile.buffer, "wav");
+      wavBuffer = await convertAudioToFormat(originalFile.buffer, "wav");
       console.log("FLAC to WAV conversion completed");
+      flacBuffer = originalFile.buffer;
     }
 
     // Generate MP3 from the audio file
     const kbps = 320; // High quality for uploaded audio
-    const mp3Buffer = await convertWAVToMP3(audioBuffer, kbps);
+    const mp3Buffer = await convertWAVToMP3(wavBuffer, kbps);
 
     // Generate waveform data
-    const waveformResult = await generateWaveformData(audioBuffer);
+    const waveformResult = await generateWaveformData(wavBuffer);
     console.log("Generated waveform data");
 
     // Upload MP3
@@ -160,17 +195,28 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
     );
     console.log("Full track MP3 uploaded");
 
+    const flacUrl = await uploadFlacFile(
+      flacBuffer,
+      `${originalName}_full`,
+      "tracks/"
+    );
+    console.log("Full track FLAC uploaded");
+
+    // TODO: Wrap these database operations in a transaction
+
     // Update track in database
-    const updatedTrack = await prisma.track.update({
+    await prisma.track.update({
       where: { id: trackId },
       data: {
-        originalUrl,
+        originalUrl: null, // fullTrackFlacUrl is the main file URL for audio tracks
         coverArt: coverArtUrl,
         fullTrackMp3Url: mp3Url,
         mp3SizeBytes: mp3Buffer.length,
+        fullTrackFlacUrl: flacUrl,
+        flacSizeBytes: flacBuffer.length,
+        isFlacSource: true,
         waveformData: waveformResult.peaks,
         duration: waveformResult.duration,
-        status: TrackStatus.ACTIVE,
       },
     });
 
@@ -194,7 +240,8 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
           const stemFileData = await getLocalFile(stemFile.url);
 
           // Convert stem to WAV if it's FLAC
-          let stemAudioBuffer: Buffer;
+          let stemWavBuffer: Buffer;
+          let stemFlacBuffer: Buffer;
           const stemExtension = stemFile.originalName
             .split(".")
             .pop()
@@ -203,34 +250,43 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
             console.log(
               `Converting FLAC stem ${stemFile.metadata.name} to WAV for processing...`
             );
-            stemAudioBuffer = await convertAudioToFormat(
+            stemWavBuffer = await convertAudioToFormat(
               stemFileData.buffer,
               "wav"
             );
+            stemFlacBuffer = stemFileData.buffer;
           } else {
-            stemAudioBuffer = stemFileData.buffer;
+            stemWavBuffer = stemFileData.buffer;
+            stemFlacBuffer = await convertAudioToFormat(
+              stemFileData.buffer,
+              "flac"
+            );
           }
 
           // Generate MP3 from the stem file
-          const stemMp3Buffer = await convertWAVToMP3(stemAudioBuffer, 192); // Lower quality for stems
+          const stemMp3Buffer = await convertWAVToMP3(stemWavBuffer, 192); // Lower quality for stems
 
           // Generate waveform data for stem
-          const stemWaveformResult = await generateWaveformData(
-            stemAudioBuffer
-          );
+          const stemWaveformResult = await generateWaveformData(stemWavBuffer);
+
+          const stemName = `${originalName}_${stemFile.metadata.name.replace(
+            /[^a-z0-9]/gi,
+            "_"
+          )}`;
 
           // Upload stem MP3
           const stemMp3Url = await uploadMp3File(
             stemMp3Buffer,
-            `${originalName}_${stemFile.metadata.name.replace(
-              /[^a-z0-9]/gi,
-              "_"
-            )}`,
+            stemName,
             "stems/"
           );
 
           // Upload original stem file
-          const stemOriginalUrl = await uploadFile(stemFileData, "stems/");
+          const stemFlacUrl = await uploadFlacFile(
+            stemFlacBuffer,
+            stemName,
+            "stems/"
+          );
 
           // Create stem record in database
           const stem = await prisma.stem.create({
@@ -241,22 +297,8 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
               trackId: trackId,
               mp3Url: stemMp3Url,
               mp3SizeBytes: stemMp3Buffer.length,
-              wavUrl:
-                track.originalFormat === SourceFormat.WAV
-                  ? stemOriginalUrl
-                  : undefined,
-              flacUrl:
-                track.originalFormat === SourceFormat.FLAC
-                  ? stemOriginalUrl
-                  : undefined,
-              wavSizeBytes:
-                track.originalFormat === SourceFormat.WAV
-                  ? stemFileData.size
-                  : undefined,
-              flacSizeBytes:
-                track.originalFormat === SourceFormat.FLAC
-                  ? stemFileData.size
-                  : undefined,
+              flacUrl: stemFlacUrl,
+              flacSizeBytes: stemFlacBuffer.length,
               waveformData: stemWaveformResult.peaks,
               duration: stemWaveformResult.duration,
             },
@@ -281,6 +323,25 @@ async function audioProcessingProcessor(job: Job<AudioProcessingJob>) {
           // Continue processing other stems even if one fails
         }
       }
+    }
+
+    const totalQuotaSeconds =
+      waveformResult.duration +
+      processedStems.reduce((acc, stem) => acc + stem.duration, 0);
+
+    // Update storage usage and get quota warning
+    const { notification } = await updateUserStorage(
+      {
+        secondsChange: totalQuotaSeconds,
+        userId: user.id,
+      },
+      prisma
+    );
+
+    if (notification) {
+      console.warn(
+        `User ${user.id} has exceeded their storage quota. Quota warning: ${notification.message}`
+      );
     }
 
     return {

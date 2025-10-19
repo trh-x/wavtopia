@@ -45,7 +45,7 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
       if (!token) throw new Error("No authentication token");
 
       const formData = new FormData();
-      formData.append("stemFile", file);
+      formData.append("audioFile", file);
 
       return api.track.replaceAudio(track.id, formData, token);
     },

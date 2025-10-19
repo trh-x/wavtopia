@@ -87,7 +87,7 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
       );
 
       if (data.file) {
-        formDataObj.append("stemFile", data.file);
+        formDataObj.append("audioFile", data.file);
       }
 
       return api.stem.update(track.id, stem.id, formDataObj, token);

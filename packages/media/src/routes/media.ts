@@ -18,6 +18,7 @@ import {
   PrismaService,
   config,
 } from "@wavtopia/core-storage";
+import { queueFullTrackReplacement } from "../services/queue/full-track-replacement-queue";
 
 const prisma = new PrismaService(config.database).db;
 
@@ -42,6 +43,11 @@ const audioProcessingOptionsSchema = z.object({
       })
     )
     .optional(),
+});
+
+const fullTrackReplacementOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+  audioFileUrl: z.string(),
 });
 
 const audioFileConversionOptionsSchema = z.object({
@@ -106,6 +112,29 @@ router.post("/process-audio", async (req, res, next) => {
       data: {
         jobId,
         message: "Audio processing has been queued",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Process uploaded audio files (WAV/FLAC) - generates MP3 and waveform data
+router.post("/replace-full-track", async (req, res, next) => {
+  try {
+    // Parse options
+    const options = fullTrackReplacementOptionsSchema.parse(req.body);
+
+    const jobId = await queueFullTrackReplacement(
+      options.trackId,
+      options.audioFileUrl
+    );
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Full track replacement has been queued",
       },
     });
   } catch (error) {

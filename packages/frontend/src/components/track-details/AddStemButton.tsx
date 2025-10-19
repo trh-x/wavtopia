@@ -79,7 +79,7 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
           type: data.type,
         })
       );
-      formDataObj.append("stemFile", data.file);
+      formDataObj.append("audioFile", data.file);
 
       return api.stem.create(track.id, formDataObj, token);
     },

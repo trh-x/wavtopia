@@ -10,6 +10,7 @@ export {
   normalizeFilePath,
 } from "./services/local-storage";
 export {
+  checkUserHasCapacity,
   updateUserStorage,
   type UpdateStorageParams,
   type StorageUpdateResult,

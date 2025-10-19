@@ -34,6 +34,7 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        isFlacSource: boolean;
         waveformData: number[];
         duration: number | null;
         wavConversionStatus: import(".prisma/client").$Enums.AudioFileConversionStatus;
@@ -52,13 +53,16 @@ export declare function filterTracks(options: TrackFilterOptions): Promise<{
         primaryArtistId: string;
         primaryArtistName: string | null;
         originalFormat: import(".prisma/client").$Enums.SourceFormat;
-        originalUrl: string;
+        originalUrl: string | null;
         fullTrackWavUrl: string | null;
         fullTrackMp3Url: string | null;
         fullTrackFlacUrl: string | null;
         coverArt: string | null;
         isPublic: boolean;
         deletedAt: Date | null;
+        forkedFromId: string | null;
+        isFork: boolean;
+        forkCount: number;
         originalSizeBytes: number | null;
         coverArtSizeBytes: number | null;
         totalQuotaSeconds: number | null;

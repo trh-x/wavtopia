@@ -5,12 +5,13 @@ import { z } from "zod";
 import {
   AudioFileConversionStatus,
   Prisma,
+  SourceFormat,
   TrackStatus,
   updateUserStorage,
 } from "@wavtopia/core-storage";
 import { prisma } from "../../lib/prisma";
 import { authenticateTrackAccess } from "./middleware";
-import { uploadStemFile } from "../../middleware/upload";
+import { uploadAudioFile } from "../../middleware/upload";
 import { config } from "../../config";
 
 const router = Router();
@@ -28,7 +29,8 @@ const updateStemSchema = z.object({
   type: z.string().optional(),
 });
 
-function isAllowedStemFormat(format: string | undefined): boolean {
+// TODO: DRY this with duplicate functions in codebase
+function isAllowedAudioFormat(format: string | undefined): boolean {
   if (format === undefined) {
     return false;
   }
@@ -225,7 +227,7 @@ router.post("/:id/fork", authenticate, async (req, res, next) => {
 router.patch(
   "/:id/stem/:stemId",
   authenticate,
-  uploadStemFile,
+  uploadAudioFile,
   async (req, res, next) => {
     try {
       const data = updateStemSchema.parse(JSON.parse(req.body.data || "{}"));
@@ -275,7 +277,7 @@ router.patch(
         stemSizeBytes = stemFile.size;
         stemFileFormat = stemFile.originalname.toLowerCase().split(".").pop();
 
-        if (!isAllowedStemFormat(stemFileFormat)) {
+        if (!isAllowedAudioFormat(stemFileFormat)) {
           throw new AppError(
             400,
             "Only WAV and FLAC files are supported for stem replacement"
@@ -350,7 +352,7 @@ router.patch(
 router.post(
   "/:id/stem",
   authenticate,
-  uploadStemFile,
+  uploadAudioFile,
   async (req, res, next) => {
     try {
       const data = updateStemSchema.parse(JSON.parse(req.body.data || "{}"));
@@ -452,7 +454,7 @@ router.post(
 router.patch(
   "/:id/audio",
   authenticate,
-  uploadStemFile,
+  uploadAudioFile,
   async (req, res, next) => {
     try {
       const { id: trackId } = req.params;
@@ -481,52 +483,13 @@ router.patch(
       }
 
       const audioFileUrl = "file://" + file.path;
-      const audioFileSizeBytes = file.size;
 
       const fileExtension = file.originalname.toLowerCase().split(".").pop();
 
-      if (!isAllowedStemFormat(fileExtension)) {
+      if (!isAllowedAudioFormat(fileExtension)) {
         throw new AppError(
           400,
           "Only WAV and FLAC files are supported for track audio replacement"
-        );
-      }
-
-      // Determine the source format
-      const originalFormat = fileExtension === "wav" ? "WAV" : "FLAC";
-
-      // Update the track with new audio file
-      const updatedTrack = await prisma.track.update({
-        where: { id: trackId },
-        data: {
-          originalUrl: audioFileUrl,
-          originalFormat: originalFormat as any,
-          originalSizeBytes: audioFileSizeBytes,
-          // Reset all converted files and conversion status when original is replaced
-          fullTrackMp3Url: null,
-          fullTrackWavUrl: null,
-          fullTrackFlacUrl: null,
-          wavConversionStatus: "NOT_STARTED",
-          flacConversionStatus: "NOT_STARTED",
-          // Reset waveform data and duration as they'll be regenerated
-          waveformData: [],
-          duration: null,
-          // Reset derived size tracking
-          mp3SizeBytes: null,
-          wavSizeBytes: null,
-          flacSizeBytes: null,
-        },
-      });
-
-      // Update user storage
-      const sizeDiff = audioFileSizeBytes - (track.originalSizeBytes || 0);
-      if (sizeDiff !== 0) {
-        await updateUserStorage(
-          {
-            userId: req.user!.id,
-            secondsChange: 0, // Duration will be recalculated from the new file
-          },
-          prisma
         );
       }
 
@@ -535,15 +498,15 @@ router.patch(
       if (mediaServiceUrl) {
         try {
           const response = await fetch(
-            mediaServiceUrl + "/api/media/process-audio",
+            mediaServiceUrl + "/api/media/replace-full-track",
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                trackId: updatedTrack.id,
-                operation: "replace_track",
+                trackId,
+                audioFileUrl,
               }),
             }
           );
@@ -563,7 +526,6 @@ router.patch(
 
       res.json({
         message: "Track audio replaced successfully",
-        track: updatedTrack,
       });
     } catch (error) {
       next(error);

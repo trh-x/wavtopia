@@ -33,6 +33,7 @@ export const stemProcessingQueue =
   createQueue<StemProcessingJob>("stem-processing");
 
 // Utility function to upload an MP3 file
+// TODO: DRY this with duplicate functions in codebase
 async function uploadMp3File(
   buffer: Buffer,
   filename: string,
@@ -49,6 +50,8 @@ async function uploadMp3File(
   );
 }
 
+// Utility function to upload a FLAC file
+// TODO: DRY this with duplicate functions in codebase
 async function uploadFlacFile(
   buffer: Buffer,
   filename: string,
@@ -100,6 +103,8 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
     console.log(`Generating waveform data for stem: ${stemId}`);
     const waveformResult = await generateWaveformData(wavBuffer);
     console.log(`Waveform data generated for stem: ${stemId}`);
+
+    // TODO: Check if the stem will take the user over their quota, bail out if so
 
     // Convert to MP3 from WAV buffer
     console.log(`Converting stem to MP3: ${stemId}`);
@@ -182,13 +187,19 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
 
     if (secondsChange > 0) {
       // Update user storage with the actual duration
-      await updateUserStorage(
+      const { notification } = await updateUserStorage(
         {
           userId,
           secondsChange,
         },
         prisma
       );
+
+      if (notification) {
+        console.warn(
+          `User ${userId} has exceeded their storage quota. Quota warning: ${notification.message}`
+        );
+      }
     }
 
     // Delete the stem's previous audio files

@@ -125,7 +125,7 @@ model Track {
   // for the trigger that keeps the primaryArtistName field in sync with the primaryArtistId field.
   primaryArtistName     String?                    @map("primary_artist_name")
   originalFormat        SourceFormat               @map("original_format")
-  originalUrl           String                     @map("original_url")
+  originalUrl           String?                    @map("original_url")
   fullTrackWavUrl       String?                    @map("full_track_wav_url")
   fullTrackMp3Url       String?                    @map("full_track_mp3_url")
   fullTrackFlacUrl      String?                    @map("full_track_flac_url")

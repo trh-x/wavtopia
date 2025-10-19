@@ -72,4 +72,4 @@ export const uploadTrackFiles = upload.fields([
   { name: "stems", maxCount: 20 }, // Allow up to 20 stem files
 ]);
 
-export const uploadStemFile = upload.single("stemFile");
+export const uploadAudioFile = upload.single("audioFile");
