@@ -11,6 +11,7 @@ import {
   XMarkIcon,
   DocumentIcon,
 } from "@heroicons/react/24/outline";
+import { DropZone } from "../ui/DropZone";
 
 interface ReplaceTrackAudioProps {
   track: Track;
@@ -44,7 +45,7 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
       if (!token) throw new Error("No authentication token");
 
       const formData = new FormData();
-      formData.append("original", file);
+      formData.append("stemFile", file);
 
       return api.track.replaceAudio(track.id, formData, token);
     },
@@ -79,23 +80,8 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
     },
   });
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const fileName = file.name.toLowerCase();
-      if (!fileName.endsWith(".wav") && !fileName.endsWith(".flac")) {
-        addToast({
-          type: "error",
-          title: "Invalid File Type",
-          message:
-            "Only WAV and FLAC files are supported for track audio replacement.",
-        });
-        return;
-      }
-
-      setSelectedFile(file);
-    }
+  const handleFileSelect = (files: File[]) => {
+    setSelectedFile(files[0] || null);
   };
 
   const handleSubmit = () => {
@@ -153,16 +139,8 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
                     <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                       <p className="text-sm text-yellow-800">
                         <strong>Warning:</strong> Replacing the track audio will
-                        overwrite the current audio file and regenerate all
-                        derivatives (MP3, WAV, FLAC). This action cannot be
+                        overwrite the current audio file. This action cannot be
                         undone.
-                      </p>
-                    </div>
-
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-2">
-                        Upload a new audio file to replace the current track
-                        audio. Only WAV and FLAC files are supported.
                       </p>
                     </div>
 
@@ -171,35 +149,14 @@ export function ReplaceTrackAudio({ track }: ReplaceTrackAudioProps) {
                         Audio File
                       </label>
 
-                      <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
-                        <div className="space-y-1 text-center">
-                          <DocumentIcon className="mx-auto h-12 w-12 text-gray-400" />
-                          <div className="flex text-sm text-gray-600">
-                            <label
-                              htmlFor="audio-upload"
-                              className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
-                            >
-                              <span>Upload a file</span>
-                              <input
-                                id="audio-upload"
-                                ref={fileInputRef}
-                                type="file"
-                                className="sr-only"
-                                accept=".wav,.flac"
-                                onChange={handleFileSelect}
-                                disabled={
-                                  replaceAudioMutation.isPending ||
-                                  isAudioProcessing
-                                }
-                              />
-                            </label>
-                            <p className="pl-1">or drag and drop</p>
-                          </div>
-                          <p className="text-xs text-gray-500">
-                            WAV or FLAC up to 50MB
-                          </p>
-                        </div>
-                      </div>
+                      <DropZone
+                        onFileSelect={handleFileSelect}
+                        accept=".wav,.flac"
+                        multiple={false}
+                        className="h-32"
+                        label="Drop audio file or click to browse"
+                        sublabel=".wav or .flac files"
+                      />
                     </div>
 
                     {selectedFile && (

@@ -54,7 +54,7 @@ export function ForkInfo({ track }: ForkInfoProps) {
         </div>
       )}
 
-      {showForkCount && (
+      {!!showForkCount && (
         <Button
           variant="ghost"
           size="sm"

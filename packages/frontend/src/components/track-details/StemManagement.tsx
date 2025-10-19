@@ -104,11 +104,6 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
       } else {
         // If only metadata was updated, invalidate immediately
         queryClient.invalidateQueries({ queryKey: ["track", track.id] });
-        addToast({
-          type: "success",
-          title: "Stem Updated",
-          message: `${stem.name} has been updated successfully.`,
-        });
       }
 
       setShowEditDialog(false);

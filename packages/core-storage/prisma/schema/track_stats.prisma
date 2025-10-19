@@ -112,7 +112,8 @@ model MonthlyTrackStats {
 model StemEvent {
   id              String         @id @default(uuid())
   stemId          String         @map("stem_id")
-  stem            Stem           @relation(fields: [stemId], references: [id])
+  // TODO: Consider keeping stems in the DB when deleting them, as tracks are, and removing the cascade
+  stem            Stem           @relation(fields: [stemId], references: [id], onDelete: Cascade)
   userId          String?        @map("user_id")
   user            User?          @relation(fields: [userId], references: [id])
   eventType       TrackEventType @map("event_type")
@@ -132,7 +133,7 @@ model UserStemActivity {
   userId          String    @map("user_id")
   user            User      @relation(fields: [userId], references: [id])
   stemId          String    @map("stem_id")
-  stem            Stem      @relation(fields: [stemId], references: [id])
+  stem            Stem      @relation(fields: [stemId], references: [id], onDelete: Cascade)
   firstPlayedAt   DateTime  @map("first_played_at")
   lastPlayedAt    DateTime  @map("last_played_at")
   playCount       Int       @default(0) @map("play_count")
@@ -151,7 +152,7 @@ model UserStemActivity {
 model DailyStemStats {
   id                String    @id @default(uuid())
   stemId            String    @map("stem_id")
-  stem              Stem      @relation(fields: [stemId], references: [id])
+  stem              Stem      @relation(fields: [stemId], references: [id], onDelete: Cascade)
   date              DateTime  // Just the date portion
   playCount         Int       @default(0) @map("play_count")
   streamCount       Int       @default(0) @map("stream_count")
@@ -173,7 +174,7 @@ model DailyStemStats {
 model MonthlyStemStats {
   id                String    @id @default(uuid())
   stemId            String    @map("stem_id")
-  stem              Stem      @relation(fields: [stemId], references: [id])
+  stem              Stem      @relation(fields: [stemId], references: [id], onDelete: Cascade)
   yearMonth         DateTime  // First day of month
   playCount         Int       @default(0) @map("play_count")
   streamCount       Int       @default(0) @map("stream_count")
