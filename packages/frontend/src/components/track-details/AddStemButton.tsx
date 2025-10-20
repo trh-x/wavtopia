@@ -12,7 +12,6 @@ import { Track, Stem } from "@/types";
 
 interface AddStemButtonProps {
   track: Track;
-  canEdit: boolean;
 }
 
 interface StemCreateFormData {
@@ -21,7 +20,7 @@ interface StemCreateFormData {
   file: File | null;
 }
 
-export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
+export function AddStemButton({ track }: AddStemButtonProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStemId, setProcessingStemId] = useState<string | null>(null);
@@ -47,7 +46,7 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
     // If we have a processing stem ID but can't find the stem in track data,
     // it might mean the track data hasn't been refreshed yet
     if (processingStemId && !processingStem && isProcessing) {
-      // Set up a timeout to stop waiting after 30 seconds (increased from 10)
+      // Set up a timeout to stop waiting after 30 seconds
       const timeout = setTimeout(() => {
         setIsProcessing(false);
         setProcessingStemId(null);
@@ -58,7 +57,7 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
           message:
             "The stem didn't appear in the track data. Please try refreshing the page.",
         });
-      }, 30000); // Increased to 30 seconds
+      }, 30000);
 
       return () => clearTimeout(timeout);
     }
@@ -103,10 +102,10 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
         file: null,
       });
 
-      // Delay the refresh to let the polling start first, and add debugging
+      // Delay the refresh to let the polling start first
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["track", track.id] });
-      }, 500); // Increased delay to 500ms
+      }, 500);
     },
     onError: (error) => {
       addToast({
@@ -149,11 +148,6 @@ export function AddStemButton({ track, canEdit }: AddStemButtonProps) {
       name: prev.name || (file ? file.name.replace(/\.[^/.]+$/, "") : ""),
     }));
   };
-
-  // Only show for forks that the user owns
-  if (!canEdit || !track.isFork) {
-    return null;
-  }
 
   return (
     <>

@@ -25,7 +25,7 @@ export function StemsSection({
       <div className={styles.container.flexBetween}>
         <h2 className={styles.text.heading}>Stems</h2>
         <div className={styles.container.flexRow}>
-          <AddStemButton track={track} canEdit={canEdit} />
+          {canEdit && <AddStemButton track={track} />}
           <PlayModeToggle />
           <ViewModeToggle
             viewMode={viewMode}

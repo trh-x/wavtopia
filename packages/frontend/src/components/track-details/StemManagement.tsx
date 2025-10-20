@@ -25,7 +25,6 @@ import { Track, Stem } from "@/types";
 interface StemManagementProps {
   track: Track;
   stem: Stem;
-  canEdit: boolean;
 }
 
 interface StemUpdateFormData {
@@ -34,7 +33,7 @@ interface StemUpdateFormData {
   file: File | null;
 }
 
-export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
+export function StemManagement({ track, stem }: StemManagementProps) {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<StemUpdateFormData>({
@@ -156,11 +155,6 @@ export function StemManagement({ track, stem, canEdit }: StemManagementProps) {
       file: files[0] || null,
     }));
   };
-
-  // Only show management options for forks that the user owns
-  if (!canEdit || !track.isFork) {
-    return null;
-  }
 
   return (
     <>

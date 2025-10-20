@@ -44,7 +44,7 @@ const TrackStemComponent = function TrackStem({
         </div>
         <div className="flex items-center gap-3">
           <StemDownloadButtons track={track} stem={stem} />
-          <StemManagement track={track} stem={stem} canEdit={canEdit} />
+          {canEdit && <StemManagement track={track} stem={stem} />}
         </div>
       </div>
       {isProcessing ? (
