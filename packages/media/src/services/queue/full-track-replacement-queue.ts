@@ -164,6 +164,8 @@ async function fullTrackReplacementProcessor(
     const waveformResult = await generateWaveformData(wavBuffer);
     console.log("Generated waveform data");
 
+    // FIXME: This secondsChange calculation needs to take into account whether it's a forked
+    // track, where the upstream track belongs to another user
     const secondsChange = waveformResult.duration - (track.duration ?? 0);
     if (!checkUserHasCapacity({ user, secondsChange }, prisma)) {
       console.warn(

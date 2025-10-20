@@ -6,6 +6,7 @@ import {
   AudioFileConversionStatus,
   Prisma,
   SourceFormat,
+  Stem,
   TrackStatus,
   updateUserStorage,
 } from "@wavtopia/core-storage";
@@ -13,6 +14,7 @@ import { prisma } from "../../lib/prisma";
 import { authenticateTrackAccess } from "./middleware";
 import { uploadAudioFile } from "../../middleware/upload";
 import { config } from "../../config";
+import { deleteFile } from "src/services/storage";
 
 const router = Router();
 
@@ -575,11 +577,39 @@ router.delete("/:id/stem/:stemId", authenticate, async (req, res, next) => {
       throw new AppError(400, "Cannot delete the last stem from a track");
     }
 
+    // TODO: DRY this with stemProcessingProcessor
+    // Delete the stem's files, but only if they are not referenced by the upstream stem
+    let upstreamStem: Stem | undefined;
+    if (track.forkedFromId) {
+      const upstreamTrack = await prisma.track.findUnique({
+        where: { id: track.forkedFromId },
+        include: { stems: true },
+      });
+      upstreamStem = upstreamTrack?.stems.find((s) => s.index === stem.index);
+    }
+    for (const [url, upstreamUrl] of [
+      [stem.mp3Url, upstreamStem?.mp3Url],
+      [stem.flacUrl, upstreamStem?.flacUrl],
+      [stem.wavUrl, upstreamStem?.wavUrl],
+    ]) {
+      if (url && url !== upstreamUrl) {
+        try {
+          await deleteFile(url);
+        } catch (error) {
+          console.error(
+            `Error deleting stem audio file ${url} for stem ${stemId}:`,
+            error
+          );
+        }
+      }
+    }
+
     // Delete the stem
     await prisma.stem.delete({
       where: { id: stemId },
     });
 
+    // FIXME: This secondsChange calculation needs to take into account whether the upstream track belongs to another user
     // Update user storage after deleting stem
     await updateUserStorage(
       {
@@ -603,7 +633,6 @@ router.delete("/:id/stem/:stemId", authenticate, async (req, res, next) => {
             body: JSON.stringify({
               trackId: track.id,
               reason: "stem_deleted",
-              updatedStemId: stem.id,
             }),
           }
         );

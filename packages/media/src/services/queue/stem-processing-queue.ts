@@ -136,6 +136,13 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
     // Retrieve the current state of the stem, in order to delete its audio files after it has been updated
     const prevStem = await prisma.stem.findUnique({
       where: { id: stemId },
+      include: {
+        track: {
+          select: {
+            forkedFromId: true,
+          },
+        },
+      },
     });
 
     // Update the stem in the database
@@ -158,6 +165,8 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
       if (!stem) {
         throw new Error(`Stem ${stemId} not found`);
       }
+      // FIXME: This secondsChange calculation needs to take into account whether it's a forked
+      // track, where the upstream track belongs to another user
       secondsChange = waveformResult.duration - (stem.duration || 0);
     }
 
@@ -202,22 +211,35 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
       }
     }
 
-    // Delete the stem's previous audio files
+    // TODO: DRY this with /:id/stem/:stemId route handler
+    // Delete the stem's previous files, but only if they are not referenced by the upstream stem
     if (prevStem) {
-      [prevStem.mp3Url, prevStem.flacUrl, prevStem.wavUrl].forEach(
-        async (url) => {
-          if (url) {
-            try {
-              await deleteFile(url);
-            } catch (error) {
-              console.error(
-                `Error deleting previous stem audio file ${url} for stem ${stemId}:`,
-                error
-              );
-            }
+      let upstreamStem: Stem | undefined;
+      if (prevStem.track.forkedFromId) {
+        const upstreamTrack = await prisma.track.findUnique({
+          where: { id: prevStem.track.forkedFromId },
+          include: { stems: true },
+        });
+        upstreamStem = upstreamTrack?.stems.find(
+          (s) => s.index === prevStem.index
+        );
+      }
+      for (const [prevUrl, upstreamUrl] of [
+        [prevStem.mp3Url, upstreamStem?.mp3Url],
+        [prevStem.flacUrl, upstreamStem?.flacUrl],
+        [prevStem.wavUrl, upstreamStem?.wavUrl],
+      ]) {
+        if (prevUrl && prevUrl !== upstreamUrl) {
+          try {
+            await deleteFile(prevUrl);
+          } catch (error) {
+            console.error(
+              `Error deleting previous stem audio file ${prevUrl} for stem ${stemId}:`,
+              error
+            );
           }
         }
-      );
+      }
     }
 
     console.log(`Stem processing completed for: ${stemId}`);
