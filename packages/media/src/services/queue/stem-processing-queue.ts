@@ -194,24 +194,7 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
 
     console.log(`Database update completed for stem: ${stemId}`);
 
-    if (secondsChange > 0) {
-      // Update user storage with the actual duration
-      const { notification } = await updateUserStorage(
-        {
-          userId,
-          secondsChange,
-        },
-        prisma
-      );
-
-      if (notification) {
-        console.warn(
-          `User ${userId} has exceeded their storage quota. Quota warning: ${notification.message}`
-        );
-      }
-    }
-
-    // TODO: DRY this with /:id/stem/:stemId route handler
+    // TODO: DRY this with /:id/stem/:stemId route handler, fullTrackReplacementProcessor
     // Delete the stem's previous files, but only if they are not referenced by the upstream stem
     if (prevStem) {
       let upstreamStem: Stem | undefined;
@@ -239,6 +222,24 @@ async function stemProcessingProcessor(job: Job<StemProcessingJob>) {
             );
           }
         }
+      }
+    }
+
+    // FIXME: This condition needs to take into account whether the previous files were actually deleted
+    if (secondsChange > 0) {
+      // Update user storage with the actual duration
+      const { notification } = await updateUserStorage(
+        {
+          userId,
+          secondsChange,
+        },
+        prisma
+      );
+
+      if (notification) {
+        console.warn(
+          `User ${userId} has exceeded their storage quota. Quota warning: ${notification.message}`
+        );
       }
     }
 

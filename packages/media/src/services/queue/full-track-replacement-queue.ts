@@ -1,6 +1,7 @@
 import { Job, Worker } from "bullmq";
 import {
   AudioFileConversionStatus,
+  Track,
   TrackStatus,
   deleteLocalFile,
 } from "@wavtopia/core-storage";
@@ -225,22 +226,31 @@ async function fullTrackReplacementProcessor(
       },
     });
 
-    // Delete the previous audio files
-    [
-      track.originalUrl,
-      track.fullTrackWavUrl,
-      track.fullTrackMp3Url,
-      track.fullTrackFlacUrl,
-    ].forEach(async (url) => {
-      if (url) {
+    // TODO: DRY this with stemProcessingProcessor, /:id/stem/:stemId route handler
+    // Delete the previous audio files, but only if they are not referenced by the upstream track
+    let upstreamTrack: Omit<Track, "user" | "sharedWith"> | null = null;
+    if (track.forkedFromId) {
+      upstreamTrack = await prisma.track.findUnique({
+        where: { id: track.forkedFromId },
+        include: { stems: true },
+      });
+    }
+    for (const [url, upstreamUrl] of [
+      [track.originalUrl, upstreamTrack?.originalUrl],
+      [track.fullTrackMp3Url, upstreamTrack?.fullTrackMp3Url],
+      [track.fullTrackWavUrl, upstreamTrack?.fullTrackWavUrl],
+      [track.fullTrackFlacUrl, upstreamTrack?.fullTrackFlacUrl],
+    ]) {
+      if (url && url !== upstreamUrl) {
         try {
           await deleteFile(url);
         } catch (error) {
           console.error(`Failed to delete file ${url}:`, error);
         }
       }
-    });
+    }
 
+    // FIXME: This condition needs to take into account whether the previous files were actually deleted
     if (secondsChange > 0) {
       // Update user storage with the actual duration
       const { notification } = await updateUserStorage(

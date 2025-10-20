@@ -180,6 +180,14 @@ router.post("/:id/fork", authenticate, async (req, res, next) => {
         });
       }
 
+      // Update the original track's fork count
+      await tx.track.update({
+        where: { id: sourceTrackId },
+        data: {
+          forkCount: { increment: 1 },
+        },
+      });
+
       return forkedTrack;
     });
 
@@ -577,7 +585,7 @@ router.delete("/:id/stem/:stemId", authenticate, async (req, res, next) => {
       throw new AppError(400, "Cannot delete the last stem from a track");
     }
 
-    // TODO: DRY this with stemProcessingProcessor
+    // TODO: DRY this with stemProcessingProcessor, fullTrackReplacementProcessor
     // Delete the stem's files, but only if they are not referenced by the upstream stem
     let upstreamStem: Stem | undefined;
     if (track.forkedFromId) {
@@ -609,7 +617,8 @@ router.delete("/:id/stem/:stemId", authenticate, async (req, res, next) => {
       where: { id: stemId },
     });
 
-    // FIXME: This secondsChange calculation needs to take into account whether the upstream track belongs to another user
+    // FIXME: This secondsChange calculation needs to take into account whether the upstream track belongs to another user,
+    // and the condition needs to consider whether the previous files were actually deleted
     // Update user storage after deleting stem
     await updateUserStorage(
       {
