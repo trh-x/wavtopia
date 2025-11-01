@@ -90,6 +90,9 @@ router.get(
 
       let filePath: string;
       if (format === "mp3") {
+        if (!stem.mp3Url) {
+          throw new AppError(404, "MP3 file not found");
+        }
         filePath = stem.mp3Url;
       } else if (format === "wav") {
         if (!stem.wavUrl) {
