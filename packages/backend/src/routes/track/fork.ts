@@ -3,9 +3,7 @@ import { AppError } from "../../middleware/errorHandler";
 import { authenticate } from "../../middleware/auth";
 import { z } from "zod";
 import {
-  AudioFileConversionStatus,
   Prisma,
-  SourceFormat,
   Stem,
   TrackStatus,
   updateUserStorage,
@@ -14,7 +12,7 @@ import { prisma } from "../../lib/prisma";
 import { authenticateTrackAccess } from "./middleware";
 import { uploadAudioFile } from "../../middleware/upload";
 import { config } from "../../config";
-import { deleteFile } from "src/services/storage";
+import { deleteFile } from "../../services/storage";
 
 const router = Router();
 
