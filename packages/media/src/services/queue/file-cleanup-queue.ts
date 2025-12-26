@@ -95,7 +95,12 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
         AND: [
           {
             originalFormat: {
-              in: [SourceFormat.IT, SourceFormat.MOD, SourceFormat.XM],
+              in: [
+                SourceFormat.IT,
+                SourceFormat.S3M,
+                SourceFormat.MOD,
+                SourceFormat.XM,
+              ],
             },
           },
           {
@@ -125,6 +130,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
                   some: {
                     flacUrl: { not: null },
                     flacLastRequestedAt: { lt: thresholdDate },
+                    isFlacSource: false,
                   },
                 },
               },
@@ -222,6 +228,7 @@ async function fileCleanupProcessor(job: Job<FileCleanupJob>) {
             }
 
             if (
+              !stem.isFlacSource &&
               stem.flacUrl &&
               stem.flacLastRequestedAt &&
               stem.flacLastRequestedAt < thresholdDate

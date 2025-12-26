@@ -90,3 +90,27 @@ export async function updateUserStorage(
     user,
   };
 }
+
+export async function checkUserHasCapacity(
+  params: UpdateStorageParams,
+  prismaClient: PrismaClient | Prisma.TransactionClient
+): Promise<boolean> {
+  // Get user state either from params or by fetching
+  const user =
+    "user" in params
+      ? params.user
+      : await prismaClient.user.findUniqueOrThrow({
+          where: { id: params.userId },
+          select: {
+            currentUsedQuotaSeconds: true,
+            freeQuotaSeconds: true,
+            paidQuotaSeconds: true,
+          },
+        });
+
+  const totalQuotaSeconds = user.freeQuotaSeconds + user.paidQuotaSeconds;
+
+  return (
+    user.currentUsedQuotaSeconds + params.secondsChange <= totalQuotaSeconds
+  );
+}

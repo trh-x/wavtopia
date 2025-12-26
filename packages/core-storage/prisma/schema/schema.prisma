@@ -45,7 +45,10 @@ enum Role {
 enum SourceFormat {
   XM  @map("xm")  // FastTracker2
   IT  @map("it")  // Impulse Tracker
+  S3M @map("s3m") // ScreamTracker3
   MOD @map("mod") // ProTracker/NoiseTracker
+  WAV @map("wav") // WAV audio files
+  FLAC @map("flac") // FLAC audio files
 }
 
 enum TrackStatus {
@@ -122,10 +125,12 @@ model Track {
   // for the trigger that keeps the primaryArtistName field in sync with the primaryArtistId field.
   primaryArtistName     String?                    @map("primary_artist_name")
   originalFormat        SourceFormat               @map("original_format")
-  originalUrl           String                     @map("original_url")
+  originalUrl           String?                    @map("original_url")
   fullTrackWavUrl       String?                    @map("full_track_wav_url")
   fullTrackMp3Url       String?                    @map("full_track_mp3_url")
   fullTrackFlacUrl      String?                    @map("full_track_flac_url")
+  // Whether this track is a source whose FLAC file should not be cleaned up
+  isFlacSource          Boolean                    @default(false) @map("is_flac_source")
   waveformData          Float[]                    @map("waveform_data")
   duration              Float?                     @map("duration") // Duration in seconds
   coverArt              String?                    @map("cover_art")
@@ -139,6 +144,15 @@ model Track {
   sharedWith            TrackShare[]               @relation("SharedTracks")
   createdAt             DateTime                   @default(now()) @map("created_at")
   updatedAt             DateTime                   @updatedAt @map("updated_at")
+  
+  // Track forking support
+  forkedFromId          String?                    @map("forked_from_id")
+  forkedFrom            Track?                     @relation("TrackForks", fields: [forkedFromId], references: [id], onDelete: SetNull)
+  forks                 Track[]                    @relation("TrackForks")
+  isFork                Boolean                    @default(false) @map("is_fork")
+  forkCount             Int                        @default(0) @map("fork_count")
+
+  // Audio file conversion status
   wavConversionStatus   AudioFileConversionStatus  @default(NOT_STARTED) @map("wav_conversion_status")
   flacConversionStatus  AudioFileConversionStatus  @default(NOT_STARTED) @map("flac_conversion_status")
   wavCreatedAt          DateTime?                  @map("wav_created_at")
@@ -275,8 +289,10 @@ model Stem {
   index                 Int
   name                  String
   type                  String
+  // Whether this stem is a source whose FLAC file should not be cleaned up
+  isFlacSource          Boolean                    @default(false) @map("is_flac_source")
   wavUrl                String?                    @map("wav_url")
-  mp3Url                String                     @map("mp3_url")
+  mp3Url                String?                    @map("mp3_url")
   flacUrl               String?                    @map("flac_url")
   waveformData          Float[]                    @map("waveform_data")
   duration              Float?                     @map("duration") // Duration in seconds

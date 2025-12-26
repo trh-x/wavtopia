@@ -39,7 +39,12 @@ export function processFiles(
     const baseName = file.name.substring(0, file.name.lastIndexOf("."));
 
     if (
-      (ext === "xm" || ext === "it" || ext === "mod") &&
+      (ext === "xm" ||
+        ext === "it" ||
+        ext === "s3m" ||
+        ext === "mod" ||
+        ext === "wav" ||
+        ext === "flac") &&
       !existingPaths.has(file.name)
     ) {
       trackFiles.set(baseName, file);

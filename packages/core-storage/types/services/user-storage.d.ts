@@ -24,4 +24,5 @@ export interface StorageUpdateResult {
  * @param prismaClient A PrismaClient instance or transaction client from PrismaService
  */
 export declare function updateUserStorage(params: UpdateStorageParams, prismaClient: PrismaClient | Prisma.TransactionClient): Promise<StorageUpdateResult>;
+export declare function checkUserHasCapacity(params: UpdateStorageParams, prismaClient: PrismaClient | Prisma.TransactionClient): Promise<boolean>;
 export {};

@@ -305,6 +305,91 @@ export const api = {
         body: JSON.stringify(data),
       }) as Promise<Track>;
     },
+
+    fork: async (
+      id: string,
+      data: {
+        title?: string;
+        description?: string;
+        isPublic?: boolean;
+      },
+      token: string
+    ) => {
+      return apiRequest(`/track/${id}/fork`, {
+        method: "POST",
+        token,
+        contentType: "application/json",
+        body: JSON.stringify(data),
+      }) as Promise<Track>;
+    },
+
+    getForks: async (id: string, token: string | null) => {
+      return apiRequest(`/track/${id}/forks`, { token }) as Promise<{
+        original: {
+          id: string;
+          title: string;
+          primaryArtistName: string;
+          createdAt: string;
+          isPublic: boolean;
+          forkCount: number;
+          user: {
+            id: string;
+            username: string;
+          };
+        };
+        forks: Array<{
+          id: string;
+          title: string;
+          primaryArtistName: string;
+          createdAt: string;
+          isPublic: boolean;
+          forkCount: number;
+          user: {
+            id: string;
+            username: string;
+          };
+        }>;
+        total: number;
+      }>;
+    },
+
+    replaceAudio: async (id: string, formData: FormData, token: string) => {
+      return apiRequest(`/track/${id}/audio`, {
+        method: "PATCH",
+        token,
+        body: formData,
+      }) as Promise<{ message: string; track: Track }>;
+    },
+  },
+
+  stem: {
+    create: async (trackId: string, data: FormData, token: string) => {
+      return apiRequest(`/track/${trackId}/stem`, {
+        method: "POST",
+        token,
+        body: data,
+      });
+    },
+
+    update: async (
+      trackId: string,
+      stemId: string,
+      data: FormData,
+      token: string
+    ) => {
+      return apiRequest(`/track/${trackId}/stem/${stemId}`, {
+        method: "PATCH",
+        token,
+        body: data,
+      });
+    },
+
+    delete: async (trackId: string, stemId: string, token: string) => {
+      return apiRequest(`/track/${trackId}/stem/${stemId}`, {
+        method: "DELETE",
+        token,
+      });
+    },
   },
 
   tracks: {

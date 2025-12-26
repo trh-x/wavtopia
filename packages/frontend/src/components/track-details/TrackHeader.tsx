@@ -9,6 +9,8 @@ import { PlayIcon, ArrowDownTrayIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserLink } from "../ui/UserLink";
 import { TrackUploaderIcon } from "../track-list/TrackIcons";
+import { ForkButton } from "./ForkButton";
+import { ForkInfo } from "./ForkInfo";
 
 export function TrackHeader() {
   const { track } = useTrack();
@@ -49,6 +51,7 @@ export function TrackHeader() {
                   Uploaded by <UserLink username={track.user.username} />
                 </span>
               )}
+              <ForkButton track={track} />
             </div>
 
             {/* Track stats */}
@@ -98,6 +101,7 @@ export function TrackHeader() {
           {track.description && (
             <p className="whitespace-pre-wrap">{track.description}</p>
           )}
+          <ForkInfo track={track} />
         </div>
       </div>
     </div>

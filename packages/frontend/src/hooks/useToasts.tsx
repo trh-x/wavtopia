@@ -32,6 +32,7 @@ const createToastsSlice: StateCreator<
     items: [],
     addToast: (toast) => {
       const id = Math.random().toString(36).substr(2, 9);
+
       set((state) => {
         state.toasts.items.push({ ...toast, id });
       });

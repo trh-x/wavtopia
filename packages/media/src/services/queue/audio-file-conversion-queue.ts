@@ -152,6 +152,7 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
           track[sourceUrlProperty] ||
           ((track.originalFormat === SourceFormat.XM ||
             track.originalFormat === SourceFormat.IT ||
+            track.originalFormat === SourceFormat.S3M ||
             track.originalFormat === SourceFormat.MOD) &&
             track.originalUrl)
         )
@@ -205,6 +206,7 @@ async function audioFileConversionProcessor(job: Job<AudioFileConversionJob>) {
           stem[sourceUrlProperty] ||
           ((track.originalFormat === SourceFormat.XM ||
             track.originalFormat === SourceFormat.IT ||
+            track.originalFormat === SourceFormat.S3M ||
             track.originalFormat === SourceFormat.MOD) &&
             track.originalUrl)
         )

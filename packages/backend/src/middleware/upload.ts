@@ -19,14 +19,17 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit
+    fileSize: 500 * 1024 * 1024, // 500MB limit for large audio files
   },
   fileFilter: (req, file, cb) => {
-    // Accept .xm, .it, and .mod files (case-insensitive) and images for cover art
+    // Accept .xm, .it, .s3m, .mod, .wav, and .flac files (case-insensitive) and images for cover art
     if (
       file.originalname.toLowerCase().endsWith(".xm") ||
       file.originalname.toLowerCase().endsWith(".it") ||
+      file.originalname.toLowerCase().endsWith(".s3m") ||
       file.originalname.toLowerCase().endsWith(".mod") ||
+      file.originalname.toLowerCase().endsWith(".wav") ||
+      file.originalname.toLowerCase().endsWith(".flac") ||
       file.mimetype.startsWith("image/")
     ) {
       cb(null, true);
@@ -34,7 +37,7 @@ const upload = multer({
       cb(
         new AppError(
           400,
-          "Only .xm, .it, and .mod files and images are allowed"
+          "Only .xm, .it, .s3m, .mod, .wav, .flac files and images are allowed"
         )
       );
     }
@@ -66,4 +69,7 @@ export function checkStorageQuota(
 export const uploadTrackFiles = upload.fields([
   { name: "original", maxCount: 1 },
   { name: "coverArt", maxCount: 1 },
+  { name: "stems", maxCount: 20 }, // Allow up to 20 stem files
 ]);
+
+export const uploadAudioFile = upload.single("audioFile");

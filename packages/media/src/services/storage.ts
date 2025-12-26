@@ -56,6 +56,8 @@ function getMimeType(filename: string): string {
       return "audio/x-xm";
     case "it":
       return "audio/x-it";
+    case "s3m":
+      return "audio/x-s3m";
     case "mod":
       return "audio/x-mod";
     case "flac":

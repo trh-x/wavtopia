@@ -5,9 +5,12 @@ import {
   trackConversionQueue,
   queueAudioFileConversion,
   audioFileConversionQueue,
+  queueAudioProcessing,
+  queueStemProcessing,
   fileCleanupQueue,
 } from "../services/queue";
 import { queueTrackDeletion } from "../services/queue/track-deletion-queue";
+import { queueTrackRegeneration } from "../services/queue/track-regeneration-queue";
 import { runCleanupJobNow } from "../services/queue/file-cleanup-queue";
 import { z } from "zod";
 import {
@@ -15,6 +18,7 @@ import {
   PrismaService,
   config,
 } from "@wavtopia/core-storage";
+import { queueFullTrackReplacement } from "../services/queue/full-track-replacement-queue";
 
 const prisma = new PrismaService(config.database).db;
 
@@ -22,6 +26,28 @@ export const router = Router();
 
 const conversionOptionsSchema = z.object({
   trackId: z.string().uuid(),
+});
+
+const audioProcessingOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+  stemFiles: z
+    .array(
+      z.object({
+        url: z.string(),
+        size: z.number(),
+        originalName: z.string(),
+        metadata: z.object({
+          name: z.string(),
+          type: z.string().optional().default("audio"),
+        }),
+      })
+    )
+    .optional(),
+});
+
+const fullTrackReplacementOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+  audioFileUrl: z.string(),
 });
 
 const audioFileConversionOptionsSchema = z.object({
@@ -33,6 +59,21 @@ const audioFileConversionOptionsSchema = z.object({
 
 const trackDeletionSchema = z.object({
   trackIds: z.array(z.string().uuid()).min(1),
+});
+
+const stemProcessingOptionsSchema = z.object({
+  stemId: z.string().uuid(),
+  stemFileUrl: z.string(),
+  stemFileName: z.string(),
+  trackId: z.string().uuid(),
+  userId: z.string().uuid(),
+  operation: z.enum(["add_stem", "replace_stem"]),
+});
+
+const trackRegenerationOptionsSchema = z.object({
+  trackId: z.string().uuid(),
+  reason: z.enum(["stem_updated", "stem_deleted", "stem_added"]),
+  updatedStemId: z.string().uuid().optional(),
 });
 
 // Convert track module file to MP3/FLAC format
@@ -48,6 +89,52 @@ router.post("/convert-module", async (req, res, next) => {
       data: {
         jobId,
         message: "Track conversion has been queued",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Process uploaded audio files (WAV/FLAC) - generates MP3 and waveform data
+router.post("/process-audio", async (req, res, next) => {
+  try {
+    // Parse options
+    const options = audioProcessingOptionsSchema.parse(req.body);
+
+    const jobId = await queueAudioProcessing(
+      options.trackId,
+      options.stemFiles
+    );
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Audio processing has been queued",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Process uploaded audio files (WAV/FLAC) - generates MP3 and waveform data
+router.post("/replace-full-track", async (req, res, next) => {
+  try {
+    // Parse options
+    const options = fullTrackReplacementOptionsSchema.parse(req.body);
+
+    const jobId = await queueFullTrackReplacement(
+      options.trackId,
+      options.audioFileUrl
+    );
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Full track replacement has been queued",
       },
     });
   } catch (error) {
@@ -256,6 +343,32 @@ router.post("/trigger-cleanup", async (req, res, next) => {
   }
 });
 
+// Process individual stem file
+router.post("/process-stem", async (req, res, next) => {
+  try {
+    const options = stemProcessingOptionsSchema.parse(req.body);
+
+    const jobId = await queueStemProcessing(
+      options.stemId,
+      options.stemFileUrl,
+      options.stemFileName,
+      options.trackId,
+      options.userId,
+      options.operation
+    );
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Stem processing has been queued",
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Queue tracks for deletion
 router.post("/tracks/delete", async (req, res, next) => {
   try {
@@ -263,6 +376,25 @@ router.post("/tracks/delete", async (req, res, next) => {
 
     const jobId = await queueTrackDeletion(trackIds);
     res.status(202).json({ jobId });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Regenerate track audio files from stems
+router.post("/regenerate-track", async (req, res, next) => {
+  try {
+    const options = trackRegenerationOptionsSchema.parse(req.body);
+
+    const jobId = await queueTrackRegeneration(options.trackId, options.reason);
+
+    res.json({
+      status: "success",
+      data: {
+        jobId,
+        message: "Track regeneration has been queued",
+      },
+    });
   } catch (error) {
     next(error);
   }

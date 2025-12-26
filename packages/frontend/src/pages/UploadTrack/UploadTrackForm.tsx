@@ -1,4 +1,5 @@
 import { DropZone } from "@/components/ui/DropZone";
+import { StemUpload, StemFile } from "@/components/ui/StemUpload";
 import { TrackForm, BaseTrackFormData } from "@/components/forms/TrackForm";
 import { useForm } from "@/hooks/useForm";
 import type { License } from "@wavtopia/core-storage";
@@ -7,6 +8,7 @@ export interface UploadTrackFormData extends BaseTrackFormData {
   original: File | null;
   coverArt: File | null;
   originalFormat: string | undefined;
+  stemFiles: StemFile[];
 }
 
 interface UploadTrackFormProps {
@@ -31,6 +33,7 @@ const EMPTY_FORM_VALUES: UploadTrackFormData = {
   original: null,
   coverArt: null,
   originalFormat: undefined,
+  stemFiles: [],
 };
 
 type FileField = "original" | "coverArt";
@@ -53,7 +56,12 @@ export function UploadTrackForm({
       const format = file.name.split(".").pop()?.toLowerCase();
       handleChange(
         "originalFormat",
-        format === "it" || format === "mod" ? format : "xm"
+        format === "it" ||
+          format === "mod" ||
+          format === "wav" ||
+          format === "flac"
+          ? format
+          : "xm"
       );
     }
     handleChange(field, file);
@@ -74,11 +82,13 @@ export function UploadTrackForm({
         label="Drop track files here"
         sublabel={
           <div className="space-y-1.5">
-            <p>.xm, .it, .mod files and optional cover art</p>
+            <p>
+              .xm, .it, .s3m, .mod, .wav, .flac files and optional cover art
+            </p>
             <p className="text-gray-400">Click to select files</p>
           </div>
         }
-        accept=".xm,.it,.mod,image/*"
+        accept=".xm,.it,.s3m,.mod,.wav,.flac,image/*"
         multiple={true}
         onFileSelect={(files) => {
           // First process any image files to ensure they're handled first for preview
@@ -86,7 +96,7 @@ export function UploadTrackForm({
             file.type.startsWith("image/")
           );
           const trackFiles = files.filter((file) =>
-            file.name.toLowerCase().match(/\.(xm|it|mod)$/)
+            file.name.toLowerCase().match(/\.(xm|it|s3m|mod|wav|flac)$/)
           );
 
           // Always update with the latest files
@@ -111,6 +121,18 @@ export function UploadTrackForm({
         error={submitError || undefined}
         showPreview={true}
       />
+
+      {/* Show stem upload only for WAV/FLAC tracks */}
+      {values.originalFormat &&
+        ["wav", "flac"].includes(values.originalFormat) && (
+          <StemUpload
+            stemFiles={values.stemFiles}
+            onStemFilesChange={(stemFiles) =>
+              handleChange("stemFiles", stemFiles)
+            }
+            disabled={disabled || isSubmitting}
+          />
+        )}
 
       <TrackForm
         values={values}

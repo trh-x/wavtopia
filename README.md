@@ -2,15 +2,15 @@
 
 <img src="wavtopia-icon.png" alt="Wavtopia Icon" width="128" height="128" />
 
-A modern web platform for sharing and downloading multi-track music files. Wavtopia allows you to upload tracker music files (.xm format) and automatically converts them into individual WAV stems and a full track WAV file.
+A modern web platform for sharing and downloading multi-track music files. Wavtopia allows you to upload tracker music files (.xm, .it, .s3m, .mod formats) and automatically converts them into individual WAV stems and a full track WAV file.
 
 ## Features
 
 - **Track Management**: Upload, manage, and share your music tracks
-- **Audio Conversion**: Automatic conversion of .xm, .it, and .mod files to WAV format
+- **Audio Conversion**: Automatic conversion of .xm, .it, .s3m, and .mod files to WAV format
 - **Stem Extraction**: Split tracks into individual instrument stems
 - **Multi-format Downloads**:
-  - Download the original tracker file (.xm, .it, .mod)
+  - Download the original tracker file (.xm, .it, .s3m, .mod)
   - Download the full track as WAV
   - Download individual instrument stems as WAV
 - **Real-time Playback**: Play and preview tracks directly in the browser
