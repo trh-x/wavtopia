@@ -57,7 +57,7 @@ export function StemUpload({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Stem Files (Optional)</h3>
+        <h3 className="text-lg font-medium">Stem Files</h3>
         <span className="text-sm text-gray-500">
           {stemFiles.length} / {maxStems} stems
         </span>
@@ -152,14 +152,6 @@ export function StemUpload({
             </div>
           </div>
         </BaseDropZone>
-      )}
-
-      {stemFiles.length === 0 && (
-        <p className="text-sm text-gray-600">
-          Stem files are optional. If you have separated your track into
-          individual instrument stems (drums, bass, vocals, etc.), you can
-          upload them here to provide listeners with more control over the mix.
-        </p>
       )}
     </div>
   );
