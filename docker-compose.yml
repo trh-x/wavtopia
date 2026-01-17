@@ -9,27 +9,27 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wavtopia}
       POSTGRES_DB: ${POSTGRES_DB:-wavtopia}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - wavtopia-net
 
-  pgadmin:
-    profiles:
-      - development
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@wavtopia.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-wavtopia123}
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - wavtopia-net
-    depends_on:
-      - postgres
+  # pgadmin:
+  #   profiles:
+  #     - development
+  #   image: dpage/pgadmin4
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@wavtopia.com}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-wavtopia123}
+  #   ports:
+  #     - "5050:80"
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #   networks:
+  #     - wavtopia-net
+  #   depends_on:
+  #     - postgres
 
   minio:
     profiles:
@@ -40,8 +40,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-wavtopia}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-wavtopia123}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -54,7 +54,7 @@ services:
       - development
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     environment:
       - REDIS_USERNAME=${REDIS_USERNAME:-wavtopia}
       - REDIS_PASSWORD=${REDIS_PASSWORD:-wavtopia123}
@@ -70,7 +70,7 @@ services:
 
       # Basic settings
       port 6379
-      bind 0.0.0.0
+      bind 127.0.0.1
 
       # Persistence
       appendonly yes
@@ -134,7 +134,7 @@ services:
         - WORKSPACE_APT_IMAGE=${REGISTRY_PREFIX:-}wavtopia-apt-base
     image: ${REGISTRY_PREFIX:-}wavtopia-media
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     volumes:
       # TODO: Mount this somewhere else so regular tmp files don't get created in the volume
       - temp_files:/tmp
@@ -159,7 +159,7 @@ services:
         - WORKSPACE_APT_IMAGE=${REGISTRY_PREFIX:-}wavtopia-apt-base
     image: ${REGISTRY_PREFIX:-}wavtopia-backend
     ports:
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     volumes:
       # TODO: Mount this somewhere else so regular tmp files don't get created in the volume
       - temp_files:/tmp
@@ -183,7 +183,7 @@ services:
       args:
         - WORKSPACE_IMAGE=${REGISTRY_PREFIX:-}wavtopia-workspace
     ports:
-      - "80:80"
+      - "127.0.0.1:80:80"
     networks:
       - wavtopia-net
 
